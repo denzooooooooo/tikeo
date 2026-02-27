@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { HeartIcon } from '@tikeo/ui';
+import { HeartIcon } from './Icons';
 
 interface LikeButtonProps {
   eventId: string;

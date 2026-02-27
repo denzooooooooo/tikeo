@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { StarIcon } from '@tikeo/ui';
+import { StarIcon } from './Icons';
 
 interface ReviewFormProps {
   eventId: string;

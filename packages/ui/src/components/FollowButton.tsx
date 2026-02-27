@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { UsersIcon } from '@tikeo/ui';
+import { UsersIcon } from './Icons';
 
 interface FollowButtonProps {
   organizerId: string;
