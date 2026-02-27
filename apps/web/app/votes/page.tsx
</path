@@ -1,0 +1,209 @@
+import Link from 'next/link';
+import Image from 'next/image';
+import { ContestCard } from '@tikeo/ui';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Concours & Votes | Tikeo',
+  description: 'Participez à nos concours et votez pour vos artistes préférés',
+};
+
+// Mock data for contests - replace with API call
+const mockContests = [
+  {
+    id: '1',
+    title: 'Meilleur Artiste Français 2024',
+    slug: 'meilleur-artiste-francais-2024',
+    description: 'Votez pour votre artiste français préféré et aidez-le à gagner !',
+    shortDescription: 'Le concours pour élire le meilleur artiste français de l\'année',
+    coverImage: '/contests/music.jpg',
+    category: 'MUSIC',
+    status: 'ACTIVE' as const,
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-12-31'),
+    prize: '1 million d\'euros + exposition',
+    organizerId: '1',
+    maxContestants: 100,
+    currentContestants: 45,
+    votesPerUser: 5,
+    isPublicResults: true,
+    isFeatured: true,
+    votesCount: 15000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '2',
+    title: 'Meilleur Photographer Animalier',
+    slug: 'meilleur-photographer-animalier',
+    description: 'Découvrez les plus belles photos d\'animaux et votez pour votre préférée',
+    shortDescription: 'Un concours de photographie animalière internationale',
+    coverImage: '/contests/photo.jpg',
+    category: 'PHOTOGRAPHY',
+    status: 'VOTING' as const,
+    startDate: new Date('2024-02-01'),
+    endDate: new Date('2024-06-30'),
+    prize: '5000€ + équipement photo',
+    organizerId: '2',
+    maxContestants: 50,
+    currentContestants: 32,
+    votesPerUser: 3,
+    isPublicResults: true,
+    isFeatured: true,
+    votesCount: 8500,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: '3',
+    title: 'Danseurs de l\'Année',
+    slug: 'danseurs-annee-2024',
+    description: 'Les meilleurs danseurs se affrontent pour le titre suprême',
+    shortDescription: 'Competition de danse urbaine et classique',
+    coverImage: '/contests/dance.jpg',
+    category: 'DANCE',
+    status: 'PUBLISHED' as const,
+    startDate: new Date('2024-03-01'),
+    endDate: new Date('2024-09-30'),
+    prize: 'Tournée mondiale + cachet',
+    organizerId: '3',
+    maxContestants: 20,
+    currentContestants: 18,
+    votesPerUser: 1,
+    isPublicResults: true,
+    isFeatured: false,
+    votesCount: 2500,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
+
+const categories = [
+  { id: 'all', name: 'Tous', icon: '🎯' },
+  { id: 'MUSIC', name: 'Musique', icon: '🎵' },
+  { id: 'DANCE', name: 'Danse', icon: '💃' },
+  { id: 'PHOTOGRAPHY', name: 'Photo', icon: '📷' },
+  { id: 'ART', name: 'Art', icon: '🎨' },
+  { id: 'TALENT', name: 'Talents', icon: '⭐' },
+];
+
+export default function VotesPage() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-red-500 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Concours & Votes
+            </h1>
+            <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
+              Participez à nos concours, soutenez vos artistes préférés et 
+              aidez-les à réaliser leurs rêves !
+            </p>
+            <div className="flex justify-center gap-4">
+              <Link
+                href="/votes/create"
+                className="bg-white text-purple-600 px-8 py-3 rounded-full font-semibold hover:bg-purple-50 transition-colors"
+              >
+                Créer un concours
+              </Link>
+              <Link
+                href="#contests"
+                className="bg-purple-700 text-white px-8 py-3 rounded-full font-semibold hover:bg-purple-800 transition-colors"
+              >
+                Parcourir les concours
+              </Link>
+            </div>
+        </div>
+
+      {/* Stats Bar */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-purple-600">150+</p>
+              <p className="text-sm text-gray-600">Concours actifs</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-pink-600">50K+</p>
+              <p className="text-sm text-gray-600">Participants</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-red-600">500K+</p>
+              <p className="text-sm text-gray-600">Votes comptabilisés</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-blue-600">1M€+</p>
+              <p className="text-sm text-gray-600">Prix à gagner</p>
+            </div>
+        </div>
+
+      {/* Contests Section */}
+      <section id="contests" className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Category Filter */}
+          <div className="flex flex-wrap gap-3 mb-8">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                className={`px-4 py-2 rounded-full font-medium transition-all ${
+                  cat.id === 'all'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-purple-50'
+                }`}
+              >
+                <span className="mr-2">{cat.icon}</span>
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Featured Contests */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <span className="text-yellow-500">⭐</span>
+              Concours Vedettes
+            </h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {mockContests
+                .filter((c) => c.isFeatured)
+                .map((contest) => (
+                  <ContestCard key={contest.id} contest={contest} />
+                ))}
+            </div>
+
+          {/* All Contests */}
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <span className="text-purple-500">🎯</span>
+              Tous les concours
+            </h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {mockContests.map((contest) => (
+                <ContestCard key={contest.id} contest={contest} />
+              ))}
+            </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-gradient-to-r from-purple-600 to-pink-600 py-16">
+        <div className="max-w-4xl mx-auto text-center px-4">
+          <h2 className="text-3xl font-bold text-white mb-4">
+            Vous voulez créer votre propre concours ?
+          </h2>
+          <p className="text-purple-100 mb-8">
+            Créez un concours, recrutez des participants et faites voter votre communauté
+          </p>
+          <Link
+            href="/votes/create"
+            className="inline-block bg-white text-purple-600 px-8 py-3 rounded-full font-semibold hover:bg-purple-50 transition-colors"
+          >
+            Commencer maintenant
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}

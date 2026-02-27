@@ -1,0 +1,254 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: tikeo-postgres
+    environment:
+      POSTGRES_USER: tikeo
+      POSTGRES_PASSWORD: tikeo_dev_password
+      POSTGRES_DB: tikeo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - tikeo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tikeo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: tikeo-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tikeo-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: tikeo-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - tikeo-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kibana (optional - for Elasticsearch visualization)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: tikeo-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - tikeo-network
+    depends_on:
+      - elasticsearch
+
+  # MinIO (S3-compatible storage for local development)
+  minio:
+    image: minio/minio:latest
+    container_name: tikeo-minio
+    environment:
+      MINIO_ROOT_USER: tikeo
+      MINIO_ROOT_PASSWORD: tikeo_minio_password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - tikeo-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/Dockerfile.api-gateway
+    container_name: tikeo-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://tikeo:tikeo_dev_password@postgres:5432/tikeo
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    networks:
+      - tikeo-network
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+
+  # Event Service
+  event-service:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/Dockerfile.event-service
+    container_name: tikeo-event-service
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://tikeo:tikeo_dev_password@postgres:5432/tikeo
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    networks:
+      - tikeo-network
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    volumes:
+      - ./services/event-service:/app
+      - /app/node_modules
+
+  # Ticket Service
+  ticket-service:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/Dockerfile.ticket-service
+    container_name: tikeo-ticket-service
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://tikeo:tikeo_dev_password@postgres:5432/tikeo
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - tikeo-network
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/ticket-service:/app
+      - /app/node_modules
+
+  # Payment Service
+  payment-service:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/Dockerfile.payment-service
+    container_name: tikeo-payment-service
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://tikeo:tikeo_dev_password@postgres:5432/tikeo
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+    networks:
+      - tikeo-network
+    depends_on:
+      - postgres
+    volumes:
+      - ./services/payment-service:/app
+      - /app/node_modules
+
+  # Notification Service
+  notification-service:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/Dockerfile.notification-service
+    container_name: tikeo-notification-service
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - FCM_SERVER_KEY=${FCM_SERVER_KEY}
+    networks:
+      - tikeo-network
+    depends_on:
+      - redis
+    volumes:
+      - ./services/notification-service:/app
+      - /app/node_modules
+
+  # AI Service
+  ai-service:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/Dockerfile.ai-service
+    container_name: tikeo-ai-service
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - tikeo-network
+    depends_on:
+      - redis
+    volumes:
+      - ./services/ai-service:/app
+      - /app/node_modules
+
+  # Analytics Service
+  analytics-service:
+    build:
+      context: .
+      dockerfile: ./infrastructure/docker/Dockerfile.analytics-service
+    container_name: tikeo-analytics-service
+    ports:
+      - "3006:3006"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://tikeo:tikeo_dev_password@postgres:5432/tikeo
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - tikeo-network
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./services/analytics-service:/app
+      - /app/node_modules
+
+networks:
+  tikeo-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:
+  minio_data:

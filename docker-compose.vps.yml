@@ -1,0 +1,75 @@
+version: '3.8'
+
+# ============================================================
+# TIKE'O - Docker Compose VPS Hetzner (Production)
+# DB      → Supabase (externe, gratuit jusqu'à 500MB)
+# Redis   → Upstash  (externe, gratuit jusqu'à 10k req/jour)
+# Backend → NestJS API Gateway (ce VPS)
+# ============================================================
+
+services:
+  # API Gateway (Backend NestJS)
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    image: tikeo-api-gateway:latest
+    container_name: tikeo-api-gateway
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - services/api-gateway/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Nginx Reverse Proxy (SSL + routing)
+  nginx:
+    image: nginx:alpine
+    container_name: tikeo-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/ssl:/etc/nginx/ssl:ro
+      - certbot-www:/var/www/certbot:ro
+      - certbot-conf:/etc/letsencrypt:ro
+    depends_on:
+      - api-gateway
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  # Certbot (SSL Let's Encrypt - renouvellement auto)
+  certbot:
+    image: certbot/certbot:latest
+    container_name: tikeo-certbot
+    volumes:
+      - certbot-www:/var/www/certbot
+      - certbot-conf:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+networks:
+  default:
+    name: tikeo-network
+
+volumes:
+  certbot-www:
+  certbot-conf:
+

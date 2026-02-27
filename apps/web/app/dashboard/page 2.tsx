@@ -1,0 +1,390 @@
+import Link from 'next/link';
+import {
+  PlusIcon,
+  DollarIcon,
+  TicketIcon,
+  CalendarIcon,
+  TrendingUpIcon,
+  BarChartIcon,
+  MailOpenIcon,
+  TargetIcon,
+  ArrowRightIcon,
+  EditIcon,
+} from '@tikeo/ui';
+
+async function getDashboardStats() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/analytics/dashboard`, {
+      cache: 'no-store',
+      headers: {
+        'Authorization': `Bearer ${process.env.API_TOKEN}`,
+      },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return null;
+  }
+}
+
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardPage() {
+  const stats = await getDashboardStats();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header avec Gradient */}
+      <div className="bg-gradient-to-br from-[#5B7CFF] via-[#7B61FF] to-[#9D4EDD] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2">
+                Dashboard Organisateur
+              </h1>
+              <p className="text-xl text-white/90">
+                Gérez vos événements et suivez vos performances
+              </p>
+            </div>
+            <Link
+              href="/dashboard/events/create"
+              className="flex items-center gap-2 px-6 py-4 bg-white text-[#5B7CFF] rounded-xl hover:shadow-2xl transition-all duration-200 font-bold"
+            >
+              <PlusIcon size={20} />
+              Créer un événement
+            </Link>
+          </div>
+        </div>
+
+        {/* Wave Separator */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
+              fill="#F9FAFB"
+            />
+          </svg>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards avec Icônes SVG */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="Revenus totaux"
+            value={stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()}€` : '0€'}
+            change="+12.5%"
+            trend="up"
+            icon={DollarIcon}
+            gradient="from-green-500 to-emerald-600"
+            bgGradient="from-green-50 to-emerald-50"
+          />
+          <StatCard
+            title="Billets vendus"
+            value={stats?.ticketsSold?.toLocaleString() || '0'}
+            change="+8.2%"
+            trend="up"
+            icon={TicketIcon}
+            gradient="from-blue-500 to-cyan-600"
+            bgGradient="from-blue-50 to-cyan-50"
+          />
+          <StatCard
+            title="Événements actifs"
+            value={stats?.activeEvents?.toString() || '0'}
+            change="+2"
+            trend="up"
+            icon={CalendarIcon}
+            gradient="from-purple-500 to-pink-600"
+            bgGradient="from-purple-50 to-pink-50"
+          />
+          <StatCard
+            title="Taux de conversion"
+            value={stats?.conversionRate ? `${stats.conversionRate}%` : '0%'}
+            change="+3.1%"
+            trend="up"
+            icon={TrendingUpIcon}
+            gradient="from-orange-500 to-red-600"
+            bgGradient="from-orange-50 to-red-50"
+          />
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Revenue Chart */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
+                  <BarChartIcon className="text-white" size={24} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Revenus des 30 derniers jours
+                  </h2>
+                  <p className="text-sm text-gray-600">Évolution mensuelle</p>
+                </div>
+              </div>
+            </div>
+            <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+              <div className="text-center">
+                <BarChartIcon className="mx-auto text-gray-400 mb-3" size={48} />
+                <p className="text-gray-600 font-medium">Graphique des revenus</p>
+                <p className="text-sm text-gray-500 mt-1">Intégration Chart.js à venir</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Sales Chart */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl">
+                  <TargetIcon className="text-white" size={24} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Ventes par événement
+                  </h2>
+                  <p className="text-sm text-gray-600">Top performances</p>
+                </div>
+              </div>
+            </div>
+            <div className="h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
+              <div className="text-center">
+                <TargetIcon className="mx-auto text-gray-400 mb-3" size={48} />
+                <p className="text-gray-600 font-medium">Graphique des ventes</p>
+                <p className="text-sm text-gray-500 mt-1">Intégration Chart.js à venir</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Events */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-8 bg-gradient-to-b from-[#5B7CFF] to-[#7B61FF] rounded-full"></div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Événements récents
+              </h2>
+            </div>
+            <Link
+              href="/dashboard/events"
+              className="flex items-center gap-2 text-[#5B7CFF] hover:text-[#7B61FF] font-semibold transition-colors"
+            >
+              Voir tout
+              <ArrowRightIcon size={20} />
+            </Link>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b-2 border-gray-200">
+                  <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Événement
+                  </th>
+                  <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Date
+                  </th>
+                  <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Billets vendus
+                  </th>
+                  <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Revenus
+                  </th>
+                  <th className="text-left py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Statut
+                  </th>
+                  <th className="text-right py-4 px-4 text-sm font-bold text-gray-700 uppercase tracking-wide">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <EventRow
+                  name="Concert Jazz Festival"
+                  date="15 Jan 2024"
+                  ticketsSold={245}
+                  revenue={12250}
+                  status="active"
+                />
+                <EventRow
+                  name="Conférence Tech 2024"
+                  date="22 Jan 2024"
+                  ticketsSold={180}
+                  revenue={9000}
+                  status="active"
+                />
+                <EventRow
+                  name="Festival Musique Électro"
+                  date="5 Fév 2024"
+                  ticketsSold={520}
+                  revenue={31200}
+                  status="upcoming"
+                />
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Quick Actions avec Icônes SVG */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <QuickActionCard
+            title="Créer un événement"
+            description="Lancez un nouvel événement en quelques clics"
+            icon={PlusIcon}
+            href="/dashboard/events/create"
+            gradient="from-[#5B7CFF] to-[#7B61FF]"
+          />
+          <QuickActionCard
+            title="Campagne marketing"
+            description="Créez une campagne email pour vos événements"
+            icon={MailOpenIcon}
+            href="/dashboard/marketing"
+            gradient="from-purple-500 to-pink-600"
+          />
+          <QuickActionCard
+            title="Analytics détaillés"
+            description="Consultez vos statistiques avancées"
+            icon={BarChartIcon}
+            href="/dashboard/analytics"
+            gradient="from-orange-500 to-red-600"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  change,
+  trend,
+  icon: Icon,
+  gradient,
+  bgGradient,
+}: {
+  title: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down';
+  icon: React.ComponentType<{ className?: string; size?: number }>;
+  gradient: string;
+  bgGradient: string;
+}) {
+  return (
+    <div className={`bg-gradient-to-br ${bgGradient} rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-200`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-3 bg-gradient-to-br ${gradient} rounded-xl shadow-lg`}>
+          <Icon className="text-white" size={24} />
+        </div>
+        <span
+          className={`flex items-center gap-1 text-sm font-bold px-3 py-1 rounded-full ${
+            trend === 'up' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}
+        >
+          <TrendingUpIcon size={14} />
+          {change}
+        </span>
+      </div>
+      <h3 className="text-gray-600 text-sm font-semibold mb-2 uppercase tracking-wide">{title}</h3>
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+    </div>
+  );
+}
+
+function EventRow({
+  name,
+  date,
+  ticketsSold,
+  revenue,
+  status,
+}: {
+  name: string;
+  date: string;
+  ticketsSold: number;
+  revenue: number;
+  status: string;
+}) {
+  return (
+    <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+      <td className="py-4 px-4">
+        <p className="font-bold text-gray-900">{name}</p>
+      </td>
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-2 text-gray-600">
+          <CalendarIcon size={16} />
+          <span>{date}</span>
+        </div>
+      </td>
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-2 text-gray-900 font-semibold">
+          <TicketIcon size={16} />
+          <span>{ticketsSold}</span>
+        </div>
+      </td>
+      <td className="py-4 px-4">
+        <div className="flex items-center gap-2 text-gray-900 font-bold">
+          <DollarIcon size={16} className="text-green-600" />
+          <span>{revenue.toLocaleString()}€</span>
+        </div>
+      </td>
+      <td className="py-4 px-4">
+        <span
+          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
+            status === 'active'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-blue-100 text-blue-700'
+          }`}
+        >
+          <span className={`w-2 h-2 rounded-full ${status === 'active' ? 'bg-green-500' : 'bg-blue-500'}`}></span>
+          {status === 'active' ? 'Actif' : 'À venir'}
+        </span>
+      </td>
+      <td className="py-4 px-4 text-right">
+        <button className="inline-flex items-center gap-2 px-4 py-2 text-[#5B7CFF] hover:bg-[#5B7CFF] hover:text-white rounded-lg font-semibold transition-all duration-200 border-2 border-[#5B7CFF]">
+          <EditIcon size={16} />
+          Gérer
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function QuickActionCard({
+  title,
+  description,
+  icon: Icon,
+  href,
+  gradient,
+}: {
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
+  href: string;
+  gradient: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6 hover:border-[#5B7CFF] hover:shadow-xl transition-all duration-200"
+    >
+      <div className={`inline-flex p-4 bg-gradient-to-br ${gradient} rounded-xl mb-4 group-hover:scale-110 transition-transform duration-200`}>
+        <Icon className="text-white" size={32} />
+      </div>
+      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-[#5B7CFF] transition-colors">
+        {title}
+      </h3>
+      <p className="text-gray-600 leading-relaxed">{description}</p>
+      <div className="mt-4 flex items-center gap-2 text-[#5B7CFF] font-semibold group-hover:gap-3 transition-all">
+        <span>Accéder</span>
+        <ArrowRightIcon size={20} />
+      </div>
+    </Link>
+  );
+}

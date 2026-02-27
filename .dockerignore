@@ -1,0 +1,9 @@
+rootnode_modules
+.git
+dist
+.next
+*.log
+.env
+.env.local
+.DS_Store
+
