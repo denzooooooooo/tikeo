@@ -8,7 +8,11 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+      'http://localhost:3000',
+      'https://tikeoh.com',
+      'https://www.tikeoh.com',
+    ],
     credentials: true,
   });
 
