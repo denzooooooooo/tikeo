@@ -27,10 +27,9 @@
   },
   "include": ["src/**/*"],
   "exclude": [
-    "node_modules", 
-    "dist", 
+    "node_modules",
+    "dist",
     "test",
-    // Disabled modules - have schema mismatches or missing files
     "src/activity-feed",
     "src/analytics",
     "src/blog",
