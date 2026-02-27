@@ -13,7 +13,7 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++ openssl
 
 # Copier les fichiers de configuration du monorepo
-COPY package.json package-lock.json* turbo.json ./
+COPY package.json package-lock.json* turbo.json tsconfig.json ./
 
 # Copier les packages partagés
 COPY packages/ ./packages/
