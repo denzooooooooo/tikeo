@@ -1,12 +1,12 @@
-// Prisma Schema for Tikeo Platform - MySQL Version
-// Use this for both local development and production
+// Prisma Schema for Tikeo Platform - PostgreSQL Version
+// Supabase (PostgreSQL) for production
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
