@@ -50,6 +50,14 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'tikeoh.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.tikeoh.com',
+      },
+      {
+        protocol: 'https',
         hostname: 's3.amazonaws.com',
       },
       {
