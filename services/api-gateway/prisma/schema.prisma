@@ -1,0 +1,549 @@
+// Prisma Schema for Tikeo Platform - MySQL Version
+// Use this for both local development and production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  password         String
+  firstName        String
+  lastName         String
+  avatar           String?
+  phone            String?
+  role             String   @default("USER")
+  emailVerified    Boolean  @default(false)
+  twoFactorEnabled Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  organizer     Organizer?
+  tickets       Ticket[]
+  orders        Order[]
+  notifications Notification[]
+
+  // Social Relations
+  likedEvents            EventLike[]
+  followedUsers          UserFollow[]            @relation("UserFollows")
+  followedBy             UserFollow[]            @relation("UserFollowedBy")
+  organizerSubscriptions OrganizerSubscription[]
+
+  // Reviews
+  reviews          WrittenReview[]
+  eventReviews     EventReview[]
+  organizerReviews OrganizerReview[]
+
+  // Activity
+  activities Activity[]
+
+  // Loyalty
+  loyaltyPoints Int @default(0)
+
+  // OAuth providers
+  provider   String?
+  providerId String?
+
+  @@index([email])
+  @@map("users")
+}
+
+// Organizer Model
+model Organizer {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName String
+  description String? @db.Text
+  logo        String?
+  banner      String?
+  website     String?
+
+  facebookUrl  String?
+  twitterUrl   String?
+  instagramUrl String?
+  linkedinUrl  String?
+
+  verified         Boolean @default(false)
+  rating           Float   @default(0)
+  ratingCount      Int     @default(0)
+  totalEvents      Int     @default(0)
+  totalTicketsSold Int     @default(0)
+  followersCount   Int     @default(0)
+
+  stripeAccountId String?
+  stripeConnected Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  events        Event[]
+  subscriptions OrganizerSubscription[]
+  reviews       OrganizerReview[]
+
+  @@map("organizers")
+}
+
+// Event Model
+model Event {
+  id               String  @id @default(cuid())
+  title            String
+  slug             String  @unique
+  description      String  @db.Text
+  shortDescription String?
+
+  coverImage  String
+  teaserVideo String?
+  videoUrl    String?
+
+  category String
+  tags     String?
+
+  organizerId String
+  organizer   Organizer @relation(fields: [organizerId], references: [id])
+
+  venueName       String
+  venueAddress    String
+  venueCity       String
+  venueCountry    String
+  venuePostalCode String
+  venueLatitude   Float?
+  venueLongitude  Float?
+
+  startDate DateTime
+  endDate   DateTime
+  timezone  String   @default("Europe/Paris")
+
+  capacity         Int
+  ticketsSold      Int @default(0)
+  ticketsAvailable Int
+
+  status     String @default("DRAFT")
+  visibility String @default("PUBLIC")
+
+  currency       String  @default("EUR")
+  minPrice       Float
+  maxPrice       Float
+  dynamicPricing Boolean @default(false)
+
+  isFeatured   Boolean @default(false)
+  isOnline     Boolean @default(false)
+  streamingUrl String?
+
+  views  Int @default(0)
+  shares Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  // Relations
+  images         EventImage[]
+  ticketTypes    TicketType[]
+  tickets        Ticket[]
+  orders         Order[]
+  likes          EventLike[]
+  reviews        EventReview[]
+  writtenReviews WrittenReview[]
+
+  @@index([slug])
+  @@index([organizerId])
+  @@index([category])
+  @@index([status])
+  @@index([startDate])
+  @@map("events")
+}
+
+// Event Images
+model EventImage {
+  id      String @id @default(cuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  url   String
+  alt   String?
+  order Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@map("event_images")
+}
+
+// Event Like
+model EventLike {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@map("event_likes")
+}
+
+// User Follow (Social)
+model UserFollow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("UserFollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+  @@map("user_follows")
+}
+
+// Organizer Subscription (Notifications)
+model OrganizerSubscription {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizerId String
+  organizer   Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, organizerId])
+  @@index([organizerId])
+  @@map("organizer_subscriptions")
+}
+
+// Event Review
+model EventReview {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  title     String?
+  content   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@map("event_reviews")
+}
+
+// Organizer Review
+model OrganizerReview {
+  id          String    @id @default(cuid())
+  organizerId String
+  organizer   Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating      Int
+  title       String?
+  content     String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, organizerId])
+  @@index([organizerId])
+  @@map("organizer_reviews")
+}
+
+// Written Review (for user profile)
+model WrittenReview {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  rating    Int
+  content   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("written_reviews")
+}
+
+// Promo Code
+model PromoCode {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  description      String?
+  discountType     String
+  discountValue    Float
+  minPurchase      Float?
+  maxUses          Int?
+  usedCount        Int      @default(0)
+  validFrom        DateTime
+  validUntil       DateTime
+  isActive         Boolean  @default(true)
+  applicableEvents String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([code])
+  @@map("promo_codes")
+}
+
+// Ticket Type
+model TicketType {
+  id      String @id @default(cuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String? @db.Text
+  price       Float
+
+  quantity  Int
+  sold      Int @default(0)
+  available Int
+
+  salesStart DateTime
+  salesEnd   DateTime
+
+  minPerOrder Int @default(1)
+  maxPerOrder Int @default(10)
+
+  isActive Boolean @default(true)
+  benefits String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tickets   Ticket[]
+  OrderItem OrderItem[]
+
+  @@index([eventId])
+  @@map("ticket_types")
+}
+
+// Ticket
+model Ticket {
+  id      String @id @default(cuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  ticketTypeId String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
+
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  qrCode  String  @unique
+  nfcCode String? @unique
+
+  status String @default("VALID")
+
+  price Float
+  fees  Float
+  total Float
+
+  purchaseDate DateTime  @default(now())
+  scannedAt    DateTime?
+  scannedBy    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([orderId])
+  @@index([qrCode])
+  @@map("tickets")
+}
+
+// Order Item
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  ticketTypeId String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
+
+  quantity Int
+  price    Float
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+//
+// Order
+model Order {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  subtotal      Float
+  fees          Float
+  taxes         Float
+  discount      Float   @default(0)
+  promoCodeUsed String?
+  total         Float
+  currency      String  @default("EUR")
+
+  status          String  @default("PENDING")
+  paymentMethod   String
+  paymentIntentId String?
+
+  billingAddress String?
+  billingName    String?
+
+  invoiceUrl    String?
+  invoiceNumber String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tickets   Ticket[]
+  OrderItem OrderItem[]
+  Payment   Payment?
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([status])
+  @@map("orders")
+}
+
+// Notification
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    String
+  title   String
+  message String
+  data    String?
+
+  read   Boolean   @default(false)
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+  @@map("notifications")
+}
+
+// Activity
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  data      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("activities")
+}
+
+// Contest
+model Contest {
+  id          String  @id @default(cuid())
+  title       String
+  slug        String  @unique
+  description String? @db.Text
+  coverImage  String?
+
+  category String
+  status   String @default("DRAFT")
+
+  organizerId String
+  startDate   DateTime
+  endDate     DateTime
+
+  maxContestants  Int?
+  votesPerUser    Int     @default(1)
+  isPublicResults Boolean @default(true)
+  isFeatured      Boolean @default(false)
+
+  prize String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contestants Contestant[]
+  votes       ContestVote[]
+
+  @@index([slug])
+  @@index([status])
+  @@map("contests")
+}
+
+model Contestant {
+  id        String  @id @default(cuid())
+  contestId String
+  contest   Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+
+  name       String
+  bio        String? @db.Text
+  imageUrl   String?
+  order      Int     @default(0)
+  votesCount Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  votes ContestVote[]
+
+  @@index([contestId])
+  @@map("contestants")
+}
+
+model ContestVote {
+  id           String     @id @default(cuid())
+  contestId    String
+  contest      Contest    @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  contestantId String
+  contestant   Contestant @relation(fields: [contestantId], references: [id], onDelete: Cascade)
+
+  userId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([contestId, userId, contestantId])
+  @@map("contest_votes")
+}
+
+// Payment Model
+model Payment {
+  id      String @id @default(cuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  amount   Float
+  currency String @default("EUR")
+  status   String @default("PENDING")
+
+  stripePaymentIntentId String?   @unique
+  paidAt                DateTime?
+  refundedAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@map("payments")
+}
