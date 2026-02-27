@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { GiftIcon, CheckCircleIcon } from '@tikeo/ui';
+import { GiftIcon, CheckCircleIcon } from './Icons';
 
 interface PromoCodeInputProps {
   onApply?: (discount: number) => void;
