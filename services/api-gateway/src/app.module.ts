@@ -6,10 +6,10 @@ import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { OrdersModule } from './orders/orders.module';
-import { PaymentsModule } from './payments/payments.module';
 import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -38,11 +38,11 @@ import { RedisModule } from './redis/redis.module';
     RedisModule,
 
     // Modules fonctionnels - API Gateway
+    HealthModule,
     AuthModule,
     EventsModule,
     TicketsModule,
     OrdersModule,
-    // PaymentsModule, // Commenté car erreurs de schema
     UsersModule,
   ],
 })
