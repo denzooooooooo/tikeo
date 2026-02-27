@@ -59,7 +59,6 @@ RUN npm ci --only=production --prefer-offline && npm cache clean --force
 # Copier les fichiers compilés depuis le builder
 COPY --from=builder /app/services/api-gateway/dist ./services/api-gateway/dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/services/api-gateway/node_modules/.prisma ./services/api-gateway/node_modules/.prisma 2>/dev/null || true
 
 # Changer le propriétaire des fichiers
 RUN chown -R nestjs:nodejs /app
