@@ -8,8 +8,7 @@ Disallow: /api/
 Disallow: /auth/
 
 # Sitemap
-Sitemap: https://tikeo.com/sitemap.xml
+Sitemap: https://www.tikeoh.com/sitemap.xml
 
 # Crawl-delay (optional, for politeness)
 Crawl-delay: 1
-
