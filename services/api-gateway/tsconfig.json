@@ -20,6 +20,7 @@
     "noFallthroughCasesInSwitch": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
+    "noEmit": false,
     "noEmitOnError": false,
     "paths": {
       "@tikeo/types": ["../../packages/types/src"],
