@@ -28,8 +28,8 @@ RUN npm ci --prefer-offline
 RUN cd services/api-gateway && npx prisma generate
 
 # Builder les packages partagés d'abord
-RUN npm run build --workspace=packages/types || true
-RUN npm run build --workspace=packages/utils || true
+RUN npm run build --workspace=packages/types
+RUN npm run build --workspace=packages/utils
 
 # Builder l'API Gateway
 RUN npm run build --workspace=services/api-gateway
