@@ -415,6 +415,9 @@ export class EventsService {
         organizerId: organizer.id,
         status: 'DRAFT',
         visibility: 'PUBLIC',
+        // Required fields with safe defaults if not provided by frontend
+        coverImage: eventData.coverImage || '',
+        venuePostalCode: eventData.venuePostalCode || '',
         ticketsAvailable: eventData.capacity || 0,
         minPrice: ticketTypes?.[0]?.price ?? 0,
         maxPrice: ticketTypes?.[ticketTypes?.length - 1]?.price ?? 0,
