@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { TicketsService } from './tickets.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -8,10 +8,19 @@ import { AuthGuard } from '@nestjs/passport';
 export class TicketsController {
   constructor(private ticketsService: TicketsService) {}
 
+  @Get('my-tickets')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user tickets' })
+  @ApiResponse({ status: 200, description: 'Tickets retrieved successfully' })
+  async getMyTickets(@Request() req: any) {
+    return this.ticketsService.findUserTickets(req.user.id);
+  }
+
   @Get('user/:userId')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get user tickets' })
+  @ApiOperation({ summary: 'Get user tickets by userId' })
   @ApiResponse({ status: 200, description: 'Tickets retrieved successfully' })
   async getUserTickets(@Param('userId') userId: string) {
     return this.ticketsService.findUserTickets(userId);

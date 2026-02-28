@@ -1,25 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { loadStripe } from '@stripe/stripe-js';
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js';
 import {
   CalendarIcon,
-  ClockIcon,
   LocationIcon,
+  TicketIcon,
   ArrowLeftIcon,
   CheckCircleIcon,
-  TicketIcon,
+  LockIcon,
 } from '@tikeo/ui';
 import { PromoCodeInput } from '@tikeo/ui';
 import { ProtectedRoute } from '../../../components/ProtectedRoute';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// ─── Stripe init ────────────────────────────────────────────────────────────
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
+);
 
-function getApiBase(url: string) {
-  return url.includes('/api/v1') ? url.replace(/\/$/, '') : url.replace(/\/$/, '') + '/api/v1';
-}
+const API_URL = (() => {
+  const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  return raw.includes('/api/v1')
+    ? raw.replace(/\/$/, '')
+    : raw.replace(/\/$/, '') + '/api/v1';
+})();
 
 function getToken(): string | null {
   try {
@@ -31,111 +43,80 @@ function getToken(): string | null {
   }
 }
 
+// ─── Types ───────────────────────────────────────────────────────────────────
 interface TicketType {
   id: string;
   name: string;
   price: number;
   description: string;
-  available?: number;
+  quantity?: number;
 }
 
 interface EventData {
   id: string;
   title: string;
-  date: string;
-  time?: string;
-  venue?: string;
+  startDate: string;
+  venueName?: string;
   venueCity?: string;
+  venueCountry?: string;
   coverImage?: string;
   currency?: string;
   ticketTypes: TicketType[];
 }
 
-type CheckoutStep = 'selection' | 'processing' | 'success' | 'error';
+// ─── Card element styles ─────────────────────────────────────────────────────
+const CARD_ELEMENT_OPTIONS = {
+  style: {
+    base: {
+      fontSize: '16px',
+      color: '#1f2937',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      '::placeholder': { color: '#9ca3af' },
+    },
+    invalid: { color: '#ef4444' },
+  },
+};
 
-export default function CheckoutPage() {
-  const params = useParams();
-  const router = useRouter();
-  const eventId = params?.id as string;
+// ─── Payment form (inner — needs Stripe context) ─────────────────────────────
+function PaymentForm({
+  event,
+  selectedTicket,
+  quantity,
+  discount,
+  promoCode,
+  onSuccess,
+}: {
+  event: EventData;
+  selectedTicket: TicketType;
+  quantity: number;
+  discount: number;
+  promoCode: string;
+  onSuccess: (orderId: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isPaying, setIsPaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [event, setEvent] = useState<EventData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
-  const [discount, setDiscount] = useState(0);
-  const [promoCode, setPromoCode] = useState('');
-  const [step, setStep] = useState<CheckoutStep>('selection');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
-
-  useEffect(() => {
-    if (eventId) fetchEvent();
-  }, [eventId]);
-
-  const fetchEvent = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`${getApiBase(API_URL)}/events/${eventId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setEvent({
-          id: data.id,
-          title: data.title,
-          date: data.startDate
-            ? new Date(data.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-            : '',
-          time: data.startDate
-            ? new Date(data.startDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-            : '',
-          venue: data.venueName || data.venueAddress || '',
-          venueCity: data.venueCity || '',
-          coverImage: data.coverImage || 'https://picsum.photos/seed/event/800/400',
-          currency: data.currency || 'XOF',
-          ticketTypes: (data.ticketTypes || []).map((t: any) => ({
-            id: t.id,
-            name: t.name,
-            price: t.price,
-            description: t.description || '',
-            available: t.available ?? t.quantity,
-          })),
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching event:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleApplyDiscount = (discountAmount: number, code?: string) => {
-    setDiscount(discountAmount);
-    if (code) setPromoCode(code);
-  };
-
-  const subtotal = selectedTicket ? selectedTicket.price * quantity : 0;
-  const discountAmount = subtotal * (discount / 100);
+  const subtotal = selectedTicket.price * quantity;
+  const discountAmount = (subtotal * discount) / 100;
   const total = subtotal - discountAmount;
-  const currencyLabel = event?.currency || 'XOF';
+  const isFree = total === 0;
 
-  const handlePayment = async () => {
-    if (!selectedTicket || !event) return;
+  const handlePay = async () => {
+    setError(null);
+    setIsPaying(true);
 
     const token = getToken();
     if (!token) {
-      router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      setError('Vous devez être connecté pour payer.');
+      setIsPaying(false);
       return;
     }
 
-    setStep('processing');
-    setIsProcessing(true);
-    setErrorMsg('');
-
     try {
-      const apiBase = getApiBase(API_URL);
-
-      // Step 1: Create order
-      const orderRes = await fetch(`${apiBase}/orders`, {
+      // 1. Create order
+      const orderRes = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,58 +131,251 @@ export default function CheckoutPage() {
       });
 
       if (!orderRes.ok) {
-        const errData = await orderRes.json().catch(() => ({}));
-        throw new Error(errData.message || 'Erreur lors de la création de la commande');
+        const err = await orderRes.json().catch(() => ({}));
+        throw new Error(err.message || 'Erreur lors de la création de la commande');
       }
 
       const order = await orderRes.json();
-      const createdOrderId = order.id || order.orderId;
-      setOrderId(createdOrderId);
 
-      // Step 2: If free ticket, confirm directly
-      if (total === 0) {
-        setStep('success');
+      // 2. Free ticket — confirm directly
+      if (isFree) {
+        onSuccess(order.id);
         return;
       }
 
-      // Step 3: Create payment intent
-      const paymentRes = await fetch(`${apiBase}/payments/create-payment-intent`, {
+      // 3. Create payment intent
+      const piRes = await fetch(`${API_URL}/payments/create-payment-intent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          orderId: createdOrderId,
-          amount: Math.round(total * 100), // in cents
-          currency: currencyLabel.toLowerCase() === 'eur' ? 'eur' : 'xof',
-          eventId: event.id,
-          ticketTypeId: selectedTicket.id,
-          quantity,
-        }),
+        body: JSON.stringify({ orderId: order.id, amount: total }),
       });
 
-      if (!paymentRes.ok) {
-        const errData = await paymentRes.json().catch(() => ({}));
-        throw new Error(errData.message || 'Erreur lors de la création du paiement');
+      if (!piRes.ok) {
+        const err = await piRes.json().catch(() => ({}));
+        throw new Error(err.message || 'Erreur lors de la création du paiement');
       }
 
-      // Payment intent created — for now mark as success
-      // In production, you'd integrate Stripe.js here to confirm the payment
-      setStep('success');
-    } catch (err: any) {
-      console.error('Payment error:', err);
-      setErrorMsg(err.message || 'Une erreur est survenue lors du paiement');
-      setStep('error');
+      const { clientSecret } = await piRes.json();
+
+      // 4. Confirm card payment with Stripe.js
+      if (!stripe || !elements) {
+        throw new Error('Stripe non initialisé');
+      }
+
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) throw new Error('Formulaire de carte introuvable');
+
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        { payment_method: { card: cardElement } }
+      );
+
+      if (stripeError) {
+        throw new Error(stripeError.message || 'Paiement refusé');
+      }
+
+      if (paymentIntent?.status === 'succeeded') {
+        // 5. Confirm on backend
+        await fetch(`${API_URL}/payments/confirm-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
+        });
+
+        onSuccess(order.id);
+      } else {
+        throw new Error('Le paiement n\'a pas abouti');
+      }
+    } catch (err) {
+      setError((err as Error).message || 'Une erreur est survenue');
     } finally {
-      setIsProcessing(false);
+      setIsPaying(false);
     }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Order summary */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+        <div className="flex justify-between text-gray-600">
+          <span>{selectedTicket.name} × {quantity}</span>
+          <span>{subtotal.toFixed(2)} {event.currency || 'EUR'}</span>
+        </div>
+        {discount > 0 && (
+          <div className="flex justify-between text-green-600">
+            <span>Réduction ({discount}%)</span>
+            <span>−{discountAmount.toFixed(2)} {event.currency || 'EUR'}</span>
+          </div>
+        )}
+        <div className="flex justify-between font-bold text-gray-900 text-base pt-2 border-t border-gray-200">
+          <span>Total</span>
+          <span>{total.toFixed(2)} {event.currency || 'EUR'}</span>
+        </div>
+      </div>
+
+      {/* Card element (only for paid tickets) */}
+      {!isFree && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Informations de carte bancaire
+          </label>
+          <div className="border border-gray-300 rounded-xl p-4 bg-white focus-within:ring-2 focus-within:ring-[#5B7CFF] focus-within:border-transparent transition-all">
+            <CardElement options={CARD_ELEMENT_OPTIONS} />
+          </div>
+          <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+            <LockIcon size={12} />
+            Paiement sécurisé par Stripe — vos données ne sont jamais stockées
+          </p>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {/* Pay button */}
+      <button
+        onClick={handlePay}
+        disabled={isPaying || (!isFree && !stripe)}
+        className="w-full bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold py-4 rounded-xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        {isPaying ? (
+          <>
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            Traitement en cours…
+          </>
+        ) : isFree ? (
+          'Confirmer la réservation gratuite'
+        ) : (
+          <>
+            <LockIcon size={16} />
+            Payer {total.toFixed(2)} {event.currency || 'EUR'}
+          </>
+        )}
+      </button>
+
+      <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
+        <span>🔒 SSL</span>
+        <span>💳 Visa / Mastercard / Amex</span>
+        <span>🛡️ 3D Secure</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Success screen ───────────────────────────────────────────────────────────
+function SuccessScreen({ orderId, eventTitle }: { orderId: string; eventTitle: string }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const t = setTimeout(() => router.push('/tickets'), 5000);
+    return () => clearTimeout(t);
+  }, [router]);
+
+  return (
+    <div className="text-center py-16 px-4">
+      <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <CheckCircleIcon size={56} className="text-green-500" />
+      </div>
+      <h2 className="text-3xl font-bold text-gray-900 mb-3">Paiement réussi !</h2>
+      <p className="text-gray-600 mb-2">
+        Votre billet pour <strong>{eventTitle}</strong> a été confirmé.
+      </p>
+      <p className="text-sm text-gray-500 mb-8">
+        Commande <span className="font-mono font-semibold">#{orderId.slice(-8).toUpperCase()}</span>
+        {' '}— Un email de confirmation vous a été envoyé.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <Link
+          href="/tickets"
+          className="px-8 py-3 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+        >
+          Voir mes billets
+        </Link>
+        <Link
+          href="/events"
+          className="px-8 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+        >
+          Découvrir d'autres événements
+        </Link>
+      </div>
+      <p className="text-xs text-gray-400 mt-6">Redirection automatique vers vos billets dans 5 secondes…</p>
+    </div>
+  );
+}
+
+// ─── Main checkout page ───────────────────────────────────────────────────────
+export default function CheckoutPage() {
+  const params = useParams();
+  const eventId = params?.id as string;
+
+  const [event, setEvent] = useState<EventData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [discount, setDiscount] = useState(0);
+  const [promoCode, setPromoCode] = useState('');
+  const [step, setStep] = useState<'select' | 'pay' | 'success'>('select');
+  const [successOrderId, setSuccessOrderId] = useState('');
+
+  const fetchEvent = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/events/${eventId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const ev: EventData = {
+        id: data.id,
+        title: data.title,
+        startDate: data.startDate,
+        venueName: data.venueName || data.venue,
+        venueCity: data.venueCity,
+        venueCountry: data.venueCountry,
+        coverImage: data.coverImage,
+        currency: data.currency || 'EUR',
+        ticketTypes: (data.ticketTypes || []).map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          price: Number(t.price),
+          description: t.description || '',
+          quantity: t.quantity,
+        })),
+      };
+      setEvent(ev);
+      if (ev.ticketTypes.length > 0) setSelectedTicket(ev.ticketTypes[0]);
+    } catch (err) {
+      console.error('Error fetching event:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [eventId]);
+
+  useEffect(() => {
+    if (eventId) fetchEvent();
+  }, [eventId, fetchEvent]);
+
+  const handleApplyDiscount = (pct: number, code: string) => {
+    setDiscount(pct);
+    setPromoCode(code);
+  };
+
+  const handleSuccess = (orderId: string) => {
+    setSuccessOrderId(orderId);
+    setStep('success');
   };
 
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center">
           <div className="w-10 h-10 border-4 border-[#5B7CFF] border-t-transparent rounded-full animate-spin" />
         </div>
       </ProtectedRoute>
@@ -211,302 +385,184 @@ export default function CheckoutPage() {
   if (!event) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <p className="text-gray-600 mb-4">Événement introuvable</p>
-            <Link href="/events" className="text-[#5B7CFF] hover:underline">Retour aux événements</Link>
+            <p className="text-gray-600 mb-4">Événement introuvable.</p>
+            <Link href="/events" className="text-[#5B7CFF] font-semibold hover:underline">
+              Retour aux événements
+            </Link>
           </div>
         </div>
       </ProtectedRoute>
     );
   }
 
-  // ── SUCCESS STATE ──
-  if (step === 'success') {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-8 text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircleIcon className="text-green-600" size={48} />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Commande confirmée ! 🎉</h2>
-            <p className="text-gray-600 mb-6">
-              Votre commande a été enregistrée avec succès. Vos billets vous seront envoyés par email.
-            </p>
-            {orderId && (
-              <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
-                <p className="text-xs text-gray-500 mb-1">Numéro de commande</p>
-                <p className="font-mono font-bold text-gray-900 text-sm">{orderId}</p>
-              </div>
-            )}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-              <p className="text-sm text-blue-700">
-                📧 Un email de confirmation avec vos billets vous a été envoyé.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <Link
-                href="/tickets"
-                className="w-full py-3 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
-              >
-                <TicketIcon size={20} />
-                Voir mes billets
-              </Link>
-              <Link
-                href="/events"
-                className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-              >
-                Découvrir d&apos;autres événements
-              </Link>
-            </div>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
+  const subtotal = (selectedTicket?.price || 0) * quantity;
+  const discountAmount = (subtotal * discount) / 100;
+  const total = subtotal - discountAmount;
 
-  // ── ERROR STATE ──
-  if (step === 'error') {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-8 text-center">
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl">❌</span>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Paiement échoué</h2>
-            <p className="text-gray-600 mb-6">{errorMsg || 'Une erreur est survenue lors du paiement.'}</p>
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => setStep('selection')}
-                className="w-full py-3 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white rounded-xl font-semibold hover:shadow-lg transition-all"
-              >
-                Réessayer
-              </button>
-              <Link
-                href={`/events/${eventId}`}
-                className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-              >
-                Retour à l&apos;événement
-              </Link>
-            </div>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
-
-  // ── PROCESSING STATE ──
-  if (step === 'processing') {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-8 text-center">
-            <div className="w-20 h-20 bg-[#5B7CFF]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <div className="w-10 h-10 border-4 border-[#5B7CFF] border-t-transparent rounded-full animate-spin" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Traitement en cours…</h2>
-            <p className="text-gray-600">Veuillez patienter pendant que nous traitons votre commande.</p>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
-
-  // ── SELECTION STATE ──
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-6xl mx-auto px-4">
-          {/* Back Link */}
-          <Link
-            href={`/events/${eventId}`}
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-[#5B7CFF] mb-6 transition-colors"
-          >
-            <ArrowLeftIcon size={20} />
-            Retour à l&apos;événement
-          </Link>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
+          <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
+            <Link
+              href={`/events/${event.id}`}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <ArrowLeftIcon size={20} className="text-gray-600" />
+            </Link>
+            <div>
+              <h1 className="font-bold text-gray-900 text-lg leading-tight">{event.title}</h1>
+              <p className="text-sm text-gray-500">Commande sécurisée</p>
+            </div>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Event Summary */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">📋 Récapitulatif</h2>
-                <div className="flex gap-4">
-                  <div className="relative w-32 h-24 rounded-xl overflow-hidden flex-shrink-0">
-                    <Image
-                      src={event.coverImage || 'https://picsum.photos/seed/event/800/400'}
-                      alt={event.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-lg">{event.title}</h3>
-                    <div className="flex items-center gap-2 text-gray-600 mt-1">
-                      <CalendarIcon size={16} />
-                      <span className="text-sm">{event.date}</span>
-                    </div>
-                    {event.time && (
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <ClockIcon size={16} />
-                        <span className="text-sm">{event.time}</span>
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          {step === 'success' ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+              <SuccessScreen orderId={successOrderId} eventTitle={event.title} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+              {/* Left — ticket selection */}
+              <div className="lg:col-span-3 space-y-6">
+                {/* Event info */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4">Détails de l'événement</h2>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    {event.startDate && (
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon size={16} className="text-[#5B7CFF]" />
+                        <span>
+                          {new Date(event.startDate).toLocaleDateString('fr-FR', {
+                            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+                          })}
+                          {' à '}
+                          {new Date(event.startDate).toLocaleTimeString('fr-FR', {
+                            hour: '2-digit', minute: '2-digit',
+                          })}
+                        </span>
                       </div>
                     )}
-                    {(event.venue || event.venueCity) && (
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <LocationIcon size={16} />
-                        <span className="text-sm">{[event.venue, event.venueCity].filter(Boolean).join(', ')}</span>
+                    {(event.venueName || event.venueCity) && (
+                      <div className="flex items-center gap-2">
+                        <LocationIcon size={16} className="text-[#5B7CFF]" />
+                        <span>
+                          {[event.venueName, event.venueCity, event.venueCountry]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </span>
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
 
-              {/* Ticket Selection */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">🎟️ Choix des billets</h2>
+                {/* Ticket selection */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <TicketIcon size={20} className="text-[#5B7CFF]" />
+                    Choisir un billet
+                  </h2>
 
-                {event.ticketTypes.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <TicketIcon size={40} className="mx-auto mb-3 text-gray-300" />
-                    <p>Aucun billet disponible pour cet événement.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {event.ticketTypes.map((ticket) => (
-                      <label
-                        key={ticket.id}
-                        className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                          selectedTicket?.id === ticket.id
-                            ? 'border-[#5B7CFF] bg-[#5B7CFF]/5'
-                            : 'border-gray-200 hover:border-gray-300'
-                        } ${(ticket.available ?? 1) <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        <div className="flex items-center justify-between">
+                  {event.ticketTypes.length === 0 ? (
+                    <p className="text-gray-500 text-sm">Aucun billet disponible pour cet événement.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {event.ticketTypes.map((ticket) => (
+                        <label
+                          key={ticket.id}
+                          className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                            selectedTicket?.id === ticket.id
+                              ? 'border-[#5B7CFF] bg-[#5B7CFF]/5'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
                           <div className="flex items-center gap-3">
                             <input
                               type="radio"
                               name="ticket"
+                              value={ticket.id}
                               checked={selectedTicket?.id === ticket.id}
-                              onChange={() => (ticket.available ?? 1) > 0 && setSelectedTicket(ticket)}
-                              disabled={(ticket.available ?? 1) <= 0}
-                              className="w-5 h-5 text-[#5B7CFF]"
+                              onChange={() => setSelectedTicket(ticket)}
+                              className="accent-[#5B7CFF]"
                             />
                             <div>
-                              <p className="font-bold text-gray-900">{ticket.name}</p>
+                              <p className="font-semibold text-gray-900">{ticket.name}</p>
                               {ticket.description && (
-                                <p className="text-sm text-gray-500">{ticket.description}</p>
+                                <p className="text-xs text-gray-500">{ticket.description}</p>
                               )}
-                              {(ticket.available ?? 1) <= 0 && (
-                                <p className="text-xs text-red-500 font-medium">Épuisé</p>
-                              )}
-                              {(ticket.available ?? 999) > 0 && (ticket.available ?? 999) <= 10 && (
-                                <p className="text-xs text-orange-500 font-medium">
-                                  Plus que {ticket.available} place{(ticket.available ?? 0) > 1 ? 's' : ''} !
-                                </p>
+                              {ticket.quantity !== undefined && (
+                                <p className="text-xs text-gray-400">{ticket.quantity} places restantes</p>
                               )}
                             </div>
                           </div>
-                          <p className="font-bold text-[#5B7CFF] text-lg whitespace-nowrap">
-                            {ticket.price === 0 ? 'Gratuit' : `${ticket.price.toLocaleString()} ${currencyLabel}`}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
-
-                {selectedTicket && (
-                  <div className="mt-6">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Quantité</label>
-                    <div className="flex items-center gap-4">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-10 h-10 rounded-lg border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 font-bold text-lg transition-colors"
-                      >
-                        −
-                      </button>
-                      <span className="text-xl font-bold w-8 text-center">{quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(Math.min(selectedTicket.available ?? 10, quantity + 1))}
-                        className="w-10 h-10 rounded-lg border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 font-bold text-lg transition-colors"
-                      >
-                        +
-                      </button>
+                          <span className="font-bold text-[#5B7CFF] text-lg">
+                            {ticket.price === 0 ? 'Gratuit' : `${ticket.price.toFixed(2)} ${event.currency || 'EUR'}`}
+                          </span>
+                        </label>
+                      ))}
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
 
-              {/* Promo Code */}
-              <PromoCodeInput onApply={handleApplyDiscount} />
-            </div>
-
-            {/* Sidebar - Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm sticky top-24">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">💳 Résumé</h3>
-
-                <div className="space-y-3 pb-4 border-b border-gray-100">
-                  <div className="flex justify-between text-gray-600 text-sm">
-                    <span>{selectedTicket?.name || 'Sélectionnez un billet'}</span>
-                    <span>× {quantity}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-800 font-medium">
-                    <span>Sous-total</span>
-                    <span>{subtotal.toLocaleString()} {currencyLabel}</span>
-                  </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-green-600 text-sm">
-                      <span>Réduction ({discount}%)</span>
-                      <span>−{discountAmount.toLocaleString()} {currencyLabel}</span>
+                  {/* Quantity */}
+                  {selectedTicket && (
+                    <div className="mt-4 flex items-center gap-4">
+                      <span className="text-sm font-medium text-gray-700">Quantité :</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 font-bold text-lg"
+                        >
+                          −
+                        </button>
+                        <span className="w-8 text-center font-bold text-gray-900">{quantity}</span>
+                        <button
+                          onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                          className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 font-bold text-lg"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                <div className="py-4 border-b border-gray-100">
-                  <div className="flex justify-between text-xl font-bold text-gray-900">
-                    <span>Total</span>
-                    <span className="text-[#5B7CFF]">
-                      {total === 0 ? 'Gratuit' : `${total.toLocaleString()} ${currencyLabel}`}
-                    </span>
-                  </div>
+                {/* Promo code */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                  <PromoCodeInput
+                    onApply={(pct: number) => handleApplyDiscount(pct, '')}
+                  />
                 </div>
+              </div>
 
-                <button
-                  onClick={handlePayment}
-                  disabled={!selectedTicket || isProcessing}
-                  className="w-full mt-6 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {total === 0 ? (
-                    <>
-                      <TicketIcon size={20} />
-                      Obtenir mes billets gratuits
-                    </>
+              {/* Right — payment */}
+              <div className="lg:col-span-2">
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm sticky top-24">
+                  <h2 className="text-lg font-bold text-gray-900 mb-6">Paiement</h2>
+
+                  {selectedTicket ? (
+                    <Elements stripe={stripePromise}>
+                      <PaymentForm
+                        event={event}
+                        selectedTicket={selectedTicket}
+                        quantity={quantity}
+                        discount={discount}
+                        promoCode={promoCode}
+                        onSuccess={handleSuccess}
+                      />
+                    </Elements>
                   ) : (
-                    <>
-                      💳 Procéder au paiement
-                    </>
+                    <p className="text-sm text-gray-500 text-center py-8">
+                      Sélectionnez un type de billet pour continuer.
+                    </p>
                   )}
-                </button>
-
-                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
-                  <CheckCircleIcon size={16} className="text-green-500" />
-                  <span>Paiement 100% sécurisé</span>
-                </div>
-
-                <div className="mt-3 text-center text-xs text-gray-400">
-                  En continuant, vous acceptez nos{' '}
-                  <Link href="/cgu" className="text-[#5B7CFF] hover:underline">CGU</Link>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </ProtectedRoute>
