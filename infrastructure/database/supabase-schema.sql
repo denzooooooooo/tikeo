@@ -423,6 +423,77 @@ CREATE UNIQUE INDEX IF NOT EXISTS "payments_stripePaymentIntentId_key" ON "payme
 CREATE INDEX IF NOT EXISTS "payments_orderId_idx" ON "payments"("orderId");
 
 -- ============================================================
+-- Table: event_likes
+-- ============================================================
+CREATE TABLE IF NOT EXISTS "event_likes" (
+  "id"        TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "userId"    TEXT NOT NULL,
+  "eventId"   TEXT NOT NULL,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT "event_likes_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "event_likes_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE,
+  CONSTRAINT "event_likes_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "events"("id") ON DELETE CASCADE,
+  CONSTRAINT "event_likes_userId_eventId_key" UNIQUE ("userId", "eventId")
+);
+CREATE INDEX IF NOT EXISTS "event_likes_userId_idx" ON "event_likes"("userId");
+CREATE INDEX IF NOT EXISTS "event_likes_eventId_idx" ON "event_likes"("eventId");
+
+-- ============================================================
+-- Table: organizer_subscriptions
+-- ============================================================
+CREATE TABLE IF NOT EXISTS "organizer_subscriptions" (
+  "id"           TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "userId"       TEXT NOT NULL,
+  "organizerId"  TEXT NOT NULL,
+  "createdAt"    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT "organizer_subscriptions_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "organizer_subscriptions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE,
+  CONSTRAINT "organizer_subscriptions_organizerId_fkey" FOREIGN KEY ("organizerId") REFERENCES "organizers"("id") ON DELETE CASCADE,
+  CONSTRAINT "organizer_subscriptions_userId_organizerId_key" UNIQUE ("userId", "organizerId")
+);
+CREATE INDEX IF NOT EXISTS "organizer_subscriptions_userId_idx" ON "organizer_subscriptions"("userId");
+CREATE INDEX IF NOT EXISTS "organizer_subscriptions_organizerId_idx" ON "organizer_subscriptions"("organizerId");
+
+-- ============================================================
+-- Table: user_follows
+-- ============================================================
+CREATE TABLE IF NOT EXISTS "user_follows" (
+  "id"          TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
+  "followerId"  TEXT NOT NULL,
+  "followingId" TEXT NOT NULL,
+  "createdAt"   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT "user_follows_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "user_follows_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "users"("id") ON DELETE CASCADE,
+  CONSTRAINT "user_follows_followingId_fkey" FOREIGN KEY ("followingId") REFERENCES "users"("id") ON DELETE CASCADE,
+  CONSTRAINT "user_follows_followerId_followingId_key" UNIQUE ("followerId", "followingId")
+);
+CREATE INDEX IF NOT EXISTS "user_follows_followerId_idx" ON "user_follows"("followerId");
+CREATE INDEX IF NOT EXISTS "user_follows_followingId_idx" ON "user_follows"("followingId");
+
+-- ============================================================
+-- Supabase Storage: bucket event-images (public)
+-- ============================================================
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'event-images',
+  'event-images',
+  true,
+  5242880,
+  ARRAY['image/jpeg','image/jpg','image/png','image/webp','image/gif']
+)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- RLS Policy: allow public read on event-images
+CREATE POLICY IF NOT EXISTS "Public read event-images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'event-images');
+
+-- RLS Policy: allow authenticated upload to event-images
+CREATE POLICY IF NOT EXISTS "Auth upload event-images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'event-images' AND auth.role() = 'authenticated');
+
+-- ============================================================
 -- Prisma migrations table (required by Prisma)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS "_prisma_migrations" (

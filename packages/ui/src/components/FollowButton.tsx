@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { UsersIcon } from './Icons';
 
 interface FollowButtonProps {
@@ -17,7 +17,7 @@ export function FollowButton({
   initialCount = 0,
   size = 'md',
   showCount = true,
-}: FollowButtonProps) {
+}: FollowButtonProps): React.JSX.Element {
   const [followed, setFollowed] = useState(initialFollowed);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
@@ -42,9 +42,14 @@ export function FollowButton({
     setLoading(true);
     try {
       const method = followed ? 'DELETE' : 'POST';
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      // Normalize API URL to always include /api/v1
+      const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+      const apiUrl = rawUrl.includes('/api/v1') ? rawUrl.replace(/\/$/, '') : rawUrl.replace(/\/$/, '') + '/api/v1';
+      const url = `${apiUrl}/likes/organizers/${organizerId}/follow`;
 
-      const response = await fetch(`${apiUrl}/likes/organizers/${organizerId}/follow`, {
+      console.debug(`[FollowButton] ${method} ${url}`);
+
+      const response = await fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
@@ -52,16 +57,26 @@ export function FollowButton({
         },
       });
 
+      console.debug(`[FollowButton] Response: ${response.status}`);
+
       if (response.ok) {
         setFollowed(!followed);
         setCount(followed ? count - 1 : count + 1);
-        showToast(followed ? 'Vous ne suivez plus cet organisateur' : 'Vous suivez maintenant cet organisateur');
+        showToast(followed ? 'Vous ne suivez plus cet organisateur' : 'Vous suivez maintenant cet organisateur ✓');
       } else if (response.status === 401) {
         showToast('Session expirée — reconnectez-vous');
       } else {
-        showToast('Erreur lors de l\'action');
+        const data = await response.json().catch(() => ({}));
+        console.error('[FollowButton] Error:', data);
+        if (response.status === 400) {
+          setFollowed(!followed);
+          setCount(followed ? count - 1 : count + 1);
+        } else {
+          showToast(data.message || `Erreur ${response.status} lors du suivi`);
+        }
       }
-    } catch {
+    } catch (err) {
+      console.error('[FollowButton] Network error:', err);
       showToast('Erreur de connexion');
     } finally {
       setLoading(false);

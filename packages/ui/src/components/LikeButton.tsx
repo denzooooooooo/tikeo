@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { HeartIcon } from './Icons';
 
 interface LikeButtonProps {
@@ -17,7 +17,7 @@ export function LikeButton({
   initialCount = 0,
   size = 'md',
   showCount = true,
-}: LikeButtonProps) {
+}: LikeButtonProps): React.JSX.Element {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
@@ -42,9 +42,14 @@ export function LikeButton({
     setLoading(true);
     try {
       const method = liked ? 'DELETE' : 'POST';
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      // Normalize API URL to always include /api/v1
+      const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+      const apiUrl = rawUrl.includes('/api/v1') ? rawUrl.replace(/\/$/, '') : rawUrl.replace(/\/$/, '') + '/api/v1';
+      const url = `${apiUrl}/likes/events/${eventId}`;
 
-      const response = await fetch(`${apiUrl}/likes/events/${eventId}`, {
+      console.debug(`[LikeButton] ${method} ${url}`);
+
+      const response = await fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
@@ -52,15 +57,25 @@ export function LikeButton({
         },
       });
 
+      console.debug(`[LikeButton] Response: ${response.status}`);
+
       if (response.ok) {
         setLiked(!liked);
         setCount(liked ? count - 1 : count + 1);
       } else if (response.status === 401) {
         showToast('Session expirée — reconnectez-vous');
       } else {
-        showToast('Erreur lors du like');
+        const data = await response.json().catch(() => ({}));
+        console.error('[LikeButton] Error:', data);
+        if (response.status === 400) {
+          setLiked(!liked);
+          setCount(liked ? count - 1 : count + 1);
+        } else {
+          showToast(data.message || `Erreur ${response.status} lors du like`);
+        }
       }
-    } catch {
+    } catch (err) {
+      console.error('[LikeButton] Network error:', err);
       showToast('Erreur de connexion');
     } finally {
       setLoading(false);

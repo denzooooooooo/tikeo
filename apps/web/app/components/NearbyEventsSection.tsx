@@ -46,7 +46,15 @@ function formatEventPrice(price: number, currency?: string): string {
   return `${symbol}${formatted}`;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Normalize API URL to always include /api/v1
+function getApiBaseUrl(): string {
+  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+  const clean = base.replace(/\/$/, '');
+  if (clean.includes('/api/v1')) return clean;
+  return clean + '/api/v1';
+}
+
+const API_URL = getApiBaseUrl();
 
 function getAuthToken(): string | null {
   try {
@@ -156,15 +164,19 @@ function EventCard({ event }: { event: NearbyEvent }) {
     }
 
     setLikeLoading(true);
+    const url = `${API_URL}/likes/events/${event.id}`;
+    const method = liked ? 'DELETE' : 'POST';
+    console.debug(`[Like] ${method} ${url}`);
     try {
-      const method = liked ? 'DELETE' : 'POST';
-      const res = await fetch(`${API_URL}/likes/events/${event.id}`, {
+      const res = await fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
+
+      console.debug(`[Like] Response: ${res.status} ${res.statusText}`);
 
       if (res.ok) {
         setLiked(!liked);
@@ -173,15 +185,16 @@ function EventCard({ event }: { event: NearbyEvent }) {
         showToast('Session expirée — reconnectez-vous');
       } else {
         const data = await res.json().catch(() => ({}));
-        // If already liked/unliked (400), still sync the UI
+        console.error('[Like] Error body:', data);
         if (res.status === 400) {
           setLiked(!liked);
           setLikeCount(prev => liked ? prev - 1 : prev + 1);
         } else {
-          showToast(data.message || 'Erreur lors du like');
+          showToast(data.message || `Erreur ${res.status} lors du like`);
         }
       }
-    } catch {
+    } catch (err) {
+      console.error('[Like] Network error:', err);
       showToast('Erreur de connexion');
     } finally {
       setLikeLoading(false);
@@ -205,15 +218,19 @@ function EventCard({ event }: { event: NearbyEvent }) {
     }
 
     setFollowLoading(true);
+    const url = `${API_URL}/likes/organizers/${event.organizerId}/follow`;
+    const method = followed ? 'DELETE' : 'POST';
+    console.debug(`[Follow] ${method} ${url}`);
     try {
-      const method = followed ? 'DELETE' : 'POST';
-      const res = await fetch(`${API_URL}/likes/organizers/${event.organizerId}/follow`, {
+      const res = await fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
+
+      console.debug(`[Follow] Response: ${res.status} ${res.statusText}`);
 
       if (res.ok) {
         setFollowed(!followed);
@@ -222,14 +239,15 @@ function EventCard({ event }: { event: NearbyEvent }) {
         showToast('Session expirée — reconnectez-vous');
       } else {
         const data = await res.json().catch(() => ({}));
+        console.error('[Follow] Error body:', data);
         if (res.status === 400) {
-          // Already followed/unfollowed — sync UI
           setFollowed(!followed);
         } else {
-          showToast(data.message || "Erreur lors de l'action");
+          showToast(data.message || `Erreur ${res.status} lors du suivi`);
         }
       }
-    } catch {
+    } catch (err) {
+      console.error('[Follow] Network error:', err);
       showToast('Erreur de connexion');
     } finally {
       setFollowLoading(false);
@@ -263,9 +281,14 @@ function EventCard({ event }: { event: NearbyEvent }) {
       {/* Image / Video */}
       <div className="relative h-52 overflow-hidden">
         <Image
-          src={event.coverImage}
+          src={event.coverImage || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80'}
           alt={event.title}
           fill
+          unoptimized={!!(event.coverImage && (event.coverImage.includes('supabase') || event.coverImage.includes('localhost')))}
+          onError={(e) => {
+            console.warn('[Image] Failed to load:', event.coverImage);
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80';
+          }}
           className={`object-cover transition-all duration-700 ${isHovered && event.teaserVideo ? 'opacity-20 scale-105' : 'scale-100'}`}
         />
         {event.teaserVideo && (
