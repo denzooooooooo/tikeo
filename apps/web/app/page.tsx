@@ -79,12 +79,37 @@ async function getFeaturedOrganizers() {
   }
 }
 
+async function getCategoryCounts(): Promise<Record<string, number>> {
+  const categoryNames = ['Concerts', 'Festivals', 'Spectacles', 'Sports', 'Conférences', 'Expositions', 'Gastronomie', 'Famille'];
+  try {
+    const results = await Promise.all(
+      categoryNames.map(async (cat) => {
+        try {
+          const res = await fetch(
+            `${API_URL}/events?category=${encodeURIComponent(cat)}&limit=1`,
+            { next: { revalidate: 3600 } }
+          );
+          if (!res.ok) return [cat, 0] as [string, number];
+          const data = await res.json();
+          return [cat, data.total ?? data.count ?? 0] as [string, number];
+        } catch {
+          return [cat, 0] as [string, number];
+        }
+      })
+    );
+    return Object.fromEntries(results);
+  } catch {
+    return {};
+  }
+}
+
 export default async function HomePage() {
-  const [featuredEvents, nearbyEvents, contests, organizers] = await Promise.all([
+  const [featuredEvents, nearbyEvents, contests, organizers, categoryCounts] = await Promise.all([
     getFeaturedEvents(),
     getNearbyEvents(),
     getContests(),
     getFeaturedOrganizers(),
+    getCategoryCounts(),
   ]);
 
   return (
@@ -135,7 +160,7 @@ export default async function HomePage() {
       <NearbyEventsSection events={nearbyEvents} />
 
       {/* Catégories */}
-      <HomeCategoriesSection />
+      <HomeCategoriesSection categoryCounts={categoryCounts} />
 
       {/* Concours & Votes */}
       <HomeContestsSection contests={contests} />

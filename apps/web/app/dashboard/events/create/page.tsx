@@ -21,9 +21,12 @@ import {
 } from '@tikeo/ui';
 import { ProtectedRoute } from '../../../components/ProtectedRoute';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 export default function CreateEventPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     // Basic Info
@@ -67,10 +70,16 @@ export default function CreateEventPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events`, {
+      if (!token) {
+        setError('Vous devez être connecté pour créer un événement.');
+        setIsLoading(false);
+        return;
+      }
+      const res = await fetch(`${API_URL}/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,8 +91,8 @@ export default function CreateEventPage() {
           endDate: new Date(`${formData.endDate}T${formData.endTime}`).toISOString(),
           ticketTypes: formData.ticketTypes.map(ticket => ({
             ...ticket,
-            price: parseFloat(ticket.price),
-            quantity: parseInt(ticket.quantity),
+            price: parseFloat(ticket.price) || 0,
+            quantity: parseInt(ticket.quantity) || 0,
           })),
         }),
       });
@@ -92,12 +101,12 @@ export default function CreateEventPage() {
         const event = await res.json();
         router.push(`/dashboard/events/${event.id}`);
       } else {
-        const error = await res.json();
-        alert(error.message || 'Une erreur est survenue');
+        const body = await res.json().catch(() => ({}));
+        setError(body.message || `Erreur ${res.status} — veuillez réessayer.`);
       }
-    } catch (error) {
-      console.error('Create event error:', error);
-      alert('Une erreur est survenue lors de la création de l\'événement');
+    } catch (err) {
+      console.error('Create event error:', err);
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.');
     } finally {
       setIsLoading(false);
     }
@@ -557,6 +566,13 @@ export default function CreateEventPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Error message */}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+              {error}
             </div>
           )}
 
