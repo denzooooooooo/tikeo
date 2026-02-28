@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   CalendarIcon,
   ClockIcon,
@@ -15,27 +15,70 @@ import {
 import { PromoCodeInput } from '@tikeo/ui';
 import { ProtectedRoute } from '../../../components/ProtectedRoute';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface TicketType {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  available?: number;
+}
+
+interface EventData {
+  id: string;
+  title: string;
+  date: string;
+  time?: string;
+  venue?: string;
+  location?: string;
+  coverImage?: string;
+  ticketTypes: TicketType[];
+}
+
 export default function CheckoutPage() {
-  const searchParams = useSearchParams();
-  const eventId = searchParams.get('eventId');
-  
+  const params = useParams();
+  const eventId = params?.id as string;
+
+  const [event, setEvent] = useState<EventData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
   const [discount, setDiscount] = useState(0);
 
-  // Mock event data - replace with API call
-  const event = {
-    id: eventId,
-    title: 'Festival Jazz 2024',
-    date: '15 Janvier 2024',
-    time: '20:00',
-    venue: 'Paris, France',
-    coverImage: 'https://picsum.photos/seed/event/800/400',
-    ticketTypes: [
-      { id: '1', name: 'Standard', price: 45, description: 'Accès général' },
-      { id: '2', name: 'VIP', price: 120, description: 'Accès VIP + drink' },
-      { id: '3', name: 'Premium', price: 200, description: 'Tout inclus' },
-    ],
+  useEffect(() => {
+    if (eventId) {
+      fetchEvent();
+    }
+  }, [eventId]);
+
+  const fetchEvent = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/events/${eventId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEvent({
+          id: data.id,
+          title: data.title,
+          date: data.startDate ? new Date(data.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : data.date || '',
+          time: data.startDate ? new Date(data.startDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : data.time || '',
+          venue: data.venue || data.location || data.address || '',
+          coverImage: data.coverImage || data.image || 'https://picsum.photos/seed/event/800/400',
+          ticketTypes: (data.ticketTypes || data.tickets || []).map((t: any) => ({
+            id: t.id,
+            name: t.name || t.type,
+            price: t.price,
+            description: t.description || '',
+            available: t.available ?? t.quantity,
+          })),
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching event:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleApplyDiscount = (discountAmount: number) => {
@@ -45,6 +88,29 @@ export default function CheckoutPage() {
   const subtotal = selectedTicket ? selectedTicket.price * quantity : 0;
   const discountAmount = subtotal * (discount / 100);
   const total = subtotal - discountAmount;
+
+  if (isLoading) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-[#5B7CFF] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (!event) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">Événement introuvable</p>
+            <Link href="/events" className="text-[#5B7CFF] hover:underline">Retour aux événements</Link>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
@@ -68,7 +134,7 @@ export default function CheckoutPage() {
               <div className="flex gap-4">
                 <div className="relative w-32 h-24 rounded-xl overflow-hidden">
                   <Image
-                    src={event.coverImage}
+                    src={event.coverImage || 'https://picsum.photos/seed/event/800/400'}
                     alt={event.title}
                     fill
                     className="object-cover"

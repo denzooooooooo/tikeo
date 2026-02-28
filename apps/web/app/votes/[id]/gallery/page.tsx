@@ -23,27 +23,7 @@ interface Contest {
   status: string;
 }
 
-// Mock data
-const mockContest: Contest = {
-  id: '1',
-  title: 'Meilleur Artiste Français 2024',
-  status: 'ACTIVE',
-};
-
-const mockImages: ContestantImage[] = [
-  { id: '1', contestantId: '1', contestantName: 'Marie Dubois', contestantImage: '/contestants/marie.jpg', url: '/gallery/marie-1.jpg', likes: 1240, isWinner: true },
-  { id: '2', contestantId: '1', contestantName: 'Marie Dubois', contestantImage: '/contestants/marie.jpg', url: '/gallery/marie-2.jpg', likes: 890 },
-  { id: '3', contestantId: '2', contestantName: 'Jean Martin', contestantImage: '/contestants/jean.jpg', url: '/gallery/jean-1.jpg', likes: 756 },
-  { id: '4', contestantId: '3', contestantName: 'Sophie Bernard', contestantImage: '/contestants/sophie.jpg', url: '/gallery/sophie-1.jpg', likes: 654 },
-  { id: '5', contestantId: '4', contestantName: 'Lucas Petit', contestantImage: '/contestants/lucas.jpg', url: '/gallery/lucas-1.jpg', likes: 543 },
-  { id: '6', contestantId: '2', contestantName: 'Jean Martin', contestantImage: '/contestants/jean.jpg', url: '/gallery/jean-2.jpg', likes: 432 },
-  { id: '7', contestantId: '5', contestantName: 'Emma Robert', contestantImage: '/contestants/emma.jpg', url: '/gallery/emma-1.jpg', likes: 398 },
-  { id: '8', contestantId: '3', contestantName: 'Sophie Bernard', contestantImage: '/contestants/sophie.jpg', url: '/gallery/sophie-2.jpg', likes: 367 },
-  { id: '9', contestantId: '6', contestantName: 'Thomas Durand', contestantImage: '/contestants/thomas.jpg', url: '/gallery/thomas-1.jpg', likes: 321 },
-  { id: '10', contestantId: '7', contestantName: 'Chloe Moreau', contestantImage: '/contestants/chloe.jpg', url: '/gallery/chloe-1.jpg', likes: 298 },
-  { id: '11', contestantId: '4', contestantName: 'Lucas Petit', contestantImage: '/contestants/lucas.jpg', url: '/gallery/lucas-2.jpg', likes: 276 },
-  { id: '12', contestantId: '8', contestantName: 'Alexandre Laurent', contestantImage: '/contestants/alexandre.jpg', url: '/gallery/alexandre-1.jpg', likes: 254 },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 function GalleryImage({ image, onClick }: { image: ContestantImage; onClick: () => void }) {
   return (
@@ -162,11 +142,30 @@ export default function GalleryPage() {
   const fetchGallery = async () => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setContest(mockContest);
-      setImages(mockImages);
+      const [contestRes, galleryRes] = await Promise.all([
+        fetch(`${API_URL}/contests/${contestId}`),
+        fetch(`${API_URL}/contests/${contestId}/gallery`),
+      ]);
+      if (!contestRes.ok || !galleryRes.ok) {
+        throw new Error('Erreur lors du chargement');
+      }
+      const contestData = await contestRes.json();
+      const galleryData = await galleryRes.json();
+      setContest(contestData);
+      const raw = galleryData.images || galleryData || [];
+      setImages(
+        raw.map((img: any) => ({
+          id: img.id,
+          contestantId: img.contestantId || img.contestant?.id || img.id,
+          contestantName: img.contestantName || img.contestant?.name || `${img.contestant?.firstName || ''} ${img.contestant?.lastName || ''}`.trim(),
+          contestantImage: img.contestantImage || img.contestant?.mainImage || img.contestant?.avatar || '/placeholder.jpg',
+          url: img.url || img.imageUrl || img.src || '/placeholder.jpg',
+          caption: img.caption,
+          likes: img.likes ?? img.likesCount ?? 0,
+          isWinner: img.isWinner ?? false,
+        }))
+      );
     } catch (err) {
       setError('Impossible de charger la galerie');
     } finally {

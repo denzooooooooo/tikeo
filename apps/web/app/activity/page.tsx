@@ -69,49 +69,6 @@ export default function ActivityFeedPage() {
       }
     } catch (error) {
       console.error('Error fetching activities:', error);
-      // Mock data for demo
-      setActivities([
-        {
-          id: '1',
-          type: 'LIKE',
-          user: { id: '1', firstName: 'Marie', lastName: 'Dupont', avatar: 'https://picsum.photos/seed/user1/100/100' },
-          event: { id: '1', title: 'Festival Jazz 2024', coverImage: 'https://picsum.photos/seed/event1/400/300' },
-          message: 'a aimé cet événement',
-          createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        },
-        {
-          id: '2',
-          type: 'FOLLOW',
-          user: { id: '2', firstName: 'Jean', lastName: 'Martin' },
-          organizer: { id: '1', companyName: 'Paris Events', logo: 'https://picsum.photos/seed/org1/100/100' },
-          message: 'suit cet organisateur',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        },
-        {
-          id: '3',
-          type: 'PURCHASE',
-          user: { id: '3', firstName: 'Sophie', lastName: 'Bernard' },
-          event: { id: '2', title: 'Concert Rock Arena', coverImage: 'https://picsum.photos/seed/event2/400/300' },
-          message: 'a acheté des billets pour',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-        },
-        {
-          id: '4',
-          type: 'REVIEW',
-          user: { id: '4', firstName: 'Lucas', lastName: 'Moreau' },
-          event: { id: '3', title: 'Tech Conference 2024', coverImage: 'https://picsum.photos/seed/event3/400/300' },
-          message: 'a laissé un avis sur',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        },
-        {
-          id: '5',
-          type: 'CONTEST_VOTE',
-          user: { id: '5', firstName: 'Emma', lastName: 'Petit' },
-          contest: { id: '1', title: 'Miss France 2024' },
-          message: 'a vote pour',
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-        },
-      ]);
     } finally {
       setIsLoading(false);
     }
