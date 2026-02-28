@@ -106,18 +106,23 @@ function CreateEventForm() {
 
   const submit = async () => {
     if (!validate()) return;
+    // Block if image upload still in progress
+    if (uploading) { setError('Veuillez attendre la fin de l\'upload de l\'image.'); return; }
     setLoading(true); setError(null);
     try {
       const stored = localStorage.getItem('auth_tokens');
       const token = stored ? JSON.parse(stored).accessToken : null;
       if (!token) { router.push('/(auth)/login?message=Connectez-vous pour créer un événement'); return; }
 
+      // Only send coverImage if it's a real URL (not a base64 data URL)
+      const coverImageUrl = f.coverImage && !f.coverImage.startsWith('data:') ? f.coverImage : undefined;
+
       const res = await fetch(`${API_URL}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           title: f.title, description: f.description, category: f.category,
-          coverImage: f.coverImage || undefined,
+          coverImage: coverImageUrl,
           teaserVideo: f.teaserVideo || undefined,
           startDate: new Date(`${f.startDate}T${f.startTime}:00`).toISOString(),
           endDate: new Date(`${f.endDate}T${f.endTime}:00`).toISOString(),
