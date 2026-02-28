@@ -2,19 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { API_CONFIG } from '@tikeo/utils';
-import {
-  PlusIcon,
-  CalendarIcon,
-  LocationIcon,
-  TicketIcon,
-  DollarIcon,
-  EditIcon,
-  EyeIcon,
-  SearchIcon,
-  TrendingUpIcon,
-} from '@tikeo/ui';
 
 interface Event {
   id: string;
@@ -23,33 +10,34 @@ interface Event {
   coverImage: string;
   startDate: string;
   venueCity: string;
+  venueCountry: string;
   status: 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED';
   ticketsSold: number;
+  revenue: number;
   views: number;
-  minPrice: number;
-  maxPrice: number;
-  _count?: { tickets: number; orders: number };
+  category: string;
 }
 
-const statusColors: Record<string, string> = {
+const statusColors = {
   DRAFT: 'bg-gray-100 text-gray-700',
   PUBLISHED: 'bg-green-100 text-green-700',
   CANCELLED: 'bg-red-100 text-red-700',
   COMPLETED: 'bg-blue-100 text-blue-700',
 };
 
-const statusLabels: Record<string, string> = {
+const statusLabels = {
   DRAFT: 'Brouillon',
   PUBLISHED: 'Publié',
   CANCELLED: 'Annulé',
   COMPLETED: 'Terminé',
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 function getToken(): string | null {
   try {
     const stored = localStorage.getItem('auth_tokens');
-    if (!stored) return null;
-    return JSON.parse(stored).accessToken ?? null;
+    return stored ? JSON.parse(stored).accessToken : null;
   } catch {
     return null;
   }
@@ -59,28 +47,34 @@ export default function DashboardEventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [publishingId, setPublishingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 4000);
+  };
 
   const fetchMyEvents = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+    setLoading(true);
     try {
       const token = getToken();
-      const res = await fetch(`${API_CONFIG.BASE_URL}/events/my`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      const res = await fetch(`${API_URL}/events/my`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Erreur lors du chargement des événements');
-      const data = await res.json();
-      setEvents(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      setError(err.message || 'Erreur inconnue');
+      if (res.ok) {
+        const data = await res.json();
+        setEvents(Array.isArray(data) ? data : data.data || []);
+      }
+    } catch {
+      showToast('Erreur lors du chargement des événements');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, []);
 
@@ -89,21 +83,28 @@ export default function DashboardEventsPage() {
   }, [fetchMyEvents]);
 
   const handlePublish = async (eventId: string) => {
+    const token = getToken();
+    if (!token) {
+      showToast('Connectez-vous pour publier');
+      return;
+    }
     setPublishingId(eventId);
     try {
-      const token = getToken();
-      const res = await fetch(`${API_CONFIG.BASE_URL}/events/${eventId}/publish`, {
+      const res = await fetch(`${API_URL}/events/${eventId}/publish`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Erreur lors de la publication');
-      // Refresh list
-      await fetchMyEvents();
-    } catch (err: any) {
-      alert(err.message || 'Erreur lors de la publication');
+      if (res.ok) {
+        showToast('Événement publié avec succès !');
+        setEvents((prev) =>
+          prev.map((e) => (e.id === eventId ? { ...e, status: 'PUBLISHED' } : e))
+        );
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.message || 'Erreur lors de la publication');
+      }
+    } catch {
+      showToast('Erreur de connexion');
     } finally {
       setPublishingId(null);
     }
@@ -115,228 +116,144 @@ export default function DashboardEventsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalStats = {
-    events: events.length,
-    published: events.filter((e) => e.status === 'PUBLISHED').length,
-    totalTickets: events.reduce((acc, e) => acc + (e.ticketsSold || 0), 0),
-    drafts: events.filter((e) => e.status === 'DRAFT').length,
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-[#5B7CFF] via-[#7B61FF] to-[#9D4EDD] relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-white mb-2">Mes Événements</h1>
-              <p className="text-xl text-white/90">Gérez et suivez vos événements</p>
-            </div>
-            <Link
-              href="/dashboard/events/create"
-              className="flex items-center gap-2 px-6 py-4 bg-white text-[#5B7CFF] rounded-xl hover:shadow-2xl transition-all duration-200 font-bold"
-            >
-              <PlusIcon size={20} />
-              Créer un événement
-            </Link>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 px-4 py-3 bg-gray-900 text-white rounded-xl shadow-xl text-sm font-medium">
+          {toast}
         </div>
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
-              fill="#F9FAFB"
-            />
-          </svg>
-        </div>
-      </div>
+      )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-[#5B7CFF]/10 rounded-lg">
-                <CalendarIcon className="text-[#5B7CFF]" size={20} />
-              </div>
-              <span className="text-gray-600 text-sm">Total événements</span>
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{totalStats.events}</p>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Mes événements</h1>
+            <p className="text-gray-500 text-sm mt-1">{events.length} événement{events.length !== 1 ? 's' : ''} au total</p>
           </div>
-          <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <TrendingUpIcon className="text-green-600" size={20} />
-              </div>
-              <span className="text-gray-600 text-sm">Publiés</span>
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{totalStats.published}</p>
-          </div>
-          <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <TicketIcon className="text-purple-600" size={20} />
-              </div>
-              <span className="text-gray-600 text-sm">Billets vendus</span>
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{totalStats.totalTickets.toLocaleString()}</p>
-          </div>
-          <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <DollarIcon className="text-orange-600" size={20} />
-              </div>
-              <span className="text-gray-600 text-sm">Brouillons</span>
-            </div>
-            <p className="text-3xl font-bold text-gray-900">{totalStats.drafts}</p>
-          </div>
+          <Link
+            href="/dashboard/events/create"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white rounded-xl font-semibold text-sm hover:shadow-lg transition-all"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+            Créer un événement
+          </Link>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-2 flex-1 px-3 py-2 bg-gray-50 rounded-xl border border-gray-200">
+            <svg className="text-gray-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
             <input
               type="text"
-              placeholder="Rechercher un événement..."
+              placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent"
+              className="flex-1 bg-transparent border-none outline-none text-sm text-gray-900 placeholder-gray-400"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B7CFF]"
+            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none focus:border-[#5B7CFF]"
           >
             <option value="all">Tous les statuts</option>
             <option value="DRAFT">Brouillon</option>
             <option value="PUBLISHED">Publié</option>
-            <option value="COMPLETED">Terminé</option>
             <option value="CANCELLED">Annulé</option>
+            <option value="COMPLETED">Terminé</option>
           </select>
         </div>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-            {error}
+        {/* Content */}
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+            <div className="w-10 h-10 border-4 border-[#5B7CFF]/30 border-t-[#5B7CFF] rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-500 text-sm">Chargement de vos événements...</p>
           </div>
-        )}
-
-        {/* Loading */}
-        {isLoading ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-            <div className="animate-spin w-8 h-8 border-4 border-[#5B7CFF] border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-500">Chargement de vos événements…</p>
+        ) : filteredEvents.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+            <div className="text-5xl mb-4">📅</div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {events.length === 0 ? 'Aucun événement créé' : 'Aucun résultat'}
+            </h3>
+            <p className="text-gray-500 text-sm mb-6">
+              {events.length === 0
+                ? 'Commencez par créer votre premier événement'
+                : 'Modifiez vos filtres de recherche'}
+            </p>
+            {events.length === 0 && (
+              <Link
+                href="/dashboard/events/create"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-semibold text-sm hover:bg-[#7B61FF] transition-colors"
+              >
+                Créer un événement
+              </Link>
+            )}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Événement</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Date</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Statut</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Billets</th>
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Vues</th>
-                    <th className="text-right py-4 px-6 text-sm font-semibold text-gray-700">Actions</th>
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Événement</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Date</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
+                    <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-50">
                   {filteredEvents.map((event) => (
-                    <tr key={event.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-4">
-                          <div className="relative w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-                            {event.coverImage ? (
-                              <Image
-                                src={event.coverImage}
-                                alt={event.title}
-                                fill
-                                className="object-cover"
-                                unoptimized
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                🎟️
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-900 line-clamp-1">{event.title}</p>
-                            <div className="flex items-center gap-1 text-sm text-gray-500">
-                              <LocationIcon size={14} />
-                              {event.venueCity}
-                            </div>
-                          </div>
+                    <tr key={event.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-4">
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm line-clamp-1">{event.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{event.venueCity}{event.venueCountry ? `, ${event.venueCountry}` : ''}</p>
                         </div>
                       </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <CalendarIcon size={16} />
-                          {new Date(event.startDate).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </div>
+                      <td className="py-4 px-4 hidden sm:table-cell">
+                        <p className="text-sm text-gray-600">
+                          {new Date(event.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
                       </td>
-                      <td className="py-4 px-6">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            statusColors[event.status] ?? 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {statusLabels[event.status] ?? event.status}
+                      <td className="py-4 px-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[event.status]}`}>
+                          {statusLabels[event.status]}
                         </span>
                       </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2 text-gray-900 font-medium">
-                          <TicketIcon size={16} className="text-gray-400" />
-                          {(event.ticketsSold || 0).toLocaleString()}
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <EyeIcon size={16} />
-                          {(event.views || 0).toLocaleString()}
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
+                      <td className="py-4 px-4">
                         <div className="flex items-center justify-end gap-2">
-                          {/* Publish button for DRAFT events */}
                           {event.status === 'DRAFT' && (
                             <button
                               onClick={() => handlePublish(event.id)}
                               disabled={publishingId === event.id}
-                              className="px-3 py-1.5 text-xs font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                              className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
                             >
-                              {publishingId === event.id ? '…' : 'Publier'}
+                              {publishingId === event.id ? '...' : 'Publier'}
                             </button>
                           )}
                           <Link
-                            href={`/events/${event.slug}`}
-                            className="p-2 text-gray-600 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
+                            href={`/events/${event.slug || event.id}`}
+                            className="p-1.5 text-gray-500 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
                             title="Voir"
                           >
-                            <EyeIcon size={18} />
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
                           </Link>
                           <Link
                             href={`/dashboard/events/${event.id}/edit`}
-                            className="p-2 text-gray-600 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
+                            className="p-1.5 text-gray-500 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
                             title="Modifier"
                           >
-                            <EditIcon size={18} />
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                           </Link>
                           <Link
                             href={`/dashboard/events/${event.id}/analytics`}
-                            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                             title="Analytics"
                           >
-                            <TrendingUpIcon size={18} />
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
                           </Link>
                         </div>
                       </td>
@@ -345,21 +262,6 @@ export default function DashboardEventsPage() {
                 </tbody>
               </table>
             </div>
-
-            {filteredEvents.length === 0 && !isLoading && (
-              <div className="text-center py-12">
-                <CalendarIcon className="mx-auto mb-4 text-gray-300" size={48} />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun événement trouvé</h3>
-                <p className="text-gray-600 mb-6">Commencez par créer votre premier événement</p>
-                <Link
-                  href="/dashboard/events/create"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-medium hover:bg-[#7B61FF] transition-colors"
-                >
-                  <PlusIcon size={20} />
-                  Créer un événement
-                </Link>
-              </div>
-            )}
           </div>
         )}
       </div>

@@ -8,64 +8,28 @@ export class LikesService {
   // ============ EVENT LIKES ============
 
   async likeEvent(userId: string, eventId: string) {
-    // Check if event exists
     const event = await this.prisma.event.findUnique({ where: { id: eventId } });
-    if (!event) {
-      throw new NotFoundException('Événement non trouvé');
-    }
+    if (!event) throw new NotFoundException('Événement non trouvé');
 
-    // Check if already liked
     const existingLike = await this.prisma.eventLike.findUnique({
-      where: {
-        userId_eventId: { userId, eventId },
-      },
+      where: { userId_eventId: { userId, eventId } },
     });
 
-    if (existingLike) {
-      throw new BadRequestException('Vous avez déjà liké cet événement');
-    }
+    if (existingLike) throw new BadRequestException('Vous avez déjà liké cet événement');
 
-    // Create like
-    await this.prisma.eventLike.create({
-      data: { userId, eventId },
-    });
-
-    // Update event likes count using SQL-like approach via raw query or count
-    const currentLikes = await this.prisma.eventLike.count({
-      where: { eventId },
-    });
-    await this.prisma.event.update({
-      where: { id: eventId },
-      data: { likes: currentLikes },
-    });
+    await this.prisma.eventLike.create({ data: { userId, eventId } });
 
     return { success: true, message: 'Événement liké avec succès' };
   }
 
   async unlikeEvent(userId: string, eventId: string) {
     const existingLike = await this.prisma.eventLike.findUnique({
-      where: {
-        userId_eventId: { userId, eventId },
-      },
+      where: { userId_eventId: { userId, eventId } },
     });
 
-    if (!existingLike) {
-      throw new BadRequestException("Vous n'avez pas liké cet événement");
-    }
+    if (!existingLike) throw new BadRequestException("Vous n'avez pas liké cet événement");
 
-    // Delete like
-    await this.prisma.eventLike.delete({
-      where: { id: existingLike.id },
-    });
-
-    // Update event likes count using count
-    const currentLikes = await this.prisma.eventLike.count({
-      where: { eventId },
-    });
-    await this.prisma.event.update({
-      where: { id: eventId },
-      data: { likes: currentLikes },
-    });
+    await this.prisma.eventLike.delete({ where: { id: existingLike.id } });
 
     return { success: true, message: 'Like retiré avec succès' };
   }
@@ -106,28 +70,17 @@ export class LikesService {
 
   async followOrganizer(userId: string, organizerId: string) {
     const organizer = await this.prisma.organizer.findUnique({ where: { id: organizerId } });
-    if (!organizer) {
-      throw new NotFoundException('Organisateur non trouvé');
-    }
+    if (!organizer) throw new NotFoundException('Organisateur non trouvé');
 
-    const existingLike = await this.prisma.organizerLike.findUnique({
-      where: {
-        userId_organizerId: { userId, organizerId },
-      },
+    const existing = await this.prisma.organizerSubscription.findUnique({
+      where: { userId_organizerId: { userId, organizerId } },
     });
 
-    if (existingLike) {
-      throw new BadRequestException('Vous suivez déjà cet organisateur');
-    }
+    if (existing) throw new BadRequestException('Vous suivez déjà cet organisateur');
 
-    await this.prisma.organizerLike.create({
-      data: { userId, organizerId },
-    });
+    await this.prisma.organizerSubscription.create({ data: { userId, organizerId } });
 
-    // Update followers count using count
-    const currentFollowers = await this.prisma.organizerLike.count({
-      where: { organizerId },
-    });
+    const currentFollowers = await this.prisma.organizerSubscription.count({ where: { organizerId } });
     await this.prisma.organizer.update({
       where: { id: organizerId },
       data: { followersCount: currentFollowers },
@@ -137,24 +90,15 @@ export class LikesService {
   }
 
   async unfollowOrganizer(userId: string, organizerId: string) {
-    const existingLike = await this.prisma.organizerLike.findUnique({
-      where: {
-        userId_organizerId: { userId, organizerId },
-      },
+    const existing = await this.prisma.organizerSubscription.findUnique({
+      where: { userId_organizerId: { userId, organizerId } },
     });
 
-    if (!existingLike) {
-      throw new BadRequestException("Vous ne suivez pas cet organisateur");
-    }
+    if (!existing) throw new BadRequestException("Vous ne suivez pas cet organisateur");
 
-    await this.prisma.organizerLike.delete({
-      where: { id: existingLike.id },
-    });
+    await this.prisma.organizerSubscription.delete({ where: { id: existing.id } });
 
-    // Update followers count using count
-    const currentFollowers = await this.prisma.organizerLike.count({
-      where: { organizerId },
-    });
+    const currentFollowers = await this.prisma.organizerSubscription.count({ where: { organizerId } });
     await this.prisma.organizer.update({
       where: { id: organizerId },
       data: { followersCount: currentFollowers },
@@ -164,27 +108,21 @@ export class LikesService {
   }
 
   async isOrganizerFollowed(userId: string, organizerId: string) {
-    const follow = await this.prisma.organizerLike.findUnique({
-      where: {
-        userId_organizerId: { userId, organizerId },
-      },
+    const follow = await this.prisma.organizerSubscription.findUnique({
+      where: { userId_organizerId: { userId, organizerId } },
     });
     return { isFollowed: !!follow };
   }
 
   async getOrganizerFollowersCount(organizerId: string) {
-    const count = await this.prisma.organizerLike.count({
-      where: { organizerId },
-    });
+    const count = await this.prisma.organizerSubscription.count({ where: { organizerId } });
     return { count };
   }
 
   async getUserFollowedOrganizers(userId: string) {
-    return this.prisma.organizerLike.findMany({
+    return this.prisma.organizerSubscription.findMany({
       where: { userId },
-      include: {
-        organizer: true,
-      },
+      include: { organizer: true },
       orderBy: { createdAt: 'desc' },
     });
   }

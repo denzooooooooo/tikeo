@@ -36,7 +36,18 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
   const organizer = await getOrganizer(params.id);
   
   if (!organizer) {
-    notFound();
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-6">🏢</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Organisateur introuvable</h1>
+          <p className="text-gray-500 mb-6">Ce profil organisateur n&apos;existe pas ou a été supprimé.</p>
+          <a href="/events" className="inline-flex items-center gap-2 px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-semibold hover:bg-[#7B61FF] transition-colors">
+            Explorer les événements
+          </a>
+        </div>
+      </div>
+    );
   }
 
   const { data: events } = await getOrganizerEvents(params.id);
