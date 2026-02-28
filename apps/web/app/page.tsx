@@ -18,7 +18,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 async function getFeaturedEvents() {
   try {
     const res = await fetch(`${API_URL}/events/featured?limit=5`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 60 },
     });
     if (!res.ok) return [];
     const data = await res.json();
@@ -43,7 +43,7 @@ async function getFeaturedEvents() {
 async function getNearbyEvents() {
   try {
     const res = await fetch(`${API_URL}/events?limit=6&page=1`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 60 },
     });
     if (!res.ok) return [];
     const data = await res.json();
@@ -69,7 +69,7 @@ async function getNearbyEvents() {
 async function getContests() {
   try {
     const res = await fetch(`${API_URL}/contests?limit=3&status=ACTIVE`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 60 },
     });
     if (!res.ok) return [];
     const data = await res.json();

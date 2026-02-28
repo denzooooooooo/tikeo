@@ -63,19 +63,38 @@ function CreateEventForm() {
 
   const set = (k: string, v: any) => setF(p => ({ ...p, [k]: v }));
 
+  const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
+  const [imageUrl, setImageUrl] = useState('');
+
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) { setError('Image uniquement (JPG, PNG, WebP)'); return; }
     if (file.size > 5 * 1024 * 1024) { setError('Max 5 Mo'); return; }
     setError(null);
     const reader = new FileReader();
-    reader.onload = e => { const d = e.target?.result as string; setPreview(d); set('coverImage', d); };
+    reader.onload = e => { const d = e.target?.result as string; setPreview(d); };
     reader.readAsDataURL(file);
     setUploading(true);
     try {
       const fd = new FormData(); fd.append('file', file);
       const r = await fetch('/api/upload', { method: 'POST', body: fd });
-      if (r.ok) { const { url } = await r.json(); set('coverImage', url); }
-    } catch { /* garde dataUrl */ } finally { setUploading(false); }
+      if (r.ok) {
+        const { url } = await r.json();
+        set('coverImage', url);
+      } else {
+        // Upload failed (Supabase not configured) — ask user for URL
+        setImageMode('url');
+        setError('Upload automatique indisponible. Collez une URL d\'image ci-dessous.');
+      }
+    } catch {
+      setImageMode('url');
+      setError('Upload indisponible. Collez une URL d\'image ci-dessous.');
+    } finally { setUploading(false); }
+  };
+
+  const handleImageUrl = (url: string) => {
+    setImageUrl(url);
+    set('coverImage', url);
+    if (url) setPreview(url);
   };
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -114,8 +133,7 @@ function CreateEventForm() {
       const token = stored ? JSON.parse(stored).accessToken : null;
       if (!token) { router.push('/(auth)/login?message=Connectez-vous pour créer un événement'); return; }
 
-      // Only send coverImage if it's a real URL (not a base64 data URL)
-      const coverImageUrl = f.coverImage && !f.coverImage.startsWith('data:') ? f.coverImage : undefined;
+      const coverImageUrl = f.coverImage && !f.coverImage.startsWith('data:') ? f.coverImage : (imageUrl || undefined);
 
       const res = await fetch(`${API_URL}/events`, {
         method: 'POST',
@@ -195,48 +213,81 @@ function CreateEventForm() {
             {/* Image */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Image de couverture</label>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
-              <div
-                onClick={() => fileRef.current?.click()}
-                onDragOver={e => { e.preventDefault(); setDragging(true); }}
-                onDragLeave={() => setDragging(false)}
-                onDrop={onDrop}
-                className={`relative rounded-2xl overflow-hidden border-2 cursor-pointer transition-all ${
-                  dragging ? 'border-[#5B7CFF] bg-blue-50' : preview ? 'border-transparent shadow-md' : 'border-dashed border-gray-300 hover:border-[#5B7CFF]'
-                }`}
-              >
-                {preview ? (
-                  <div className="relative aspect-video">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview} alt="Aperçu" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity">
-                      <span className="text-white font-semibold text-sm bg-black/30 px-3 py-1.5 rounded-full">📷 Changer</span>
-                    </div>
-                    {uploading && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2">
-                          <div className="w-4 h-4 border-2 border-[#5B7CFF] border-t-transparent rounded-full animate-spin" />
-                          <span className="text-sm font-medium">Upload…</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="aspect-video flex flex-col items-center justify-center gap-3 p-6 bg-gray-50">
-                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-3xl">📷</div>
-                    <div className="text-center">
-                      <p className="font-semibold text-gray-700 text-sm">Appuyer pour choisir depuis la galerie</p>
-                      <p className="text-xs text-gray-400 mt-1">ou glisser une image · JPG, PNG, WebP · max 5 Mo</p>
-                    </div>
-                    {uploading && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-[#5B7CFF] border-t-transparent rounded-full animate-spin" />
-                        <span className="text-sm text-[#5B7CFF] font-medium">Upload…</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+              {/* Mode tabs */}
+              <div className="flex gap-2 mb-3">
+                <button type="button" onClick={() => setImageMode('upload')}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${imageMode === 'upload' ? 'bg-[#5B7CFF] text-white border-[#5B7CFF]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#5B7CFF]'}`}>
+                  📷 Uploader un fichier
+                </button>
+                <button type="button" onClick={() => setImageMode('url')}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${imageMode === 'url' ? 'bg-[#5B7CFF] text-white border-[#5B7CFF]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#5B7CFF]'}`}>
+                  🔗 Coller une URL
+                </button>
               </div>
+
+              {imageMode === 'url' ? (
+                <div className="space-y-2">
+                  <input
+                    type="url"
+                    value={imageUrl}
+                    onChange={e => handleImageUrl(e.target.value)}
+                    placeholder="https://exemple.com/image.jpg"
+                    className={inp}
+                  />
+                  {preview && imageMode === 'url' && (
+                    <div className="relative aspect-video rounded-xl overflow-hidden border border-gray-200">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={preview} alt="Aperçu" className="w-full h-full object-cover" onError={() => setPreview(null)} />
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400">Collez l'URL directe d'une image (JPG, PNG, WebP)</p>
+                </div>
+              ) : (
+                <>
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
+                  <div
+                    onClick={() => fileRef.current?.click()}
+                    onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={onDrop}
+                    className={`relative rounded-2xl overflow-hidden border-2 cursor-pointer transition-all ${
+                      dragging ? 'border-[#5B7CFF] bg-blue-50' : preview ? 'border-transparent shadow-md' : 'border-dashed border-gray-300 hover:border-[#5B7CFF]'
+                    }`}
+                  >
+                    {preview ? (
+                      <div className="relative aspect-video">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={preview} alt="Aperçu" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity">
+                          <span className="text-white font-semibold text-sm bg-black/30 px-3 py-1.5 rounded-full">📷 Changer</span>
+                        </div>
+                        {uploading && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2">
+                              <div className="w-4 h-4 border-2 border-[#5B7CFF] border-t-transparent rounded-full animate-spin" />
+                              <span className="text-sm font-medium">Upload…</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="aspect-video flex flex-col items-center justify-center gap-3 p-6 bg-gray-50">
+                        <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-3xl">📷</div>
+                        <div className="text-center">
+                          <p className="font-semibold text-gray-700 text-sm">Appuyer pour choisir depuis la galerie</p>
+                          <p className="text-xs text-gray-400 mt-1">ou glisser une image · JPG, PNG, WebP · max 5 Mo</p>
+                        </div>
+                        {uploading && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-[#5B7CFF] border-t-transparent rounded-full animate-spin" />
+                            <span className="text-sm text-[#5B7CFF] font-medium">Upload…</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Titre */}
