@@ -133,8 +133,15 @@ export class EventsController {
   @ApiResponse({ status: 201, description: 'Événement créé' })
   @ApiResponse({ status: 401, description: 'Non autorisé' })
   async create(@Body() createEventDto: any, @Request() req: any) {
-    // Attach organizer from JWT
-    return this.eventsService.create(createEventDto, req.user?.id);
+    try {
+      return await this.eventsService.create(createEventDto, req.user?.id);
+    } catch (error: any) {
+      // Return detailed error message for debugging
+      throw new HttpException(
+        { message: error?.message || 'Erreur inconnue', detail: error?.meta || null },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   // ─── PUT /events/:id ──────────────────────────────────────────────────────────
