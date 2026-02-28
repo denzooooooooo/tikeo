@@ -79,6 +79,30 @@ async function getFeaturedOrganizers() {
   }
 }
 
+async function getCountryCounts(): Promise<Record<string, number>> {
+  const countryNames = ['Nigeria', "Côte d'Ivoire", 'Sénégal', 'Gabon', 'Cameroun', 'Congo RDC', 'Ghana', 'Afrique du Sud', 'Maroc', 'Mali'];
+  try {
+    const results = await Promise.all(
+      countryNames.map(async (country) => {
+        try {
+          const res = await fetch(
+            `${API_URL}/events?country=${encodeURIComponent(country)}&limit=1`,
+            { next: { revalidate: 3600 } }
+          );
+          if (!res.ok) return [country, 0] as [string, number];
+          const data = await res.json();
+          return [country, data.total ?? data.count ?? 0] as [string, number];
+        } catch {
+          return [country, 0] as [string, number];
+        }
+      })
+    );
+    return Object.fromEntries(results);
+  } catch {
+    return {};
+  }
+}
+
 async function getCategoryCounts(): Promise<Record<string, number>> {
   const categoryNames = ['Concerts', 'Festivals', 'Spectacles', 'Sports', 'Conférences', 'Expositions', 'Gastronomie', 'Famille'];
   try {
@@ -104,12 +128,13 @@ async function getCategoryCounts(): Promise<Record<string, number>> {
 }
 
 export default async function HomePage() {
-  const [featuredEvents, nearbyEvents, contests, organizers, categoryCounts] = await Promise.all([
+  const [featuredEvents, nearbyEvents, contests, organizers, categoryCounts, countryCounts] = await Promise.all([
     getFeaturedEvents(),
     getNearbyEvents(),
     getContests(),
     getFeaturedOrganizers(),
     getCategoryCounts(),
+    getCountryCounts(),
   ]);
 
   return (
@@ -154,7 +179,7 @@ export default async function HomePage() {
       </div>
 
       {/* 15 pays africains */}
-      <HomeCountriesSection />
+      <HomeCountriesSection countryCounts={countryCounts} />
 
       {/* Événements à proximité avec teaser au survol */}
       <NearbyEventsSection events={nearbyEvents} />
