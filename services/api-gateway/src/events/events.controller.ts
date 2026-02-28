@@ -167,4 +167,16 @@ export class EventsController {
   async publish(@Param('id') id: string, @Request() req: any) {
     return this.eventsService.publish(id, req.user?.id);
   }
+
+  // ─── DELETE /events/admin/cleanup ─────────────────────────────────────────────
+  @Delete('admin/cleanup')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'ADMIN — Supprimer tous les événements (nettoyage seed)' })
+  async adminCleanup(@Request() req: any) {
+    if (req.user?.role !== 'ADMIN') {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    return this.eventsService.deleteAllEvents();
+  }
 }

@@ -387,10 +387,16 @@ export class EventsService {
   }
 
   async create(dto: any, userId: string) {
-    // Find organizer for this user
-    const organizer = await this.prisma.organizer.findUnique({ where: { userId } });
+    // Find or auto-create organizer profile for this user
+    let organizer = await this.prisma.organizer.findUnique({ where: { userId } });
     if (!organizer) {
-      throw new Error('Vous devez être organisateur pour créer un événement');
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      const name = user
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0]
+        : 'Mon Organisation';
+      organizer = await this.prisma.organizer.create({
+        data: { userId, companyName: name, verified: false },
+      });
     }
 
     const slug = dto.title
@@ -531,5 +537,18 @@ export class EventsService {
       distinct: ['venueCity'],
     });
     return events.map((e) => ({ city: e.venueCity, country: e.venueCountry }));
+  }
+
+  // ─── ADMIN: delete all seeded events ────────────────────────────────────────
+  async deleteAllEvents() {
+    await this.prisma.ticket.deleteMany();
+    await this.prisma.order.deleteMany();
+    await this.prisma.ticketType.deleteMany();
+    await this.prisma.eventImage.deleteMany();
+    await this.prisma.eventLike.deleteMany();
+    await this.prisma.eventReview.deleteMany();
+    const result = await this.prisma.event.deleteMany();
+    await this.redis.del('events:featured');
+    return { deleted: result.count };
   }
 }
