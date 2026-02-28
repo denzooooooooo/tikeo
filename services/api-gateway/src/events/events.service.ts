@@ -386,6 +386,21 @@ export class EventsService {
     return events;
   }
 
+  async findMyEvents(userId: string) {
+    const organizer = await this.prisma.organizer.findUnique({ where: { userId } });
+    if (!organizer) return [];
+
+    return this.prisma.event.findMany({
+      where: { organizerId: organizer.id },
+      include: {
+        organizer: { select: { id: true, companyName: true, logo: true, verified: true } },
+        ticketTypes: true,
+        _count: { select: { tickets: true, orders: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async create(dto: any, userId: string) {
     // Find or auto-create organizer profile for this user
     let organizer = await this.prisma.organizer.findUnique({ where: { userId } });
