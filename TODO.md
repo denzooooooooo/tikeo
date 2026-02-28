@@ -1,11 +1,14 @@
-# Railway Deployment Fix — TODO
+# TODO - Fix Like & Follow dans NearbyEventsSection
 
-## Issues Identified
-- [ ] Fix 1: `railway.json` — add `startCommand` to use compiled output (root crash fix)
-- [ ] Fix 2: `main.ts` — bind to `0.0.0.0` explicitly for Railway network compatibility
-- [ ] Fix 3: `Dockerfile` — fix HEALTHCHECK to use dynamic `${PORT:-3001}`
+## Étapes
 
-## Progress
-- [x] railway.json updated — added `startCommand: "node services/api-gateway/dist/main.js"`
-- [x] main.ts updated — `app.listen(port, '0.0.0.0')`
-- [x] Dockerfile updated — HEALTHCHECK uses `${PORT:-3001}`
+- [x] Analyser les fichiers : supabase-schema.sql, likes.service.ts, likes.controller.ts, LikeButton.tsx, FollowButton.tsx, NearbyEventsSection.tsx, page.tsx, events.service.ts
+- [x] Modifier `apps/web/app/page.tsx` — ajouter `organizerId` et `likesCount` dans le mapping `getNearbyEvents()`
+- [x] Modifier `apps/web/app/components/NearbyEventsSection.tsx` — connecter les boutons Like et Follow à l'API réelle
+- [x] Corriger l'erreur TypeScript sur `organizerName` (type `never`)
+
+## Problèmes identifiés
+1. `handleLike` dans NearbyEventsSection = local state seulement, pas d'appel API
+2. `handleFollow` dans NearbyEventsSection = local state seulement, pas d'appel API
+3. `organizerId` manquant dans le mapping de page.tsx (nécessaire pour le follow)
+4. `likesCount` non transmis (remplacé par Math.random())

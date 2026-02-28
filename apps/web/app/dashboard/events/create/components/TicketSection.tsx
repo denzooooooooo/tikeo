@@ -10,15 +10,24 @@ interface TicketType {
 interface Props {
   tickets: TicketType[];
   isFree: boolean;
+  currency?: string;
   onUpdate: (i: number, field: keyof TicketType, value: string) => void;
   onAdd: () => void;
   onRemove: (i: number) => void;
 }
 
+// Currency code → display label
+const CURRENCY_LABELS: Record<string, string> = {
+  XOF: 'FCFA', XAF: 'FCFA', NGN: '₦', GHS: 'GH₵',
+  ZAR: 'R', MAD: 'MAD', GNF: 'GNF', CDF: 'FC',
+  EUR: '€', USD: '$', CAD: 'CAD', CHF: 'CHF',
+};
+
 const inputCls =
   'w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:border-[#5B7CFF] focus:ring-2 focus:ring-[#5B7CFF]/20 outline-none text-sm bg-white';
 
-export function TicketSection({ tickets, isFree, onUpdate, onAdd, onRemove }: Props) {
+export function TicketSection({ tickets, isFree, currency = 'XOF', onUpdate, onAdd, onRemove }: Props) {
+  const currencyLabel = CURRENCY_LABELS[currency] ?? currency;
   return (
     <div className="space-y-3">
       {tickets.map((ticket, i) => (
@@ -64,7 +73,7 @@ export function TicketSection({ tickets, isFree, onUpdate, onAdd, onRemove }: Pr
             {!isFree && (
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Prix (FCFA)
+                  Prix ({currencyLabel})
                 </label>
                 <input
                   type="number"

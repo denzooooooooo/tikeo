@@ -15,8 +15,47 @@ interface NearbyEvent {
   price: number;
   category: string;
   organizer?: string;
+  organizerId?: string | null;
+  likesCount?: number;
+  currency?: string;
   ticketsLeft?: number;
   totalTickets?: number;
+}
+
+// Currency code → display symbol
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  XOF: 'FCFA', XAF: 'FCFA', NGN: '₦', GHS: 'GH₵',
+  ZAR: 'R', MAD: 'MAD', GNF: 'GNF', CDF: 'FC',
+  EUR: '€', USD: '$', CAD: 'CAD', CHF: 'CHF',
+};
+
+function getCurrencySymbol(currency?: string): string {
+  if (!currency) return 'FCFA';
+  return CURRENCY_SYMBOLS[currency] ?? currency;
+}
+
+function formatEventPrice(price: number, currency?: string): string {
+  if (price === 0) return 'Gratuit';
+  const symbol = getCurrencySymbol(currency);
+  const formatted = new Intl.NumberFormat('fr-FR').format(price);
+  // Suffix currencies
+  const suffixCurrencies = ['XOF', 'XAF', 'MAD', 'GNF', 'CDF', 'CAD', 'CHF'];
+  if (!currency || suffixCurrencies.includes(currency)) {
+    return `${formatted} ${symbol}`;
+  }
+  return `${symbol}${formatted}`;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+function getAuthToken(): string | null {
+  try {
+    const stored = localStorage.getItem('auth_tokens');
+    if (!stored) return null;
+    return JSON.parse(stored).accessToken ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────────
@@ -78,9 +117,17 @@ const CheckIcon = () => (
 function EventCard({ event }: { event: NearbyEvent }) {
   const [isHovered, setIsHovered] = useState(false);
   const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 200) + 20);
+  const [likeCount, setLikeCount] = useState(event.likesCount ?? 0);
+  const [likeLoading, setLikeLoading] = useState(false);
   const [followed, setFollowed] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [toast, setToast] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -97,17 +144,96 @@ function EventCard({ event }: { event: NearbyEvent }) {
     }
   };
 
-  const handleLike = (e: React.MouseEvent) => {
+  const handleLike = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setLiked(!liked);
-    setLikeCount(prev => liked ? prev - 1 : prev + 1);
+    if (likeLoading) return;
+
+    const token = getAuthToken();
+    if (!token) {
+      showToast('Connectez-vous pour liker cet événement');
+      return;
+    }
+
+    setLikeLoading(true);
+    try {
+      const method = liked ? 'DELETE' : 'POST';
+      const res = await fetch(`${API_URL}/likes/events/${event.id}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.ok) {
+        setLiked(!liked);
+        setLikeCount(prev => liked ? prev - 1 : prev + 1);
+      } else if (res.status === 401) {
+        showToast('Session expirée — reconnectez-vous');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        // If already liked/unliked (400), still sync the UI
+        if (res.status === 400) {
+          setLiked(!liked);
+          setLikeCount(prev => liked ? prev - 1 : prev + 1);
+        } else {
+          showToast(data.message || 'Erreur lors du like');
+        }
+      }
+    } catch {
+      showToast('Erreur de connexion');
+    } finally {
+      setLikeLoading(false);
+    }
   };
 
-  const handleFollow = (e: React.MouseEvent) => {
+  const handleFollow = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setFollowed(!followed);
+    if (followLoading) return;
+
+    if (!event.organizerId) {
+      showToast('Organisateur non disponible');
+      return;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+      showToast('Connectez-vous pour suivre cet organisateur');
+      return;
+    }
+
+    setFollowLoading(true);
+    try {
+      const method = followed ? 'DELETE' : 'POST';
+      const res = await fetch(`${API_URL}/likes/organizers/${event.organizerId}/follow`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.ok) {
+        setFollowed(!followed);
+        showToast(followed ? 'Vous ne suivez plus cet organisateur' : 'Vous suivez maintenant cet organisateur ✓');
+      } else if (res.status === 401) {
+        showToast('Session expirée — reconnectez-vous');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 400) {
+          // Already followed/unfollowed — sync UI
+          setFollowed(!followed);
+        } else {
+          showToast(data.message || "Erreur lors de l'action");
+        }
+      }
+    } catch {
+      showToast('Erreur de connexion');
+    } finally {
+      setFollowLoading(false);
+    }
   };
 
   const rawDate = event.startDate || event.date || '';
@@ -124,13 +250,9 @@ function EventCard({ event }: { event: NearbyEvent }) {
   const ticketPercent = Math.min(100, ((totalTickets - ticketsLeft) / totalTickets) * 100);
   const isLowStock = ticketsLeft < 20;
 
-  // Handle organizer - could be string or object { id, name }
-  const organizerName = typeof event.organizer === 'object' && event.organizer !== null
-    ? event.organizer.name || event.organizer.nameEn || 'Organisateur'
-    : (event.organizer || 'Organisateur');
-  const organizerInitial = typeof organizerName === 'string' && organizerName.length > 0
-    ? organizerName.charAt(0).toUpperCase()
-    : 'O';
+  // organizer is always a string (companyName) or undefined
+  const organizerName = event.organizer || 'Organisateur';
+  const organizerInitial = organizerName.charAt(0).toUpperCase();
 
   return (
     <div
@@ -185,10 +307,18 @@ function EventCard({ event }: { event: NearbyEvent }) {
           </div>
         </div>
 
+        {/* Toast notification */}
+        {toast && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 bg-gray-900/95 text-white text-xs rounded-lg shadow-lg z-50 pointer-events-none">
+            {toast}
+          </div>
+        )}
+
         {/* Like button */}
         <button
           onClick={handleLike}
-          className={`absolute bottom-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl backdrop-blur-sm border transition-all duration-200 ${
+          disabled={likeLoading}
+          className={`absolute bottom-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl backdrop-blur-sm border transition-all duration-200 disabled:opacity-60 ${
             liked
               ? 'bg-red-500/90 border-red-400 text-white'
               : 'bg-black/30 border-white/20 text-white hover:bg-red-500/80 hover:border-red-400'
@@ -220,7 +350,7 @@ function EventCard({ event }: { event: NearbyEvent }) {
             ) : (
               <span className="text-[#5B7CFF]">
                 <span className="text-xs text-gray-400 font-normal">dès </span>
-                {event.price}€
+                {formatEventPrice(event.price, event.currency)}
               </span>
             )}
           </div>
@@ -261,7 +391,8 @@ function EventCard({ event }: { event: NearbyEvent }) {
           <div className="flex items-center gap-2">
             <button
               onClick={handleFollow}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+              disabled={followLoading || !event.organizerId}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                 followed
                   ? 'bg-[#5B7CFF]/10 text-[#5B7CFF] border border-[#5B7CFF]/30'
                   : 'bg-gray-100 text-gray-600 hover:bg-[#5B7CFF]/10 hover:text-[#5B7CFF] border border-transparent'

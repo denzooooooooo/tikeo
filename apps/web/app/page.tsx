@@ -69,6 +69,9 @@ async function getNearbyEvents() {
       price: e.ticketTypes?.[0]?.price ?? e.minPrice ?? 0,
       category: e.category,
       organizer: e.organizer?.companyName || 'Organisateur',
+      organizerId: e.organizer?.id || null,
+      likesCount: e._count?.likes ?? 0,
+      currency: e.currency || 'XOF',
       ticketsLeft: e.ticketsAvailable ?? e.capacity,
       totalTickets: e.capacity ?? 100,
     }));

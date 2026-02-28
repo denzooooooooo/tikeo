@@ -23,6 +23,29 @@ const COUNTRIES = [
   'Burkina Faso', 'Niger', 'Guinée', 'France', 'Belgique', 'Canada', 'Autre',
 ];
 
+// Country → ISO currency code
+const COUNTRY_CURRENCY: Record<string, string> = {
+  "Côte d'Ivoire": 'XOF', 'Sénégal': 'XOF', 'Mali': 'XOF', 'Bénin': 'XOF',
+  'Togo': 'XOF', 'Burkina Faso': 'XOF', 'Niger': 'XOF',
+  'Cameroun': 'XAF', 'Gabon': 'XAF',
+  'Congo RDC': 'CDF', 'Nigeria': 'NGN', 'Ghana': 'GHS',
+  'Afrique du Sud': 'ZAR', 'Maroc': 'MAD', 'Guinée': 'GNF',
+  'France': 'EUR', 'Belgique': 'EUR', 'Canada': 'CAD',
+  'Autre': 'XOF',
+};
+
+const CURRENCY_LABELS: Record<string, string> = {
+  XOF: 'FCFA (Franc CFA Ouest-Africain)', XAF: 'FCFA (Franc CFA Afrique Centrale)',
+  NGN: '₦ Naira (Nigeria)', GHS: 'GH₵ Cedi (Ghana)',
+  ZAR: 'R Rand (Afrique du Sud)', MAD: 'MAD Dirham (Maroc)',
+  GNF: 'GNF Franc Guinéen', CDF: 'FC Franc Congolais',
+  EUR: '€ Euro', CAD: 'CAD Dollar Canadien',
+};
+
+function getCurrencyFromCountry(country: string): string {
+  return COUNTRY_CURRENCY[country] ?? 'XOF';
+}
+
 const STEPS = ['Infos', 'Date & Lieu', 'Billets'];
 
 interface TicketType { name: string; description: string; price: string; quantity: string; }
@@ -57,11 +80,17 @@ function CreateEventForm() {
     title: '', description: '', category: '', coverImage: '', teaserVideo: '',
     startDate: '', startTime: '18:00', endDate: '', endTime: '22:00',
     venueName: '', venueAddress: '', venueCity: '', venueCountry: "Côte d'Ivoire",
+    currency: getCurrencyFromCountry("Côte d'Ivoire"),
     isOnline: false, isFree: false,
     tickets: [{ name: 'Standard', description: '', price: '0', quantity: '100' }] as TicketType[],
   });
 
   const set = (k: string, v: any) => setF(p => ({ ...p, [k]: v }));
+
+  // Auto-update currency when country changes
+  const setCountry = (country: string) => {
+    setF(p => ({ ...p, venueCountry: country, currency: getCurrencyFromCountry(country) }));
+  };
 
   const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
   const [imageUrl, setImageUrl] = useState('');
@@ -149,6 +178,7 @@ function CreateEventForm() {
           venueCity: f.isOnline ? 'En ligne' : f.venueCity,
           venueCountry: f.isOnline ? 'En ligne' : f.venueCountry,
           isOnline: f.isOnline, isFree: f.isFree,
+          currency: f.currency,
           ticketTypes: f.tickets.map(t => ({
             name: t.name, description: t.description,
             price: f.isFree ? 0 : parseFloat(t.price) || 0,
@@ -404,10 +434,17 @@ function CreateEventForm() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Pays</label>
-                    <select value={f.venueCountry} onChange={e => set('venueCountry', e.target.value)} className={inp_sm}>
+                    <select value={f.venueCountry} onChange={e => setCountry(e.target.value)} className={inp_sm}>
                       {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
+                </div>
+                {/* Currency indicator */}
+                <div className="flex items-center gap-2 p-2.5 bg-blue-50 border border-blue-100 rounded-lg">
+                  <span className="text-blue-500 text-sm">💱</span>
+                  <span className="text-xs text-blue-700 font-medium">
+                    Devise détectée : <strong>{CURRENCY_LABELS[f.currency] ?? f.currency}</strong>
+                  </span>
                 </div>
               </div>
             )}
@@ -427,6 +464,7 @@ function CreateEventForm() {
             <TicketSection
               tickets={f.tickets}
               isFree={f.isFree}
+              currency={f.currency}
               onUpdate={(i, field, val) => {
                 const updated = [...f.tickets];
                 updated[i] = { ...updated[i], [field]: val };

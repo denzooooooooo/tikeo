@@ -59,11 +59,20 @@ export function EventCard({
     };
   };
 
+  // Currency code → display symbol
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    XOF: 'FCFA', XAF: 'FCFA', NGN: '₦', GHS: 'GH₵',
+    ZAR: 'R', MAD: 'MAD', GNF: 'GNF', CDF: 'FC',
+    EUR: '€', USD: '$', CAD: 'CAD', CHF: 'CHF',
+  };
+
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: currency,
-    }).format(price);
+    if (price === 0) return 'Gratuit';
+    const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
+    const formatted = new Intl.NumberFormat('fr-FR').format(price);
+    const suffixCurrencies = ['XOF', 'XAF', 'MAD', 'GNF', 'CDF', 'CAD', 'CHF'];
+    if (suffixCurrencies.includes(currency)) return `${formatted} ${symbol}`;
+    return `${symbol}${formatted}`;
   };
 
   const dateInfo = formatDate(startDate);
@@ -165,10 +174,10 @@ export function EventCard({
             </span>
           </div>
           <div className="text-lg font-bold text-[#5B7CFF]">
-            {minPrice === 0 ? (
+          {minPrice === 0 ? (
               <span>Gratuit</span>
             ) : (
-              <span>Desde {formatPrice(minPrice)}</span>
+              <span>dès {formatPrice(minPrice)}</span>
             )}
           </div>
         </div>
@@ -241,9 +250,16 @@ export function FeaturedEventCard(props: EventCardProps) {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-2xl font-bold text-white">
-                {props.minPrice === 0
+              {props.minPrice === 0
                   ? 'Gratuit'
-                  : `Desde ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: props.currency || 'EUR' }).format(props.minPrice)}`}
+                  : (() => {
+                      const sym: Record<string, string> = { XOF: 'FCFA', XAF: 'FCFA', NGN: '₦', GHS: 'GH₵', ZAR: 'R', MAD: 'MAD', GNF: 'GNF', CDF: 'FC', EUR: '€', USD: '$', CAD: 'CAD' };
+                      const c = props.currency || 'XOF';
+                      const s = sym[c] ?? c;
+                      const f = new Intl.NumberFormat('fr-FR').format(props.minPrice);
+                      const suffix = ['XOF','XAF','MAD','GNF','CDF','CAD'].includes(c);
+                      return `dès ${suffix ? `${f} ${s}` : `${s}${f}`}`;
+                    })()}
               </span>
               <span className="px-6 py-3 bg-white text-[#5B7CFF] font-semibold rounded-xl hover:bg-gray-100 transition-colors">
                 Reservez

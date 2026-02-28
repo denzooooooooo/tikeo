@@ -18,6 +18,23 @@ import { ShareButton } from './ShareButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Currency code → display symbol
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  XOF: 'FCFA', XAF: 'FCFA', NGN: '₦', GHS: 'GH₵',
+  ZAR: 'R', MAD: 'MAD', GNF: 'GNF', CDF: 'FC',
+  EUR: '€', USD: '$', CAD: 'CAD', CHF: 'CHF',
+};
+
+function formatEventPrice(price: number, currency?: string): string {
+  if (price === 0) return 'Gratuit';
+  const c = currency || 'XOF';
+  const symbol = CURRENCY_SYMBOLS[c] ?? c;
+  const formatted = new Intl.NumberFormat('fr-FR').format(price);
+  const suffixCurrencies = ['XOF', 'XAF', 'MAD', 'GNF', 'CDF', 'CAD', 'CHF'];
+  if (suffixCurrencies.includes(c)) return `${formatted} ${symbol}`;
+  return `${symbol}${formatted}`;
+}
+
 async function getEvent(id: string) {
   try {
     const res = await fetch(`${API_URL}/events/${id}`, { cache: 'no-store' });
@@ -101,7 +118,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
         <div>
           <p className="text-xs text-gray-500">À partir de</p>
           <p className="text-lg font-bold text-[#5B7CFF]">
-            {minPrice === 0 ? 'Gratuit' : `${minPrice.toLocaleString('fr-FR')} ${event.currency || 'FCFA'}`}
+            {formatEventPrice(minPrice, event.currency)}
           </p>
         </div>
         <Link
@@ -276,8 +293,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
                             <span className="text-green-600 font-bold text-sm">Gratuit</span>
                           ) : (
                             <div>
-                              <span className="text-lg font-bold text-[#5B7CFF]">{ticket.price.toLocaleString('fr-FR')}</span>
-                              <span className="text-xs text-gray-400 ml-1">{event.currency || 'FCFA'}</span>
+                              <span className="text-lg font-bold text-[#5B7CFF]">{formatEventPrice(ticket.price, event.currency)}</span>
                             </div>
                           )}
                         </div>

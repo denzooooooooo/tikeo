@@ -1,4 +1,101 @@
 /**
+ * Country → ISO currency code mapping
+ */
+export const COUNTRY_CURRENCY_MAP: Record<string, string> = {
+  // Zone XOF (Franc CFA Ouest-Africain)
+  "Côte d'Ivoire": 'XOF',
+  'Sénégal': 'XOF',
+  'Mali': 'XOF',
+  'Bénin': 'XOF',
+  'Togo': 'XOF',
+  'Burkina Faso': 'XOF',
+  'Niger': 'XOF',
+  'Guinée-Bissau': 'XOF',
+  // Zone XAF (Franc CFA Afrique Centrale)
+  'Cameroun': 'XAF',
+  'Gabon': 'XAF',
+  'Congo': 'XAF',
+  'Centrafrique': 'XAF',
+  'Tchad': 'XAF',
+  'Guinée Équatoriale': 'XAF',
+  // Autres pays africains
+  'Congo RDC': 'CDF',
+  'Nigeria': 'NGN',
+  'Ghana': 'GHS',
+  'Afrique du Sud': 'ZAR',
+  'Maroc': 'MAD',
+  'Guinée': 'GNF',
+  'Éthiopie': 'ETB',
+  'Kenya': 'KES',
+  'Tanzanie': 'TZS',
+  'Ouganda': 'UGX',
+  // Europe
+  'France': 'EUR',
+  'Belgique': 'EUR',
+  'Suisse': 'CHF',
+  // Amérique
+  'Canada': 'CAD',
+  'États-Unis': 'USD',
+  // Défaut
+  'Autre': 'XOF',
+  'En ligne': 'XOF',
+};
+
+/**
+ * Currency code → display symbol/label
+ */
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  XOF: 'FCFA',
+  XAF: 'FCFA',
+  NGN: '₦',
+  GHS: 'GH₵',
+  ZAR: 'R',
+  MAD: 'MAD',
+  GNF: 'GNF',
+  CDF: 'FC',
+  ETB: 'Br',
+  KES: 'KSh',
+  TZS: 'TSh',
+  UGX: 'USh',
+  EUR: '€',
+  USD: '$',
+  CAD: 'CAD',
+  CHF: 'CHF',
+};
+
+/**
+ * Get ISO currency code from country name
+ */
+export function getCurrencyFromCountry(country: string): string {
+  return COUNTRY_CURRENCY_MAP[country] ?? 'XOF';
+}
+
+/**
+ * Get display symbol from currency code
+ */
+export function getCurrencySymbol(currency: string): string {
+  return CURRENCY_SYMBOLS[currency] ?? currency;
+}
+
+/**
+ * Format a price with the correct currency symbol
+ * e.g. formatPrice(5000, 'XOF') → '5 000 FCFA'
+ *      formatPrice(25, 'EUR')   → '25 €'
+ */
+export function formatPrice(amount: number, currency: string): string {
+  if (amount === 0) return 'Gratuit';
+  const symbol = getCurrencySymbol(currency);
+  const formatted = new Intl.NumberFormat('fr-FR').format(amount);
+  // For currencies with suffix symbol (FCFA, MAD, etc.)
+  const suffixCurrencies = ['XOF', 'XAF', 'MAD', 'GNF', 'CDF', 'ETB', 'KES', 'TZS', 'UGX', 'CAD', 'CHF'];
+  if (suffixCurrencies.includes(currency)) {
+    return `${formatted} ${symbol}`;
+  }
+  // Prefix symbol (€, $, ₦, etc.)
+  return `${symbol}${formatted}`;
+}
+
+/**
  * Format currency
  */
 export function formatCurrency(

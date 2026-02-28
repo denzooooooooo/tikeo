@@ -74,9 +74,26 @@ interface Event {
   venueCountry: string;
   category: string;
   minPrice: number;
+  currency?: string;
   ticketsAvailable: number;
   capacity: number;
   organizer?: { companyName: string; verified: boolean };
+}
+
+// Shared currency formatter
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  XOF: 'FCFA', XAF: 'FCFA', NGN: '₦', GHS: 'GH₵',
+  ZAR: 'R', MAD: 'MAD', GNF: 'GNF', CDF: 'FC',
+  EUR: '€', USD: '$', CAD: 'CAD', CHF: 'CHF',
+};
+
+function formatEventPrice(price: number, currency = 'XOF'): string {
+  if (price === 0) return 'Gratuit';
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
+  const formatted = new Intl.NumberFormat('fr-FR').format(price);
+  const suffixCurrencies = ['XOF', 'XAF', 'MAD', 'GNF', 'CDF', 'CAD', 'CHF'];
+  if (suffixCurrencies.includes(currency)) return `${formatted} ${symbol}`;
+  return `${symbol}${formatted}`;
 }
 
 interface Meta {
@@ -212,13 +229,6 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
 
   const hasActiveFilters = search || country || category || isFree || minPrice || maxPrice;
 
-  const formatPrice = (price: number, currency = 'XOF') => {
-    if (price === 0) return 'Gratuit';
-    if (currency === 'NGN') return `₦${price.toLocaleString()}`;
-    if (currency === 'GHS') return `GH₵${price.toLocaleString()}`;
-    if (currency === 'KES') return `KSh${price.toLocaleString()}`;
-    return `${price.toLocaleString()} FCFA`;
-  };
 
   const getAvailabilityColor = (available: number, total: number) => {
     const pct = (available / total) * 100;
@@ -324,7 +334,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Prix min (FCFA)</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Prix min</label>
                 <input
                   type="number"
                   value={minPrice}
@@ -335,7 +345,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Prix max (FCFA)</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Prix max</label>
                 <input
                   type="number"
                   value={maxPrice}
@@ -470,7 +480,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
                       {/* Price badge */}
                       <div className="absolute bottom-4 right-4 z-20">
                         <span className="px-3 py-1.5 bg-white text-gray-900 text-sm font-bold rounded-full shadow-lg">
-                          {formatPrice(event.minPrice)}
+                          {formatEventPrice(event.minPrice, event.currency)}
                         </span>
                       </div>
                     </div>
