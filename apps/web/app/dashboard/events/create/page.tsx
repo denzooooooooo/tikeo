@@ -54,7 +54,7 @@ function CreateEventForm() {
   const [dragging, setDragging] = useState(false);
 
   const [f, setF] = useState({
-    title: '', description: '', category: '', coverImage: '',
+    title: '', description: '', category: '', coverImage: '', teaserVideo: '',
     startDate: '', startTime: '18:00', endDate: '', endTime: '22:00',
     venueName: '', venueAddress: '', venueCity: '', venueCountry: "Côte d'Ivoire",
     isOnline: false, isFree: false,
@@ -118,6 +118,7 @@ function CreateEventForm() {
         body: JSON.stringify({
           title: f.title, description: f.description, category: f.category,
           coverImage: f.coverImage || undefined,
+          teaserVideo: f.teaserVideo || undefined,
           startDate: new Date(`${f.startDate}T${f.startTime}:00`).toISOString(),
           endDate: new Date(`${f.endDate}T${f.endTime}:00`).toISOString(),
           venueName: f.isOnline ? 'En ligne' : f.venueName,
@@ -264,6 +265,28 @@ function CreateEventForm() {
                 placeholder="Décrivez votre événement : programme, artistes, ambiance…"
                 rows={5} className={`${inp} resize-none`} maxLength={2000} />
               <p className="text-xs text-gray-400 mt-1 text-right">{f.description.length}/2000</p>
+            </div>
+
+            {/* Teaser vidéo */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                🎬 Vidéo teaser <span className="text-xs font-normal text-gray-400 ml-1">(optionnel)</span>
+              </label>
+              <input
+                type="url"
+                value={f.teaserVideo}
+                onChange={e => set('teaserVideo', e.target.value)}
+                placeholder="https://youtube.com/watch?v=... ou https://vimeo.com/..."
+                className={inp}
+              />
+              <p className="text-xs text-gray-400 mt-1">Lien YouTube, Vimeo ou autre plateforme vidéo</p>
+              {f.teaserVideo && (
+                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-xs text-green-700 font-medium truncate">{f.teaserVideo}</span>
+                  <button type="button" onClick={() => set('teaserVideo', '')} className="ml-auto text-green-500 hover:text-red-500 font-bold text-sm flex-shrink-0">✕</button>
+                </div>
+              )}
             </div>
           </div>
         )}
