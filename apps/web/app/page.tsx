@@ -15,26 +15,37 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const mapEvent = (e: any) => ({
+  id: e.id,
+  title: e.title,
+  coverImage: e.coverImage || null,
+  teaserVideo: e.teaserVideo || null,
+  startDate: e.startDate,
+  venueCity: e.venueCity,
+  venueCountry: e.venueCountry,
+  category: e.category,
+  price: e.ticketTypes?.[0]?.price ?? e.minPrice ?? 0,
+  description: e.description,
+});
+
 async function getFeaturedEvents() {
   try {
+    // 1. Try featured endpoint
     const res = await fetch(`${API_URL}/events/featured?limit=5`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (!data || data.length === 0) return [];
-    return data.map((e: any) => ({
-      id: e.id,
-      title: e.title,
-      coverImage: e.coverImage || null,
-      teaserVideo: e.teaserVideo || null,
-      startDate: e.startDate,
-      venueCity: e.venueCity,
-      venueCountry: e.venueCountry,
-      category: e.category,
-      price: e.ticketTypes?.[0]?.price ?? 0,
-      description: e.description,
-    }));
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data.map(mapEvent);
+    }
+    // 2. Fallback: recent published events
+    const fallback = await fetch(`${API_URL}/events?limit=5&sortBy=date`, {
+      next: { revalidate: 60 },
+    });
+    if (!fallback.ok) return [];
+    const fallbackData = await fallback.json();
+    const events = fallbackData?.data || [];
+    return events.map(mapEvent);
   } catch {
     return [];
   }

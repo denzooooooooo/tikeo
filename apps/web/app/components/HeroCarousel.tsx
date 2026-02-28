@@ -144,10 +144,39 @@ export default function HeroCarousel({ events }: HeroCarouselProps) {
 
   if (!currentEvent || events.length === 0) {
     return (
-      <div className="relative h-[85vh] min-h-[600px] flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}>
-        <div className="text-white text-center">
-          <div className="w-16 h-16 mx-auto mb-4 border-4 border-white/30 border-t-white rounded-full animate-spin" />
-          <p className="text-xl font-medium">Chargement des événements...</p>
+      <div
+        className="relative h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #5B7CFF 0%, #7B61FF 50%, #9D4EDD 100%)' }}
+      >
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}
+        />
+        <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full filter blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/10 rounded-full filter blur-3xl" />
+        <div className="relative text-white text-center px-4 max-w-2xl mx-auto">
+          <div className="text-7xl mb-6">{'🎉'}</div>
+          <h2 className="text-4xl sm:text-5xl font-bold mb-4">Bienvenue sur Tikeo</h2>
+          <p className="text-white/80 text-lg sm:text-xl mb-4 leading-relaxed">
+            La plateforme de billetterie africaine.
+          </p>
+          <p className="text-white/70 text-base sm:text-lg mb-10">
+            Découvrez les meilleurs événements près de chez vous.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href="/events"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#5B7CFF] rounded-xl font-bold hover:bg-gray-100 transition-all shadow-xl"
+            >
+              Explorer les événements
+            </a>
+            <a
+              href="/dashboard/events/create"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-white/50 text-white rounded-xl font-bold hover:bg-white/10 transition-all"
+            >
+              Créer un événement
+            </a>
+          </div>
         </div>
       </div>
     );
