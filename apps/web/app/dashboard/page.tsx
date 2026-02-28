@@ -108,25 +108,24 @@ export default function DashboardPage() {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (parsedToken?.accessToken) headers['Authorization'] = `Bearer ${parsedToken.accessToken}`;
 
-        // Fetch events
-        const eventsRes = await fetch(`${API_URL}/events?limit=5&page=1`, { headers });
+        // Fetch organizer's own events
+        const eventsRes = await fetch(`${API_URL}/events/my`, { headers });
         if (eventsRes.ok) {
-          const eventsData = await eventsRes.json();
-          const events = eventsData.data || [];
+          const events: any[] = await eventsRes.json();
           setRecentEvents(events.slice(0, 5));
 
-          // Calculate stats from events
+          // Calculate stats from organizer's events
           const published = events.filter((e: any) => e.status === 'PUBLISHED').length;
           const draft = events.filter((e: any) => e.status === 'DRAFT').length;
           const totalSold = events.reduce((acc: number, e: any) => acc + (e.ticketsSold || 0), 0);
           const totalViews = events.reduce((acc: number, e: any) => acc + (e.views || 0), 0);
           const totalRevenue = events.reduce((acc: number, e: any) => {
-            const minPrice = e.ticketTypes?.[0]?.price || 0;
+            const minPrice = e.minPrice || e.ticketTypes?.[0]?.price || 0;
             return acc + (e.ticketsSold || 0) * minPrice;
           }, 0);
 
           setStats({
-            totalEvents: eventsData.meta?.total || events.length,
+            totalEvents: events.length,
             publishedEvents: published,
             draftEvents: draft,
             totalTicketsSold: totalSold,
