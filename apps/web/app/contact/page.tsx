@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { MailIcon, PhoneIcon, ClockIcon, LoadingSpinner } from '@tikeo/ui';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
 export default function ContactPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -28,19 +30,24 @@ export default function ContactPage() {
     if (!validate()) return;
     setLoading(true);
 
-    // Simulate API call — replace with real endpoint when available
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch(`${API_URL}/help/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, subject, category, message }),
+      });
+      if (!res.ok) throw new Error('Erreur lors de l\'envoi');
       setSent(true);
-      // keep a small delay before clearing fields for better UX
-      setTimeout(() => {
-        setName('');
-        setEmail('');
-        setSubject('');
-        setCategory('support');
-        setMessage('');
-      }, 600);
-    }, 1000);
+      setName('');
+      setEmail('');
+      setSubject('');
+      setCategory('support');
+      setMessage('');
+    } catch (err) {
+      setErrors({ message: 'Une erreur est survenue. Veuillez réessayer.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

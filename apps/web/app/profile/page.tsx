@@ -21,42 +21,77 @@ import {
   CameraIcon,
 } from '@tikeo/ui';
 
-// Mock user stats for demo (in production, fetch from API)
-const mockUserStats = {
-  ticketsPurchased: 24,
-  eventsAttended: 18,
-  favorites: 45,
-  reviews: 12,
-};
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-const mockRecentOrders = [
-  {
-    id: 'ORD-001',
-    event: 'Festival de Jazz 2024',
-    date: '2024-07-15',
-    status: 'completed',
-    price: 89,
-  },
-  {
-    id: 'ORD-002',
-    event: 'Conférence Tech 2024',
-    date: '2024-08-20',
-    status: 'upcoming',
-    price: 149,
-  },
-];
+interface UserStats {
+  ticketsPurchased: number;
+  eventsAttended: number;
+  favorites: number;
+  reviews: number;
+}
+
+interface RecentOrder {
+  id: string;
+  event: string;
+  date: string;
+  status: string;
+  price: number;
+}
 
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [isPageLoading, setIsPageLoading] = useState(true);
+  const [userStats, setUserStats] = useState<UserStats>({ ticketsPurchased: 0, eventsAttended: 0, favorites: 0, reviews: 0 });
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+
+  const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (isAuthenticated) {
+      fetchProfileData();
+    } else {
       setIsPageLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  }, [isAuthenticated]);
+
+  const fetchProfileData = async () => {
+    setIsPageLoading(true);
+    const token = getToken();
+    const headers = { Authorization: `Bearer ${token}` };
+    try {
+      const [statsRes, ordersRes] = await Promise.allSettled([
+        fetch(`${API_URL}/users/stats`, { headers }),
+        fetch(`${API_URL}/orders?limit=5`, { headers }),
+      ]);
+      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+        const data = await statsRes.value.json();
+        setUserStats({
+          ticketsPurchased: data.ticketsPurchased ?? data.tickets ?? 0,
+          eventsAttended: data.eventsAttended ?? data.events ?? 0,
+          favorites: data.favorites ?? 0,
+          reviews: data.reviews ?? 0,
+        });
+      }
+      if (ordersRes.status === 'fulfilled' && ordersRes.value.ok) {
+        const data = await ordersRes.value.json();
+        const orders = data.orders || data || [];
+        setRecentOrders(
+          orders.slice(0, 5).map((o: any) => ({
+            id: o.id,
+            event: o.event?.title || o.eventTitle || o.event || 'Événement',
+            date: o.createdAt || o.date,
+            status: o.status?.toLowerCase() || 'completed',
+            price: o.totalAmount || o.total || o.price || 0,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error('Error fetching profile data:', err);
+    } finally {
+      setIsPageLoading(false);
+    }
+  };
 
   const tabs = [
     { id: 'overview', label: 'Aperçu', icon: UserIcon },
@@ -197,22 +232,22 @@ export default function ProfilePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 md:p-8 pt-0">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 text-center">
               <TicketIcon className="mx-auto text-blue-500 mb-2" size={24} />
-              <p className="text-2xl font-bold text-gray-900">{mockUserStats.ticketsPurchased}</p>
+              <p className="text-2xl font-bold text-gray-900">{userStats.ticketsPurchased}</p>
               <p className="text-sm text-blue-600">Billets achetés</p>
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 text-center">
               <CalendarIcon className="mx-auto text-purple-500 mb-2" size={24} />
-              <p className="text-2xl font-bold text-gray-900">{mockUserStats.eventsAttended}</p>
+              <p className="text-2xl font-bold text-gray-900">{userStats.eventsAttended}</p>
               <p className="text-sm text-purple-600">Événements</p>
             </div>
             <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-4 text-center">
               <HeartIcon className="mx-auto text-pink-500 mb-2" size={24} />
-              <p className="text-2xl font-bold text-gray-900">{mockUserStats.favorites}</p>
+              <p className="text-2xl font-bold text-gray-900">{userStats.favorites}</p>
               <p className="text-sm text-pink-600">Favoris</p>
             </div>
             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 text-center">
               <StarIcon className="mx-auto text-yellow-500 mb-2" size={24} />
-              <p className="text-2xl font-bold text-gray-900">{mockUserStats.reviews}</p>
+              <p className="text-2xl font-bold text-gray-900">{userStats.reviews}</p>
               <p className="text-sm text-yellow-600">Avis</p>
             </div>
           </div>
@@ -246,7 +281,9 @@ export default function ProfilePage() {
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Activité récente</h2>
-                {mockRecentOrders.map((order) => (
+                {recentOrders.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">Aucune commande récente</p>
+                ) : recentOrders.map((order) => (
                   <div
                     key={order.id}
                     className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"

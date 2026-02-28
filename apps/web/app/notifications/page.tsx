@@ -20,81 +20,17 @@ import {
   DiscountIcon,
 } from '@tikeo/ui';
 
-// Mock notifications data
-const mockNotifications = [
-  {
-    id: '1',
-    type: 'order_confirmation',
-    title: 'Commande confirmée',
-    message: 'Votre commande #TIK-2024-001234 pour "Festival Jazz 2024" a été confirmée. Vos billets sont disponibles.',
-    read: false,
-    createdAt: '2024-03-15T10:30:00Z',
-    data: { orderId: 'TIK-2024-001234', eventId: 'evt-1' },
-  },
-  {
-    id: '2',
-    type: 'event_reminder',
-    title: 'Rappel: Festival Jazz dans 3 jours',
-    message: 'N\'oubliez pas ! Le Festival Jazz 2024 aura lieu dans 3 jours. Préparez-vous pour une expérience inoubliable.',
-    read: false,
-    createdAt: '2024-03-14T09:00:00Z',
-    data: { eventId: 'evt-1' },
-  },
-  {
-    id: '3',
-    type: 'price_drop',
-    title: 'Baisse de prix sur un événement suivi',
-    message: 'Les billets pour "Techno Paradise" sont maintenant à partir de 35€ au lieu de 50€ !',
-    read: true,
-    createdAt: '2024-03-13T15:45:00Z',
-    data: { eventId: 'evt-2' },
-  },
-  {
-    id: '4',
-    type: 'favorite_on_sale',
-    title: 'Vos événements favoris sont en vente !',
-    message: '"Les Nuits Electroniques" ouvrent la billetterie aujourd\'hui. Ne manquez pas cette opportunité.',
-    read: true,
-    createdAt: '2024-03-12T08:00:00Z',
-    data: { eventId: 'evt-3' },
-  },
-  {
-    id: '5',
-    type: 'review_request',
-    title: 'Partagez votre expérience',
-    message: 'Vous avez participé à "Concert Classique" le mois dernier. Partagez votre avis et aidez d\'autres personnes !',
-    read: true,
-    createdAt: '2024-03-11T14:20:00Z',
-    data: { eventId: 'evt-4' },
-  },
-  {
-    id: '6',
-    type: 'payment_received',
-    title: 'Paiement reçu',
-    message: 'Votre paiement de 150€ pour la commande #TIK-2024-001100 a été traité avec succès.',
-    read: true,
-    createdAt: '2024-03-10T11:30:00Z',
-    data: { orderId: 'TIK-2024-001100' },
-  },
-  {
-    id: '7',
-    type: 'event_update',
-    title: 'Mise à jour de l\'événement',
-    message: 'L\'horaire de "Summer Festival" a été modifié. Consultez les nouvelles informations.',
-    read: true,
-    createdAt: '2024-03-09T16:00:00Z',
-    data: { eventId: 'evt-5' },
-  },
-  {
-    id: '8',
-    type: 'new_follower',
-    title: 'Nouvel abonné',
-    message: 'Festival Productions commence à vous suivre. Consultez leur profil !',
-    read: true,
-    createdAt: '2024-03-08T12:00:00Z',
-    data: { organizerId: 'org-1' },
-  },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  data?: { orderId?: string; eventId?: string; organizerId?: string };
+}
 
 const notificationTypeIcons: Record<string, any> = {
   order_confirmation: OrderIcon,
@@ -123,7 +59,7 @@ function NotificationCard({
   onMarkAsRead,
   onDelete,
 }: {
-  notification: typeof mockNotifications[0];
+  notification: Notification;
   onMarkAsRead: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
@@ -231,27 +167,81 @@ function getTimeAgo(dateString: string): string {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'all' | 'unread'>('all');
   const [showSettings, setShowSettings] = useState(false);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
+  const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/notifications`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleMarkAsRead = async (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try {
+      await fetch(`${API_URL}/notifications/${id}/read`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await fetch(`${API_URL}/notifications/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+    } catch (err) {
+      console.error('Error deleting notification:', err);
+    }
   };
 
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await fetch(`${API_URL}/notifications/read-all`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
   };
 
-  const handleDeleteAll = () => {
+  const handleDeleteAll = async () => {
     setNotifications([]);
+    try {
+      await fetch(`${API_URL}/notifications`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+    } catch (err) {
+      console.error('Error deleting all notifications:', err);
+    }
   };
 
   const filteredNotifications = activeFilter === 'unread'
@@ -373,7 +363,11 @@ export default function NotificationsPage() {
         )}
 
         {/* Notifications List */}
-        {filteredNotifications.length > 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-4 border-[#5B7CFF] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : filteredNotifications.length > 0 ? (
           <div className="space-y-4">
             {filteredNotifications.map((notification) => (
               <NotificationCard

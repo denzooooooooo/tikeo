@@ -23,29 +23,7 @@ interface Contest {
   endDate: string;
 }
 
-// Mock data
-const mockContest: Contest = {
-  id: '1',
-  title: 'Meilleur Artiste Français 2024',
-  status: 'ACTIVE',
-  endDate: '2024-12-31',
-};
-
-const mockLeaderboard: Contestant[] = [
-  { id: '1', name: 'Marie Dubois', mainImage: '/contestants/marie.jpg', votesCount: 15420, rank: 1, isWinner: false, winnerPosition: 1 },
-  { id: '2', name: 'Jean Martin', mainImage: '/contestants/jean.jpg', votesCount: 12350, rank: 2, isWinner: false, winnerPosition: 2 },
-  { id: '3', name: 'Sophie Bernard', mainImage: '/contestants/sophie.jpg', votesCount: 9870, rank: 3, isWinner: false, winnerPosition: 3 },
-  { id: '4', name: 'Lucas Petit', mainImage: '/contestants/lucas.jpg', votesCount: 7650, rank: 4, isWinner: false },
-  { id: '5', name: 'Emma Robert', mainImage: '/contestants/emma.jpg', votesCount: 5430, rank: 5, isWinner: false },
-  { id: '6', name: 'Thomas Durand', mainImage: '/contestants/thomas.jpg', votesCount: 4320, rank: 6, isWinner: false },
-  { id: '7', name: 'Chloé Moreau', mainImage: '/contestants/chloe.jpg', votesCount: 3210, rank: 7, isWinner: false },
-  { id: '8', name: 'Alexandre Laurent', mainImage: '/contestants/alexandre.jpg', votesCount: 2100, rank: 8, isWinner: false },
-  { id: '9', name: 'Manon Girard', mainImage: '/contestants/manon.jpg', votesCount: 1890, rank: 9, isWinner: false },
-  { id: '10', name: 'Hugo Bernard', mainImage: '/contestants/hugo.jpg', votesCount: 1650, rank: 10, isWinner: false },
-];
-
-const maxVotes = 50000;
-const userVotes = 5;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 function LeaderboardRow({ contestant, index, isCurrentUser = false }: { contestant: Contestant; index: number; isCurrentUser?: boolean }) {
   const getRankDisplay = (rank: number) => {
@@ -76,7 +54,7 @@ function LeaderboardRow({ contestant, index, isCurrentUser = false }: { contesta
     return <span className="text-xl font-bold text-gray-500">#{rank}</span>;
   };
 
-  const percentage = Math.round((contestant.votesCount / maxVotes) * 100);
+  const percentage = Math.min(100, Math.round((contestant.votesCount / Math.max(contestant.votesCount, 1)) * 100));
 
   return (
     <div className={`relative overflow-hidden rounded-xl transition-all duration-300 ${
@@ -230,11 +208,30 @@ export default function LeaderboardPage() {
   const fetchLeaderboard = async () => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setContest(mockContest);
-      setContestants(mockLeaderboard);
+      const [contestRes, leaderboardRes] = await Promise.all([
+        fetch(`${API_URL}/contests/${contestId}`),
+        fetch(`${API_URL}/contests/${contestId}/leaderboard`),
+      ]);
+      if (!contestRes.ok || !leaderboardRes.ok) {
+        throw new Error('Erreur lors du chargement');
+      }
+      const contestData = await contestRes.json();
+      const leaderboardData = await leaderboardRes.json();
+      setContest(contestData);
+      const raw = leaderboardData.contestants || leaderboardData || [];
+      const sorted = raw
+        .sort((a: any, b: any) => (b.votesCount ?? b.votes ?? 0) - (a.votesCount ?? a.votes ?? 0))
+        .map((c: any, i: number) => ({
+          id: c.id,
+          name: c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim(),
+          mainImage: c.mainImage || c.image || c.avatar || '/placeholder.jpg',
+          votesCount: c.votesCount ?? c.votes ?? 0,
+          rank: i + 1,
+          isWinner: c.isWinner ?? false,
+          winnerPosition: c.winnerPosition,
+        }));
+      setContestants(sorted);
     } catch (err) {
       setError('Impossible de charger le classement');
     } finally {
@@ -303,7 +300,7 @@ export default function LeaderboardPage() {
           {/* User Progress */}
           <div className="max-w-md mx-auto">
             <VoteProgress
-              userVotes={userVotes}
+              userVotes={0}
               maxVotes={10}
               totalVotes={contestants.reduce((acc, c) => acc + c.votesCount, 0)}
               size="md"

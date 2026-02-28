@@ -74,48 +74,6 @@ export default function PromoCodesPage() {
       }
     } catch (error) {
       console.error('Error fetching promo codes:', error);
-      // Mock data for demo
-      setPromoCodes([
-        {
-          id: '1',
-          code: 'WELCOME2024',
-          description: 'Code de bienvenue pour nouveaux utilisateurs',
-          discountType: 'PERCENTAGE',
-          discountValue: 20,
-          minPurchase: 50,
-          maxUses: 100,
-          usedCount: 45,
-          validFrom: '2024-01-01',
-          validUntil: '2024-12-31',
-          isActive: true,
-        },
-        {
-          id: '2',
-          code: 'SUMMER10',
-          description: 'Promotion été',
-          discountType: 'FIXED',
-          discountValue: 10,
-          minPurchase: 0,
-          maxUses: 500,
-          usedCount: 230,
-          validFrom: '2024-06-01',
-          validUntil: '2024-08-31',
-          isActive: true,
-        },
-        {
-          id: '3',
-          code: 'EXPIRED',
-          description: 'Ancien code',
-          discountType: 'PERCENTAGE',
-          discountValue: 15,
-          minPurchase: 0,
-          maxUses: 1000,
-          usedCount: 850,
-          validFrom: '2023-01-01',
-          validUntil: '2023-12-31',
-          isActive: false,
-        },
-      ]);
     } finally {
       setIsLoading(false);
     }
