@@ -1,13 +1,18 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
+import { EmailService } from '../email/email.service';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private redis: RedisService,
+    private emailService: EmailService,
   ) {}
 
   async register(email: string, password: string, firstName: string, lastName: string) {
@@ -119,6 +124,57 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async forgotPassword(email: string) {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Always return success to avoid email enumeration
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (user) {
+      // Generate a secure random token
+      const token = crypto.randomBytes(32).toString('hex');
+      const redisKey = `reset:${token}`;
+
+      // Store token in Redis with 1 hour TTL
+      await this.redis.set(redisKey, user.id, 3600);
+
+      // Send password reset email
+      await this.emailService.sendPasswordResetEmail(normalizedEmail, token);
+    }
+
+    return {
+      message: 'Si un compte existe pour cet email, vous recevrez les instructions de réinitialisation.',
+    };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const redisKey = `reset:${token}`;
+    const userId = await this.redis.get(redisKey);
+
+    if (!userId) {
+      throw new BadRequestException('Token invalide ou expiré');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('Utilisateur introuvable');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    // Invalidate the token after use
+    await this.redis.del(redisKey);
+
+    return { message: 'Mot de passe réinitialisé avec succès' };
   }
 
   async validateOAuthUser(profile: any) {

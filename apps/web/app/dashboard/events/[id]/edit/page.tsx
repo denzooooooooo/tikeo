@@ -20,6 +20,51 @@ const CATEGORIES = [
   'Gastronomie', 'Famille', 'Théâtre', 'Cinéma', 'Autre',
 ];
 
+const CURRENCIES = [
+  { code: 'XOF', label: 'FCFA (XOF)' },
+  { code: 'XAF', label: 'FCFA (XAF)' },
+  { code: 'EUR', label: 'Euro (€)' },
+  { code: 'USD', label: 'Dollar ($)' },
+  { code: 'NGN', label: 'Naira (₦)' },
+  { code: 'GHS', label: 'Cedi (GH₵)' },
+  { code: 'ZAR', label: 'Rand (R)' },
+  { code: 'MAD', label: 'Dirham (MAD)' },
+  { code: 'GNF', label: 'Franc guinéen (GNF)' },
+  { code: 'CAD', label: 'Dollar canadien (CAD)' },
+];
+
+const CURRENCY_LABELS: Record<string, string> = {
+  XOF: 'FCFA', XAF: 'FCFA', NGN: '₦', GHS: 'GH₵',
+  ZAR: 'R', MAD: 'MAD', GNF: 'GNF', CDF: 'FC',
+  EUR: '€', USD: '$', CAD: 'CAD', CHF: 'CHF',
+};
+
+interface TicketType {
+  id?: string;
+  name: string;
+  description: string;
+  price: string;
+  quantity: string;
+  salesStart?: string;
+  salesEnd?: string;
+  minPerOrder?: string;
+  maxPerOrder?: string;
+  isActive?: boolean;
+}
+
+type TabId = 'general' | 'venue' | 'tickets' | 'settings';
+
+function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <div
+      onClick={onChange}
+      className={`relative w-11 h-6 rounded-full cursor-pointer transition-colors ${checked ? 'bg-[#5B7CFF]' : 'bg-gray-300'}`}
+    >
+      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? 'translate-x-5' : ''}`} />
+    </div>
+  );
+}
+
 export default function EditEventPage() {
   const router = useRouter();
   const params = useParams();
@@ -29,6 +74,7 @@ export default function EditEventPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>('general');
 
   const [form, setForm] = useState({
     title: '',
@@ -46,7 +92,15 @@ export default function EditEventPage() {
     coverImage: '',
     capacity: '',
     visibility: 'PUBLIC',
+    status: 'DRAFT',
+    currency: 'XOF',
+    tags: '',
+    isFree: false,
   });
+
+  const [tickets, setTickets] = useState<TicketType[]>([
+    { name: '', description: '', price: '0', quantity: '100', minPerOrder: '1', maxPerOrder: '10' },
+  ]);
 
   const fetchEvent = useCallback(async () => {
     if (!eventId) return;
@@ -63,12 +117,12 @@ export default function EditEventPage() {
       if (!res.ok) throw new Error('Événement introuvable');
       const event = await res.json();
 
-      // Format dates for datetime-local input
       const formatDate = (d: string) => {
         if (!d) return '';
         return new Date(d).toISOString().slice(0, 16);
       };
 
+      const minPrice = event.minPrice ?? 0;
       setForm({
         title: event.title || '',
         description: event.description || '',
@@ -85,7 +139,28 @@ export default function EditEventPage() {
         coverImage: event.coverImage || '',
         capacity: String(event.capacity || ''),
         visibility: event.visibility || 'PUBLIC',
+        status: event.status || 'DRAFT',
+        currency: event.currency || 'XOF',
+        tags: typeof event.tags === 'string' ? event.tags.replace(/,/g, ', ') : '',
+        isFree: minPrice === 0,
       });
+
+      if (event.ticketTypes && event.ticketTypes.length > 0) {
+        setTickets(
+          event.ticketTypes.map((tt: any) => ({
+            id: tt.id,
+            name: tt.name || '',
+            description: tt.description || '',
+            price: String(tt.price ?? 0),
+            quantity: String(tt.quantity ?? 100),
+            salesStart: tt.salesStart ? formatDate(tt.salesStart) : '',
+            salesEnd: tt.salesEnd ? formatDate(tt.salesEnd) : '',
+            minPerOrder: String(tt.minPerOrder ?? 1),
+            maxPerOrder: String(tt.maxPerOrder ?? 10),
+            isActive: tt.isActive !== false,
+          }))
+        );
+      }
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement');
     } finally {
@@ -99,6 +174,22 @@ export default function EditEventPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleTicketUpdate = (i: number, field: keyof TicketType, value: string) => {
+    setTickets((prev) => prev.map((t, idx) => idx === i ? { ...t, [field]: value } : t));
+  };
+
+  const handleAddTicket = () => {
+    setTickets((prev) => [
+      ...prev,
+      { name: '', description: '', price: '0', quantity: '100', minPerOrder: '1', maxPerOrder: '10' },
+    ]);
+  };
+
+  const handleRemoveTicket = (i: number) => {
+    if (tickets.length <= 1) return;
+    setTickets((prev) => prev.filter((_, idx) => idx !== i));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -107,11 +198,56 @@ export default function EditEventPage() {
 
     try {
       const token = getToken();
-      const payload = {
-        ...form,
-        capacity: form.capacity ? parseInt(form.capacity) : undefined,
+
+      const validTickets = tickets.filter((t) => t.name.trim());
+      const ticketTypesPayload = validTickets.map((t) => ({
+        id: t.id,
+        name: t.name,
+        description: t.description || '',
+        price: form.isFree ? 0 : (parseFloat(t.price) || 0),
+        quantity: parseInt(t.quantity) || 100,
+        available: parseInt(t.quantity) || 100,
+        salesStart: t.salesStart
+          ? new Date(t.salesStart).toISOString()
+          : new Date().toISOString(),
+        salesEnd: t.salesEnd
+          ? new Date(t.salesEnd).toISOString()
+          : new Date(form.endDate || Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        minPerOrder: parseInt(t.minPerOrder || '1') || 1,
+        maxPerOrder: parseInt(t.maxPerOrder || '10') || 10,
+        isActive: t.isActive !== false,
+      }));
+
+      const prices = ticketTypesPayload.map((t) => t.price);
+      const minPrice = form.isFree ? 0 : (prices.length > 0 ? Math.min(...prices) : 0);
+      const maxPrice = form.isFree ? 0 : (prices.length > 0 ? Math.max(...prices) : 0);
+
+      const tagsValue = form.tags
+        ? form.tags.split(',').map((t) => t.trim()).filter(Boolean).join(',')
+        : '';
+
+      const payload: any = {
+        title: form.title,
+        description: form.description,
+        category: form.category,
         startDate: form.startDate ? new Date(form.startDate).toISOString() : undefined,
         endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
+        venueName: form.isOnline ? 'En ligne' : form.venueName,
+        venueAddress: form.isOnline ? '' : form.venueAddress,
+        venueCity: form.isOnline ? 'En ligne' : form.venueCity,
+        venueCountry: form.isOnline ? 'En ligne' : form.venueCountry,
+        venuePostalCode: form.isOnline ? '' : form.venuePostalCode,
+        isOnline: form.isOnline,
+        streamingUrl: form.isOnline ? form.streamingUrl : undefined,
+        coverImage: form.coverImage,
+        capacity: form.capacity ? parseInt(form.capacity) : undefined,
+        visibility: form.visibility,
+        status: form.status,
+        currency: form.currency,
+        tags: tagsValue || undefined,
+        minPrice,
+        maxPrice,
+        ticketTypes: ticketTypesPayload,
       };
 
       const res = await fetch(`${API_URL}/events/${eventId}`, {
@@ -139,6 +275,14 @@ export default function EditEventPage() {
 
   const inputCls = 'w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#5B7CFF] focus:ring-2 focus:ring-[#5B7CFF]/20 outline-none text-sm bg-white transition-all';
   const labelCls = 'block text-sm font-semibold text-gray-700 mb-1.5';
+  const currencyLabel = CURRENCY_LABELS[form.currency] ?? form.currency;
+
+  const tabs: { id: TabId; label: string }[] = [
+    { id: 'general', label: '📋 Général' },
+    { id: 'venue', label: '📍 Lieu & Dates' },
+    { id: 'tickets', label: '🎟️ Billets' },
+    { id: 'settings', label: '⚙️ Paramètres' },
+  ];
 
   if (isLoading) {
     return (
@@ -178,11 +322,31 @@ export default function EditEventPage() {
           </div>
         )}
 
+        {/* Tabs */}
+        <div className="flex gap-1 bg-white rounded-2xl border border-gray-200 p-1.5 mb-6 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 min-w-max px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white shadow-md'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informations générales */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">📋 Informations générales</h2>
-            <div className="space-y-4">
+
+          {/* ── TAB: GÉNÉRAL ── */}
+          {activeTab === 'general' && (
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+              <h2 className="text-lg font-bold text-gray-900 mb-2">📋 Informations générales</h2>
+
               <div>
                 <label className={labelCls}>Titre <span className="text-red-500">*</span></label>
                 <input
@@ -194,16 +358,18 @@ export default function EditEventPage() {
                   required
                 />
               </div>
+
               <div>
                 <label className={labelCls}>Description <span className="text-red-500">*</span></label>
                 <textarea
                   value={form.description}
                   onChange={(e) => handleChange('description', e.target.value)}
-                  className={`${inputCls} min-h-[120px] resize-y`}
-                  placeholder="Décrivez votre événement…"
+                  className={`${inputCls} min-h-[140px] resize-y`}
+                  placeholder="Décrivez votre événement en détail…"
                   required
                 />
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className={labelCls}>Catégorie <span className="text-red-500">*</span></label>
@@ -218,17 +384,19 @@ export default function EditEventPage() {
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Visibilité</label>
+                  <label className={labelCls}>Devise</label>
                   <select
-                    value={form.visibility}
-                    onChange={(e) => handleChange('visibility', e.target.value)}
+                    value={form.currency}
+                    onChange={(e) => handleChange('currency', e.target.value)}
                     className={inputCls}
                   >
-                    <option value="PUBLIC">Public</option>
-                    <option value="PRIVATE">Privé</option>
+                    {CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
+
               <div>
                 <label className={labelCls}>Image de couverture (URL)</label>
                 <input
@@ -238,131 +406,248 @@ export default function EditEventPage() {
                   className={inputCls}
                   placeholder="https://…"
                 />
+                {form.coverImage && (
+                  <div className="mt-2 rounded-xl overflow-hidden h-40 bg-gray-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={form.coverImage}
+                      alt="Aperçu"
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
 
-          {/* Dates */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">📅 Dates</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Date de début <span className="text-red-500">*</span></label>
+                <label className={labelCls}>Tags (séparés par des virgules)</label>
                 <input
-                  type="datetime-local"
-                  value={form.startDate}
-                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  type="text"
+                  value={form.tags}
+                  onChange={(e) => handleChange('tags', e.target.value)}
                   className={inputCls}
-                  required
+                  placeholder="musique, concert, live, afrobeat…"
                 />
-              </div>
-              <div>
-                <label className={labelCls}>Date de fin <span className="text-red-500">*</span></label>
-                <input
-                  type="datetime-local"
-                  value={form.endDate}
-                  onChange={(e) => handleChange('endDate', e.target.value)}
-                  className={inputCls}
-                  required
-                />
+                <p className="text-xs text-gray-400 mt-1">Les tags améliorent la visibilité dans les recherches.</p>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Lieu */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">📍 Lieu</h2>
-            <div className="mb-4 flex items-center gap-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.isOnline}
-                  onChange={(e) => handleChange('isOnline', e.target.checked)}
-                  className="w-4 h-4 accent-[#5B7CFF]"
-                />
-                <span className="text-sm font-medium text-gray-700">Événement en ligne</span>
-              </label>
-            </div>
-            {form.isOnline ? (
-              <div>
-                <label className={labelCls}>Lien de streaming</label>
-                <input
-                  type="url"
-                  value={form.streamingUrl}
-                  onChange={(e) => handleChange('streamingUrl', e.target.value)}
-                  className={inputCls}
-                  placeholder="https://…"
-                />
+          {/* ── TAB: LIEU & DATES ── */}
+          {activeTab === 'venue' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-5">📅 Dates</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelCls}>Date de début <span className="text-red-500">*</span></label>
+                    <input
+                      type="datetime-local"
+                      value={form.startDate}
+                      onChange={(e) => handleChange('startDate', e.target.value)}
+                      className={inputCls}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Date de fin <span className="text-red-500">*</span></label>
+                    <input
+                      type="datetime-local"
+                      value={form.endDate}
+                      onChange={(e) => handleChange('endDate', e.target.value)}
+                      className={inputCls}
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-4">
+
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-5">📍 Lieu</h2>
+                <div className="mb-4 flex items-center gap-3">
+                  <Toggle checked={form.isOnline} onChange={() => handleChange('isOnline', !form.isOnline)} />
+                  <span className="text-sm font-medium text-gray-700">Événement en ligne</span>
+                </div>
+
+                {form.isOnline ? (
+                  <div>
+                    <label className={labelCls}>Lien de streaming</label>
+                    <input
+                      type="url"
+                      value={form.streamingUrl}
+                      onChange={(e) => handleChange('streamingUrl', e.target.value)}
+                      className={inputCls}
+                      placeholder="https://zoom.us/… ou https://youtube.com/…"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className={labelCls}>Nom du lieu <span className="text-red-500">*</span></label>
+                      <input type="text" value={form.venueName} onChange={(e) => handleChange('venueName', e.target.value)} className={inputCls} placeholder="Salle, stade, parc…" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Adresse</label>
+                      <input type="text" value={form.venueAddress} onChange={(e) => handleChange('venueAddress', e.target.value)} className={inputCls} placeholder="Rue, numéro…" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className={labelCls}>Ville <span className="text-red-500">*</span></label>
+                        <input type="text" value={form.venueCity} onChange={(e) => handleChange('venueCity', e.target.value)} className={inputCls} placeholder="Abidjan" />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Pays <span className="text-red-500">*</span></label>
+                        <input type="text" value={form.venueCountry} onChange={(e) => handleChange('venueCountry', e.target.value)} className={inputCls} placeholder="Côte d'Ivoire" />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Code postal</label>
+                        <input type="text" value={form.venuePostalCode} onChange={(e) => handleChange('venuePostalCode', e.target.value)} className={inputCls} placeholder="00000" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-5">👥 Capacité totale</h2>
                 <div>
-                  <label className={labelCls}>Nom du lieu <span className="text-red-500">*</span></label>
-                  <input type="text" value={form.venueName} onChange={(e) => handleChange('venueName', e.target.value)} className={inputCls} placeholder="Salle, stade, parc…" required={!form.isOnline} />
-                </div>
-                <div>
-                  <label className={labelCls}>Adresse</label>
-                  <input type="text" value={form.venueAddress} onChange={(e) => handleChange('venueAddress', e.target.value)} className={inputCls} placeholder="Rue, numéro…" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className={labelCls}>Ville <span className="text-red-500">*</span></label>
-                    <input type="text" value={form.venueCity} onChange={(e) => handleChange('venueCity', e.target.value)} className={inputCls} placeholder="Abidjan" required={!form.isOnline} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Pays <span className="text-red-500">*</span></label>
-                    <input type="text" value={form.venueCountry} onChange={(e) => handleChange('venueCountry', e.target.value)} className={inputCls} placeholder="Côte d'Ivoire" required={!form.isOnline} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Code postal</label>
-                    <input type="text" value={form.venuePostalCode} onChange={(e) => handleChange('venuePostalCode', e.target.value)} className={inputCls} placeholder="00000" />
-                  </div>
+                  <label className={labelCls}>Nombre de places</label>
+                  <input
+                    type="number"
+                    value={form.capacity}
+                    onChange={(e) => handleChange('capacity', e.target.value)}
+                    className={inputCls}
+                    min="1"
+                    placeholder="500"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Capacité maximale toutes catégories confondues.</p>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Capacité */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">🎟️ Capacité</h2>
-            <div>
-              <label className={labelCls}>Nombre de places</label>
-              <input
-                type="number"
-                value={form.capacity}
-                onChange={(e) => handleChange('capacity', e.target.value)}
-                className={inputCls}
-                min="1"
-                placeholder="100"
-              />
             </div>
-          </div>
+          )}
 
-          {/* Actions */}
-          <div className="flex items-center justify-between gap-4">
-            <Link
-              href="/dashboard/events"
-              className="px-6 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:border-gray-300 transition-colors"
-            >
-              Annuler
-            </Link>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white rounded-xl font-bold hover:shadow-xl transition-all disabled:opacity-50"
-            >
-              {isSaving ? (
-                <>
-                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                  Enregistrement…
-                </>
-              ) : (
-                '💾 Enregistrer les modifications'
+          {/* ── TAB: BILLETS ── */}
+          {activeTab === 'tickets' && (
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-bold text-gray-900">🎟️ Types de billets</h2>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <span className="text-sm font-medium text-gray-700">Gratuit</span>
+                  <Toggle checked={form.isFree} onChange={() => handleChange('isFree', !form.isFree)} />
+                </label>
+              </div>
+
+              {form.isFree && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+                  ✅ Événement gratuit — les prix seront mis à 0.
+                </div>
               )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+
+              <div className="space-y-4">
+                {tickets.map((ticket, i) => (
+                  <div key={i} className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-gray-800 text-sm">🎟️ Billet {i + 1}</h3>
+                      {tickets.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTicket(i)}
+                          className="text-red-400 hover:text-red-600 text-xs font-semibold px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                        >
+                          Supprimer
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Nom <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={ticket.name}
+                          onChange={(e) => handleTicketUpdate(i, 'name', e.target.value)}
+                          placeholder="Standard, VIP, Early Bird…"
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                        <input
+                          type="text"
+                          value={ticket.description}
+                          onChange={(e) => handleTicketUpdate(i, 'description', e.target.value)}
+                          placeholder="Avantages inclus…"
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {!form.isFree && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Prix ({currencyLabel})
+                          </label>
+                          <input
+                            type="number"
+                            value={ticket.price}
+                            onChange={(e) => handleTicketUpdate(i, 'price', e.target.value)}
+                            min="0"
+                            placeholder="0"
+                            className={inputCls}
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Quantité <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={ticket.quantity}
+                          onChange={(e) => handleTicketUpdate(i, 'quantity', e.target.value)}
+                          min="1"
+                          placeholder="100"
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Min/commande</label>
+                        <input
+                          type="number"
+                          value={ticket.minPerOrder || '1'}
+                          onChange={(e) => handleTicketUpdate(i, 'minPerOrder', e.target.value)}
+                          min="1"
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Max/commande</label>
+                        <input
+                          type="number"
+                          value={ticket.maxPerOrder || '10'}
+                          onChange={(e) => handleTicketUpdate(i, 'maxPerOrder', e.target.value)}
+                          min="1"
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Début des ventes</label>
+                        <input
+                          type="datetime-local"
+                          value={ticket.salesStart || ''}
+                          onChange={(e) => handleTicketUpdate(i, 'salesStart', e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Fin des ventes</label>
+                        <input
+                          type="datetime-local"
+                          value={ticket.salesEnd || ''}
+                          onChange={(e) => handle

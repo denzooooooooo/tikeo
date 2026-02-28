@@ -30,14 +30,24 @@ export default function TicketsPage() {
   }, []);
 
   const fetchTickets = async () => {
-    const token = localStorage.getItem('token');
+    let token: string | null = null;
+    try {
+      const stored = localStorage.getItem('auth_tokens');
+      token = stored ? JSON.parse(stored).accessToken : null;
+    } catch {
+      token = null;
+    }
+
     if (!token) {
       setIsLoading(false);
       return;
     }
 
+    const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiBase = rawUrl.includes('/api/v1') ? rawUrl.replace(/\/$/, '') : rawUrl.replace(/\/$/, '') + '/api/v1';
+
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/tickets/my-tickets`, {
+      const response = await fetch(`${apiBase}/tickets/my-tickets`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

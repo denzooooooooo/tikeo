@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeartIcon } from './Icons';
 
 interface LikeButtonProps {
@@ -22,6 +22,41 @@ export function LikeButton({
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState('');
+
+  // Fetch real like status on mount
+  useEffect(() => {
+    const fetchLikeStatus = async () => {
+      try {
+        const storedTokens = localStorage.getItem('auth_tokens');
+        const token = storedTokens ? JSON.parse(storedTokens).accessToken : null;
+        if (!token || !eventId) return;
+
+        const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+        const apiUrl = rawUrl.includes('/api/v1') ? rawUrl.replace(/\/$/, '') : rawUrl.replace(/\/$/, '') + '/api/v1';
+
+        const [statusRes, countRes] = await Promise.all([
+          fetch(`${apiUrl}/likes/events/${eventId}/status`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${apiUrl}/likes/events/${eventId}/count`),
+        ]);
+
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          setLiked(statusData.isLiked ?? false);
+        }
+
+        if (countRes.ok) {
+          const countData = await countRes.json();
+          setCount(countData.count ?? initialCount);
+        }
+      } catch {
+        // Silently fail — use initial values
+      }
+    };
+
+    fetchLikeStatus();
+  }, [eventId, initialCount]);
 
   const showToast = (msg: string) => {
     setToast(msg);

@@ -475,13 +475,14 @@ export class EventsService {
   async update(id: string, dto: any, userId: string) {
     const event = await this.prisma.event.findUnique({
       where: { id },
-      include: { organizer: true },
+      include: { organizer: true, ticketTypes: true },
     });
     if (!event) throw new Error('Événement non trouvé');
     if (event.organizer.userId !== userId) throw new Error('Non autorisé');
 
-    const { ticketTypes, ...eventData } = dto;
+    const { ticketTypes, isFree: _isFree, ...eventData } = dto;
 
+    // Update the event fields
     const updated = await this.prisma.event.update({
       where: { id },
       data: eventData,
@@ -491,11 +492,74 @@ export class EventsService {
       },
     });
 
+    // Handle ticketTypes upsert if provided
+    if (ticketTypes && Array.isArray(ticketTypes)) {
+      const incomingIds = ticketTypes.filter((t: any) => t.id).map((t: any) => t.id);
+
+      // Delete ticket types that are no longer in the payload
+      const existingIds = event.ticketTypes.map((t) => t.id);
+      const toDelete = existingIds.filter((eid) => !incomingIds.includes(eid));
+      if (toDelete.length > 0) {
+        await this.prisma.ticketType.deleteMany({
+          where: { id: { in: toDelete } },
+        });
+      }
+
+      // Upsert each ticket type
+      for (const tt of ticketTypes) {
+        if (tt.id) {
+          // Update existing
+          await this.prisma.ticketType.update({
+            where: { id: tt.id },
+            data: {
+              name: tt.name,
+              description: tt.description ?? '',
+              price: tt.price ?? 0,
+              quantity: tt.quantity ?? 100,
+              available: tt.available ?? tt.quantity ?? 100,
+              salesStart: tt.salesStart ? new Date(tt.salesStart) : undefined,
+              salesEnd: tt.salesEnd ? new Date(tt.salesEnd) : undefined,
+              minPerOrder: tt.minPerOrder ?? 1,
+              maxPerOrder: tt.maxPerOrder ?? 10,
+              isActive: tt.isActive !== false,
+            },
+          });
+        } else {
+          // Create new
+          await this.prisma.ticketType.create({
+            data: {
+              eventId: id,
+              name: tt.name,
+              description: tt.description ?? '',
+              price: tt.price ?? 0,
+              quantity: tt.quantity ?? 100,
+              available: tt.quantity ?? 100,
+              sold: 0,
+              salesStart: tt.salesStart ? new Date(tt.salesStart) : new Date(),
+              salesEnd: tt.salesEnd
+                ? new Date(tt.salesEnd)
+                : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              minPerOrder: tt.minPerOrder ?? 1,
+              maxPerOrder: tt.maxPerOrder ?? 10,
+              isActive: tt.isActive !== false,
+            },
+          });
+        }
+      }
+    }
+
     // Invalidate cache
     await this.redis.del(`event:${id}`);
     await this.redis.del('events:featured');
 
-    return updated;
+    // Return updated event with fresh ticketTypes
+    return this.prisma.event.findUnique({
+      where: { id },
+      include: {
+        organizer: { select: { id: true, companyName: true, logo: true, verified: true } },
+        ticketTypes: true,
+      },
+    });
   }
 
   async remove(id: string, userId: string) {
