@@ -47,7 +47,20 @@ async function getNearbyEvents() {
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return data?.data || [];
+    const events = data?.data || [];
+    return events.map((e: any) => ({
+      id: e.id,
+      title: e.title,
+      coverImage: e.coverImage || 'https://picsum.photos/seed/event/400/300',
+      teaserVideo: e.teaserVideo || null,
+      startDate: e.startDate,
+      city: e.venueCity,
+      price: e.ticketTypes?.[0]?.price ?? e.minPrice ?? 0,
+      category: e.category,
+      organizer: e.organizer?.companyName || 'Organisateur',
+      ticketsLeft: e.ticketsAvailable ?? e.capacity,
+      totalTickets: e.capacity ?? 100,
+    }));
   } catch {
     return [];
   }
