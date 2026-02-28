@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { HealthModule } from './health/health.module';
+import { LikesModule } from './likes/likes.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { HealthModule } from './health/health.module';
     TicketsModule,
     OrdersModule,
     UsersModule,
+    LikesModule,
   ],
 })
 export class AppModule {}
