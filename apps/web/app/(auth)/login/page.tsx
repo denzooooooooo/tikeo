@@ -306,23 +306,6 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          {/* Compte de test */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <p className="text-xs font-bold text-blue-700 mb-2 flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
-              Compte de démonstration
-            </p>
-            <div className="space-y-1">
-              <button
-                type="button"
-                onClick={() => setFormData({ email: 'admin@tikeo.africa', password: 'Tikeo2024!' })}
-                className="w-full text-left text-xs text-blue-600 hover:text-blue-800 font-mono bg-white/60 px-2 py-1 rounded flex items-center justify-between group"
-              >
-                <span>admin@tikeo.africa / Tikeo2024!</span>
-                <span className="text-[10px] text-blue-400 group-hover:text-blue-600">Cliquer pour remplir</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
