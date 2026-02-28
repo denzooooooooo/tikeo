@@ -138,14 +138,23 @@ export function HomeHowItWorksSection() {
   );
 }
 
+interface OrganizerItem {
+  id: string;
+  companyName?: string;
+  name?: string;
+  logo?: string | null;
+  image?: string | null;
+  verified?: boolean;
+  _count?: { events?: number };
+  eventsCount?: number;
+}
+
+interface HomeOrganizersSectionProps {
+  organizers: OrganizerItem[];
+}
+
 // ── Organizers Section ─────────────────────────────────────────────────────────
-export function HomeOrganizersSection() {
-  const organizers = [
-    { id: '1', name: 'Live Nation', events: 450, image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=200&q=80', verified: true },
-    { id: '2', name: 'Paris Events', events: 280, image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80', verified: true },
-    { id: '3', name: 'Festival Prod', events: 180, image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&q=80', verified: false },
-    { id: '4', name: 'Sport Elite', events: 320, image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80', verified: true },
-  ];
+export function HomeOrganizersSection({ organizers }: HomeOrganizersSectionProps) {
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -159,24 +168,37 @@ export function HomeOrganizersSection() {
             Voir tout <ArrowRightIcon />
           </Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-          {organizers.map((org) => (
-            <Link key={org.id} href={`/organizers/${org.id}`} className="group">
-              <div className="bg-white rounded-2xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
-                <div className="relative w-16 h-16 mx-auto mb-4">
-                  <Image src={org.image} alt={org.name} fill className="object-cover rounded-full" />
-                  {org.verified && (
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+        {organizers.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+            {organizers.map((org) => {
+              const displayName = org.companyName || org.name || 'Organisateur';
+              const displayImage = org.logo || org.image;
+              const eventsCount = org._count?.events ?? org.eventsCount ?? 0;
+              return (
+                <Link key={org.id} href={`/organizers/${org.id}`} className="group">
+                  <div className="bg-white rounded-2xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                    <div className="relative w-16 h-16 mx-auto mb-4">
+                      {displayImage ? (
+                        <Image src={displayImage} alt={displayName} fill className="object-cover rounded-full" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}>
+                          {displayName.charAt(0)}
+                        </div>
+                      )}
+                      {org.verified && (
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <h3 className="font-bold text-gray-900 group-hover:text-[#5B7CFF] transition-colors text-sm">{org.name}</h3>
-                <p className="text-xs text-gray-400 mt-1">{org.events} événements</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+                    <h3 className="font-bold text-gray-900 group-hover:text-[#5B7CFF] transition-colors text-sm">{displayName}</h3>
+                    {eventsCount > 0 && <p className="text-xs text-gray-400 mt-1">{eventsCount} événements</p>}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
         {/* Become organizer CTA */}
         <div className="mt-12 p-8 rounded-2xl text-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(91,124,255,0.07), rgba(123,97,255,0.07))', border: '1px solid rgba(91,124,255,0.15)' }}>
           <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(91,124,255,0.08) 0%, transparent 70%)' }} />
