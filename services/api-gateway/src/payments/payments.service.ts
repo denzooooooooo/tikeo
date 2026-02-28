@@ -65,11 +65,11 @@ export class PaymentsService {
       // Generate tickets
       const order = await this.prisma.order.findUnique({
         where: { id: payment.orderId },
-        include: { OrderItem: true },
+        include: { items: true },
       });
 
       if (order) {
-        for (const item of order.OrderItem) {
+        for (const item of order.items) {
           for (let i = 0; i < item.quantity; i++) {
             await this.prisma.ticket.create({
               data: {
@@ -80,10 +80,7 @@ export class PaymentsService {
                 qrCode: this.generateQRCode(),
                 status: 'VALID',
                 purchaseDate: new Date(),
-                price: item.price,
-                fees: 0,
-                total: item.price,
-              } as any,
+              },
             });
           }
         }
