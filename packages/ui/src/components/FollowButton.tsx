@@ -28,11 +28,13 @@ export function FollowButton({
     setLoading(true);
     
     try {
-      const token = localStorage.getItem('auth_token');
+      const storedTokens = localStorage.getItem('auth_tokens');
+      const token = storedTokens ? JSON.parse(storedTokens).accessToken : null;
       const method = followed ? 'DELETE' : 'POST';
-      
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/likes/organizers/${organizerId}/follow`,
+        `${apiUrl}/likes/organizers/${organizerId}/follow`,
         {
           method,
           headers: {
