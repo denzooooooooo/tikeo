@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CountrySelector from '../../components/CountrySelector';
 import { useGeolocation } from '../../context/GeolocationContext';
+import { useAuth } from '../../context/AuthContext';
 
 // Custom SVG Icons
 const ArrowRightIcon = ({ className = "" }: { className?: string }) => (
@@ -22,6 +23,7 @@ const CheckCircleIcon = ({ className = "" }: { className?: string }) => (
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
   const { country: geoCountry, countryName } = useGeolocation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -56,11 +58,27 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      router.push('/login?registered=true');
+      await register(
+        formData.email,
+        formData.password,
+        formData.firstName,
+        formData.lastName,
+      );
+      router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || "Une erreur est survenue lors de l'inscription");
+      const msg = (err?.message || '').toLowerCase();
+      if (msg.includes('already') || msg.includes('exists') || msg.includes('conflict') || msg.includes('409')) {
+        setError('Un compte existe déjà avec cet email.');
+      } else if (
+        msg.includes('failed to fetch') ||
+        msg.includes('network') ||
+        msg.includes('econnrefused') ||
+        err?.name === 'TypeError'
+      ) {
+        setError('Impossible de se connecter au serveur. Vérifiez votre connexion.');
+      } else {
+        setError(err.message || "Une erreur est survenue lors de l'inscription");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -100,16 +118,16 @@ export default function RegisterPage() {
             
             <div className="space-y-6">
               {[
-                { icon: CheckCircleIcon, text: 'Accès à des milliers d\'événements' },
-                { icon: CheckCircleIcon, text: 'Réservation en quelques clics' },
-                { icon: CheckCircleIcon, text: 'Billets numériques sécurisés' },
-                { icon: CheckCircleIcon, text: 'Recommandations personnalisées' },
-              ].map((feature, index) => (
+                'Accès à des milliers d\'événements',
+                'Réservation en quelques clics',
+                'Billets numériques sécurisés',
+                'Recommandations personnalisées',
+              ].map((text, index) => (
                 <div key={index} className="flex items-center gap-4 text-white">
                   <div className="flex-shrink-0 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                    <feature.icon size={20} />
+                    <CheckCircleIcon className="w-5 h-5" />
                   </div>
-                  <span className="text-lg">{feature.text}</span>
+                  <span className="text-lg">{text}</span>
                 </div>
               ))}
             </div>
