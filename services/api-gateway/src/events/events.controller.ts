@@ -108,6 +108,15 @@ export class EventsController {
     return this.eventsService.getRecommendations(undefined, country, limit ? parseInt(limit) : 10);
   }
 
+  // ─── GET /events/my ──────────────────────────────────────────────────────────
+  @Get('my')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mes événements (organisateur connecté)' })
+  async getMyEvents(@Request() req: any) {
+    return this.eventsService.findMyEvents(req.user?.id);
+  }
+
   // ─── GET /events/:id ─────────────────────────────────────────────────────────
   @Get(':id')
   @ApiOperation({ summary: 'Récupérer un événement par ID ou slug' })

@@ -1,22 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  PlusIcon, 
-  CalendarIcon, 
-  LocationIcon, 
+import { API_CONFIG } from '@tikeo/utils';
+import {
+  PlusIcon,
+  CalendarIcon,
+  LocationIcon,
   TicketIcon,
   DollarIcon,
   EditIcon,
-  TrashIcon,
   EyeIcon,
-  MoreVerticalIcon,
   SearchIcon,
-  FilterIcon,
   TrendingUpIcon,
-  UsersIcon,
 } from '@tikeo/ui';
 
 interface Event {
@@ -28,79 +25,89 @@ interface Event {
   venueCity: string;
   status: 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED';
   ticketsSold: number;
-  revenue: number;
   views: number;
+  minPrice: number;
+  maxPrice: number;
+  _count?: { tickets: number; orders: number };
 }
 
-const mockEvents: Event[] = [
-  {
-    id: '1',
-    title: 'Festival Jazz Paris 2024',
-    slug: 'festival-jazz-paris-2024',
-    coverImage: 'https://picsum.photos/seed/jazz/400/300',
-    startDate: '2024-06-15',
-    venueCity: 'Paris',
-    status: 'PUBLISHED',
-    ticketsSold: 1250,
-    revenue: 56250,
-    views: 15420,
-  },
-  {
-    id: '2',
-    title: 'Tech Conference 2024',
-    slug: 'tech-conference-2024',
-    coverImage: 'https://picsum.photos/seed/tech/400/300',
-    startDate: '2024-09-20',
-    venueCity: 'Lyon',
-    status: 'PUBLISHED',
-    ticketsSold: 850,
-    revenue: 42500,
-    views: 8900,
-  },
-  {
-    id: '3',
-    title: 'Electronic Music Festival',
-    slug: 'electronic-music-festival',
-    coverImage: 'https://picsum.photos/seed/electro/400/300',
-    startDate: '2024-07-22',
-    venueCity: 'Marseille',
-    status: 'DRAFT',
-    ticketsSold: 0,
-    revenue: 0,
-    views: 0,
-  },
-  {
-    id: '4',
-    title: 'Art Exhibition 2024',
-    slug: 'art-exhibition-2024',
-    coverImage: 'https://picsum.photos/seed/art/400/300',
-    startDate: '2024-05-10',
-    venueCity: 'Bordeaux',
-    status: 'COMPLETED',
-    ticketsSold: 2100,
-    revenue: 31500,
-    views: 25000,
-  },
-];
-
-const statusColors = {
+const statusColors: Record<string, string> = {
   DRAFT: 'bg-gray-100 text-gray-700',
   PUBLISHED: 'bg-green-100 text-green-700',
   CANCELLED: 'bg-red-100 text-red-700',
   COMPLETED: 'bg-blue-100 text-blue-700',
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   DRAFT: 'Brouillon',
   PUBLISHED: 'Publié',
   CANCELLED: 'Annulé',
   COMPLETED: 'Terminé',
 };
 
+function getToken(): string | null {
+  try {
+    const stored = localStorage.getItem('auth_tokens');
+    if (!stored) return null;
+    return JSON.parse(stored).accessToken ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default function DashboardEventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [events, setEvents] = useState(mockEvents);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchMyEvents = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_CONFIG.BASE_URL}/events/my`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Erreur lors du chargement des événements');
+      const data = await res.json();
+      setEvents(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      setError(err.message || 'Erreur inconnue');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMyEvents();
+  }, [fetchMyEvents]);
+
+  const handlePublish = async (eventId: string) => {
+    setPublishingId(eventId);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_CONFIG.BASE_URL}/events/${eventId}/publish`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Erreur lors de la publication');
+      // Refresh list
+      await fetchMyEvents();
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors de la publication');
+    } finally {
+      setPublishingId(null);
+    }
+  };
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -111,8 +118,8 @@ export default function DashboardEventsPage() {
   const totalStats = {
     events: events.length,
     published: events.filter((e) => e.status === 'PUBLISHED').length,
-    totalTickets: events.reduce((acc, e) => acc + e.ticketsSold, 0),
-    totalRevenue: events.reduce((acc, e) => acc + e.revenue, 0),
+    totalTickets: events.reduce((acc, e) => acc + (e.ticketsSold || 0), 0),
+    drafts: events.filter((e) => e.status === 'DRAFT').length,
   };
 
   return (
@@ -120,16 +127,11 @@ export default function DashboardEventsPage() {
       {/* Header */}
       <div className="bg-gradient-to-br from-[#5B7CFF] via-[#7B61FF] to-[#9D4EDD] relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-white mb-2">
-                Mes Événements
-              </h1>
-              <p className="text-xl text-white/90">
-                Gérez et suivez vos événements
-              </p>
+              <h1 className="text-4xl font-bold text-white mb-2">Mes Événements</h1>
+              <p className="text-xl text-white/90">Gérez et suivez vos événements</p>
             </div>
             <Link
               href="/dashboard/events/create"
@@ -140,8 +142,6 @@ export default function DashboardEventsPage() {
             </Link>
           </div>
         </div>
-
-        {/* Wave Separator */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
@@ -164,7 +164,6 @@ export default function DashboardEventsPage() {
             </div>
             <p className="text-3xl font-bold text-gray-900">{totalStats.events}</p>
           </div>
-
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -174,7 +173,6 @@ export default function DashboardEventsPage() {
             </div>
             <p className="text-3xl font-bold text-gray-900">{totalStats.published}</p>
           </div>
-
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-purple-100 rounded-lg">
@@ -184,15 +182,14 @@ export default function DashboardEventsPage() {
             </div>
             <p className="text-3xl font-bold text-gray-900">{totalStats.totalTickets.toLocaleString()}</p>
           </div>
-
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-orange-100 rounded-lg">
                 <DollarIcon className="text-orange-600" size={20} />
               </div>
-              <span className="text-gray-600 text-sm">Revenus totaux</span>
+              <span className="text-gray-600 text-sm">Brouillons</span>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{totalStats.totalRevenue.toLocaleString()}€</p>
+            <p className="text-3xl font-bold text-gray-900">{totalStats.drafts}</p>
           </div>
         </div>
 
@@ -221,124 +218,151 @@ export default function DashboardEventsPage() {
           </select>
         </div>
 
-        {/* Events Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Événement</th>
-                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Date</th>
-                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Statut</th>
-                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Billets</th>
-                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Revenus</th>
-                  <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Vues</th>
-                  <th className="text-right py-4 px-6 text-sm font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEvents.map((event) => (
-                  <tr key={event.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-16 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image
-                            src={event.coverImage}
-                            alt={event.title}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 line-clamp-1">{event.title}</p>
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
-                            <LocationIcon size={14} />
-                            {event.venueCity}
+        {/* Error */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Loading */}
+        {isLoading ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+            <div className="animate-spin w-8 h-8 border-4 border-[#5B7CFF] border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-gray-500">Chargement de vos événements…</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Événement</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Date</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Statut</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Billets</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Vues</th>
+                    <th className="text-right py-4 px-6 text-sm font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEvents.map((event) => (
+                    <tr key={event.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-4">
+                          <div className="relative w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                            {event.coverImage ? (
+                              <Image
+                                src={event.coverImage}
+                                alt={event.title}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                                🎟️
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 line-clamp-1">{event.title}</p>
+                            <div className="flex items-center gap-1 text-sm text-gray-500">
+                              <LocationIcon size={14} />
+                              {event.venueCity}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <CalendarIcon size={16} />
-                        {new Date(event.startDate).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusColors[event.status]}`}>
-                        {statusLabels[event.status]}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2 text-gray-900 font-medium">
-                        <TicketIcon size={16} className="text-gray-400" />
-                        {event.ticketsSold.toLocaleString()}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2 text-gray-900 font-bold">
-                        <DollarIcon size={16} className="text-green-500" />
-                        {event.revenue.toLocaleString()}€
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <EyeIcon size={16} />
-                        {event.views.toLocaleString()}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/events/${event.slug}`}
-                          className="p-2 text-gray-600 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
-                          title="Voir"
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <CalendarIcon size={16} />
+                          {new Date(event.startDate).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            statusColors[event.status] ?? 'bg-gray-100 text-gray-700'
+                          }`}
                         >
-                          <EyeIcon size={18} />
-                        </Link>
-                        <Link
-                          href={`/dashboard/events/${event.id}/edit`}
-                          className="p-2 text-gray-600 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
-                          title="Modifier"
-                        >
-                          <EditIcon size={18} />
-                        </Link>
-                        <Link
-                          href={`/dashboard/events/${event.id}/analytics`}
-                          className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                          title="Analytics"
-                        >
-                          <TrendingUpIcon size={18} />
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {filteredEvents.length === 0 && (
-            <div className="text-center py-12">
-              <CalendarIcon className="mx-auto mb-4 text-gray-300" size={48} />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun événement trouvé</h3>
-              <p className="text-gray-600 mb-6">Commencez par créer votre premier événement</p>
-              <Link
-                href="/dashboard/events/create"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-medium hover:bg-[#7B61FF] transition-colors"
-              >
-                <PlusIcon size={20} />
-                Créer un événement
-              </Link>
+                          {statusLabels[event.status] ?? event.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2 text-gray-900 font-medium">
+                          <TicketIcon size={16} className="text-gray-400" />
+                          {(event.ticketsSold || 0).toLocaleString()}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <EyeIcon size={16} />
+                          {(event.views || 0).toLocaleString()}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Publish button for DRAFT events */}
+                          {event.status === 'DRAFT' && (
+                            <button
+                              onClick={() => handlePublish(event.id)}
+                              disabled={publishingId === event.id}
+                              className="px-3 py-1.5 text-xs font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                            >
+                              {publishingId === event.id ? '…' : 'Publier'}
+                            </button>
+                          )}
+                          <Link
+                            href={`/events/${event.slug}`}
+                            className="p-2 text-gray-600 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
+                            title="Voir"
+                          >
+                            <EyeIcon size={18} />
+                          </Link>
+                          <Link
+                            href={`/dashboard/events/${event.id}/edit`}
+                            className="p-2 text-gray-600 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
+                            title="Modifier"
+                          >
+                            <EditIcon size={18} />
+                          </Link>
+                          <Link
+                            href={`/dashboard/events/${event.id}/analytics`}
+                            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            title="Analytics"
+                          >
+                            <TrendingUpIcon size={18} />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
+
+            {filteredEvents.length === 0 && !isLoading && (
+              <div className="text-center py-12">
+                <CalendarIcon className="mx-auto mb-4 text-gray-300" size={48} />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun événement trouvé</h3>
+                <p className="text-gray-600 mb-6">Commencez par créer votre premier événement</p>
+                <Link
+                  href="/dashboard/events/create"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-medium hover:bg-[#7B61FF] transition-colors"
+                >
+                  <PlusIcon size={20} />
+                  Créer un événement
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
