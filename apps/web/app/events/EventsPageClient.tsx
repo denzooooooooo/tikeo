@@ -92,13 +92,13 @@ interface Props {
   searchParams: Record<string, string | undefined>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function EventsPageClient({ initialEvents, initialMeta, searchParams }: Props) {
   const router = useRouter();
 
-  const [events, setEvents] = useState<Event[]>(initialEvents?.length ? initialEvents : FALLBACK_EVENTS);
-  const [meta, setMeta] = useState<Meta>(initialMeta || { total: FALLBACK_EVENTS.length, page: 1, totalPages: 1, limit: 20 });
+  const [events, setEvents] = useState<Event[]>(initialEvents || []);
+  const [meta, setMeta] = useState<Meta>(initialMeta || { total: 0, page: 1, totalPages: 1, limit: 20 });
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -151,16 +151,16 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
     setLoading(true);
     try {
       const qs = new URLSearchParams({ page: '1', limit: '20', ...params }).toString();
-      const res = await fetch(`${API_URL}/api/events?${qs}`, { cache: 'no-store' });
+      const res = await fetch(`${API_URL}/events?${qs}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setEvents(data.data || data || []);
         setMeta(data.meta || { total: (data.data || data || []).length, page: 1, totalPages: 1, limit: 20 });
       } else {
-        setEvents(FALLBACK_EVENTS);
+        setEvents([]);
       }
     } catch {
-      setEvents(FALLBACK_EVENTS);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -426,74 +426,92 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
                 const isAlmostFull = availPct <= 15;
                 const eventDate = new Date(event.startDate);
 
+                const catEmoji = CATEGORIES.find(c => c.value === event.category)?.emoji ?? '🎉';
+                const monthLabel = eventDate.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase();
+
                 return (
-                  <Link key={event.id} href={`/events/${event.id}`} className="group block">
-                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
-                      {/* Image */}
-                      <div className="relative h-48 overflow-hidden">
-                        <Image
-                          src={event.coverImage || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80'}
-                          alt={event.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                        {/* Category badge */}
-                        <div className="absolute top-3 left-3">
-                          <span className="px-2.5 py-1 bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-bold rounded-full">
-                            {CATEGORIES.find(c => c.value === event.category)?.emoji} {event.category}
+                  <Link key={event.id} href={`/events/${event.id}`} className="group cursor-pointer block">
+                    {/* ── IMAGE ── */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gray-100 aspect-[4/3] mb-4">
+                      {/* Gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10 pointer-events-none" />
+
+                      <Image
+                        src={event.coverImage || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80'}
+                        alt={event.title}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+
+                      {/* Category badge */}
+                      <div className="absolute top-4 left-4 z-20">
+                        <span className="px-3 py-1 bg-white/95 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-900">
+                          {catEmoji} {event.category}
+                        </span>
+                      </div>
+
+                      {/* Almost full badge */}
+                      {isAlmostFull && (
+                        <div className="absolute top-4 right-4 z-20">
+                          <span className="px-2.5 py-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
+                            Presque complet !
                           </span>
                         </div>
-                        {/* Availability badge */}
-                        {isAlmostFull && (
-                          <div className="absolute top-3 right-3">
-                            <span className="px-2.5 py-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
-                              Presque complet !
-                            </span>
-                          </div>
-                        )}
-                        {/* Price badge */}
-                        <div className="absolute bottom-3 right-3">
-                          <span className="px-3 py-1.5 bg-white text-gray-900 text-sm font-bold rounded-full shadow-lg">
-                            {formatPrice(event.minPrice)}
+                      )}
+
+                      {/* Date badge */}
+                      <div className="absolute bottom-4 left-4 z-20">
+                        <div className="bg-white rounded-lg p-2 text-center shadow-lg min-w-[44px]">
+                          <div className="text-xs font-semibold text-gray-500 uppercase">{monthLabel}</div>
+                          <div className="text-2xl font-bold text-gray-900 leading-none">{eventDate.getDate()}</div>
+                        </div>
+                      </div>
+
+                      {/* Price badge */}
+                      <div className="absolute bottom-4 right-4 z-20">
+                        <span className="px-3 py-1.5 bg-white text-gray-900 text-sm font-bold rounded-full shadow-lg">
+                          {formatPrice(event.minPrice)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* ── INFO ── */}
+                    <div className="space-y-1.5">
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#5B7CFF] transition-colors line-clamp-1">
+                        {event.title}
+                      </h3>
+
+                      <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                        <MapPinIcon />
+                        <span className="line-clamp-1">{event.venueCity}, {event.venueCountry}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm text-gray-600">
+                        <div className="flex items-center gap-1.5">
+                          <CalendarIcon />
+                          <span>
+                            {eventDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+                            {' · '}
+                            {eventDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                       </div>
 
-                      {/* Content */}
-                      <div className="p-4">
-                        <h3 className="font-bold text-gray-900 text-base mb-2 line-clamp-2 group-hover:text-[#5B7CFF] transition-colors">
-                          {event.title}
-                        </h3>
-
-                        <div className="flex items-center gap-1.5 text-gray-500 text-sm mb-1.5">
-                          <CalendarIcon />
-                          <span>{eventDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                      {/* Organizer + availability */}
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-1.5">
+                          {event.organizer?.verified && <span className="text-[#5B7CFF] text-xs">✓</span>}
+                          <span className="text-xs text-gray-500 font-medium truncate max-w-[130px]">
+                            {event.organizer?.companyName || 'Organisateur'}
+                          </span>
                         </div>
-
-                        <div className="flex items-center gap-1.5 text-gray-500 text-sm mb-3">
-                          <MapPinIcon />
-                          <span>{event.venueCity}, {event.venueCountry}</span>
-                        </div>
-
-                        {/* Organizer + availability */}
-                        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                          <div className="flex items-center gap-1.5">
-                            {event.organizer?.verified && (
-                              <span className="text-[#5B7CFF]">✓</span>
-                            )}
-                            <span className="text-xs text-gray-500 font-medium truncate max-w-[120px]">
-                              {event.organizer?.companyName || 'Organisateur'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <TicketIcon />
-                            <span className={`text-xs font-semibold ${getAvailabilityColor(event.ticketsAvailable, event.capacity)}`}>
-                              {event.ticketsAvailable > 0
-                                ? `${event.ticketsAvailable.toLocaleString()} places`
-                                : 'Complet'}
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-1">
+                          <TicketIcon />
+                          <span className={`text-xs font-semibold ${getAvailabilityColor(event.ticketsAvailable, event.capacity)}`}>
+                            {event.ticketsAvailable > 0
+                              ? `${event.ticketsAvailable.toLocaleString()} places`
+                              : 'Complet'}
+                          </span>
                         </div>
                       </div>
                     </div>

@@ -73,8 +73,9 @@ export default function CreateEventPage() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
+      const storedTokens = localStorage.getItem('auth_tokens');
+      const accessToken = storedTokens ? JSON.parse(storedTokens).accessToken : null;
+      if (!accessToken) {
         setError('Vous devez être connecté pour créer un événement.');
         setIsLoading(false);
         return;
@@ -83,7 +84,7 @@ export default function CreateEventPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           ...formData,
