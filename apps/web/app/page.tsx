@@ -13,170 +13,20 @@ import {
   HomeCTASection,
 } from './components/HomeBottomSections';
 
-// Données africaines de fallback (utilisées si l'API n'est pas disponible)
-const AFRICAN_FEATURED_EVENTS = [
-  {
-    id: '1',
-    title: 'MASA 2025 — Marché des Arts du Spectacle',
-    coverImage: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1920&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    startDate: '2025-03-10T18:00:00',
-    venueCity: 'Abidjan',
-    venueCountry: 'Côte d\'Ivoire',
-    category: 'Festival',
-    price: 5000,
-    description: 'Le plus grand marché des arts du spectacle d\'Afrique. Danse, théâtre, musique et cirque.',
-  },
-  {
-    id: '2',
-    title: 'Dakar Jazz Festival',
-    coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1920&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    startDate: '2025-04-05T20:00:00',
-    venueCity: 'Dakar',
-    venueCountry: 'Sénégal',
-    category: 'Concert',
-    price: 15000,
-    description: 'Festival international de jazz avec les meilleurs artistes africains et internationaux.',
-  },
-  {
-    id: '3',
-    title: 'Lagos Music Festival',
-    coverImage: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1920&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    startDate: '2025-05-20T21:00:00',
-    venueCity: 'Lagos',
-    venueCountry: 'Nigeria',
-    category: 'Festival',
-    price: 8000,
-    description: 'Le festival de musique le plus attendu de l\'Afrique de l\'Ouest. Afrobeats, Highlife et plus.',
-  },
-  {
-    id: '4',
-    title: 'Afrobeats Summit Accra',
-    coverImage: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1920&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    startDate: '2025-06-15T19:00:00',
-    venueCity: 'Accra',
-    venueCountry: 'Ghana',
-    category: 'Conférence',
-    price: 25000,
-    description: 'Le sommet mondial de l\'Afrobeats. Networking, panels et performances live.',
-  },
-  {
-    id: '5',
-    title: 'Fête de la Musique — Douala',
-    coverImage: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=1920&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-    startDate: '2025-06-21T17:00:00',
-    venueCity: 'Douala',
-    venueCountry: 'Cameroun',
-    category: 'Concert',
-    price: 0,
-    description: 'Célébration gratuite de la musique dans toute la ville. Scènes ouvertes et concerts.',
-  },
-];
-
-const AFRICAN_NEARBY_EVENTS = [
-  {
-    id: '1',
-    title: 'MASA 2025',
-    coverImage: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    startDate: '2025-03-10T18:00:00',
-    venueCity: 'Abidjan',
-    venueCountry: 'Côte d\'Ivoire',
-    category: 'Festival',
-    price: 5000,
-    description: 'Marché des Arts du Spectacle Africain',
-    organizer: { companyName: 'Abidjan Productions', logo: null, verified: true },
-    ticketTypes: [{ price: 5000 }],
-  },
-  {
-    id: '2',
-    title: 'Dakar Jazz Festival',
-    coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    startDate: '2025-04-05T20:00:00',
-    venueCity: 'Dakar',
-    venueCountry: 'Sénégal',
-    category: 'Concert',
-    price: 15000,
-    description: 'Festival international de jazz',
-    organizer: { companyName: 'Dakar Events', logo: null, verified: true },
-    ticketTypes: [{ price: 15000 }],
-  },
-  {
-    id: '3',
-    title: 'Lagos Music Festival',
-    coverImage: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    startDate: '2025-05-20T21:00:00',
-    venueCity: 'Lagos',
-    venueCountry: 'Nigeria',
-    category: 'Festival',
-    price: 8000,
-    description: 'Le festival de musique le plus attendu',
-    organizer: { companyName: 'Lagos Entertainment', logo: null, verified: true },
-    ticketTypes: [{ price: 8000 }],
-  },
-  {
-    id: '4',
-    title: 'Afrobeats Summit',
-    coverImage: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    startDate: '2025-06-15T19:00:00',
-    venueCity: 'Accra',
-    venueCountry: 'Ghana',
-    category: 'Conférence',
-    price: 25000,
-    description: 'Le sommet mondial de l\'Afrobeats',
-    organizer: { companyName: 'Ghana Events Co.', logo: null, verified: true },
-    ticketTypes: [{ price: 25000 }],
-  },
-  {
-    id: '5',
-    title: 'Fête de la Musique',
-    coverImage: 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&q=80',
-    teaserVideo: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-    startDate: '2025-06-21T17:00:00',
-    venueCity: 'Douala',
-    venueCountry: 'Cameroun',
-    category: 'Concert',
-    price: 0,
-    description: 'Célébration gratuite de la musique',
-    organizer: { companyName: 'Douala Culture', logo: null, verified: false },
-    ticketTypes: [{ price: 0 }],
-  },
-  {
-    id: '6',
-    title: 'Nairobi Tech Summit',
-    coverImage: 'https://images.unsplash.com/photo-1531058020387-3be344556be6?w=800&q=80',
-    teaserVideo: null,
-    startDate: '2025-07-10T09:00:00',
-    venueCity: 'Nairobi',
-    venueCountry: 'Kenya',
-    category: 'Conférence',
-    price: 50000,
-    description: 'Le plus grand sommet tech d\'Afrique de l\'Est',
-    organizer: { companyName: 'Kenya Tech Events', logo: null, verified: true },
-    ticketTypes: [{ price: 50000 }],
-  },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 async function getFeaturedEvents() {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-    const res = await fetch(`${apiUrl}/events/featured?limit=5`, {
-      next: { revalidate: 300 }, // Cache 5 minutes
+    const res = await fetch(`${API_URL}/events/featured?limit=5`, {
+      next: { revalidate: 300 },
     });
-    if (!res.ok) throw new Error('API unavailable');
+    if (!res.ok) return [];
     const data = await res.json();
-    if (!data || data.length === 0) return AFRICAN_FEATURED_EVENTS;
+    if (!data || data.length === 0) return [];
     return data.map((e: any) => ({
       id: e.id,
       title: e.title,
-      coverImage: e.coverImage || 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1920&q=80',
+      coverImage: e.coverImage || null,
       teaserVideo: e.teaserVideo || null,
       startDate: e.startDate,
       venueCity: e.venueCity,
@@ -186,29 +36,55 @@ async function getFeaturedEvents() {
       description: e.description,
     }));
   } catch {
-    return AFRICAN_FEATURED_EVENTS;
+    return [];
   }
 }
 
 async function getNearbyEvents() {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-    const res = await fetch(`${apiUrl}/events?limit=6&page=1`, {
+    const res = await fetch(`${API_URL}/events?limit=6&page=1`, {
       next: { revalidate: 300 },
     });
-    if (!res.ok) throw new Error('API unavailable');
+    if (!res.ok) return [];
     const data = await res.json();
-    if (!data?.data || data.data.length === 0) return AFRICAN_NEARBY_EVENTS;
-    return data.data;
+    return data?.data || [];
   } catch {
-    return AFRICAN_NEARBY_EVENTS;
+    return [];
+  }
+}
+
+async function getContests() {
+  try {
+    const res = await fetch(`${API_URL}/contests?limit=3&status=ACTIVE`, {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data?.contests || data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function getFeaturedOrganizers() {
+  try {
+    const res = await fetch(`${API_URL}/organizers?limit=4`, {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data?.organizers || data || [];
+  } catch {
+    return [];
   }
 }
 
 export default async function HomePage() {
-  const [featuredEvents, nearbyEvents] = await Promise.all([
+  const [featuredEvents, nearbyEvents, contests, organizers] = await Promise.all([
     getFeaturedEvents(),
     getNearbyEvents(),
+    getContests(),
+    getFeaturedOrganizers(),
   ]);
 
   return (
@@ -262,7 +138,7 @@ export default async function HomePage() {
       <HomeCategoriesSection />
 
       {/* Concours & Votes */}
-      <HomeContestsSection />
+      <HomeContestsSection contests={contests} />
 
       {/* Pourquoi Tikeo */}
       <HomeFeaturesSection />
@@ -274,7 +150,7 @@ export default async function HomePage() {
       <HomeHowItWorksSection />
 
       {/* Organisateurs */}
-      <HomeOrganizersSection />
+      <HomeOrganizersSection organizers={organizers} />
 
       {/* Newsletter */}
       <NewsletterSection />
