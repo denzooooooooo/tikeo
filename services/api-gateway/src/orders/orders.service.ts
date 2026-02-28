@@ -20,7 +20,7 @@ export class OrdersService {
       where: { id: data.ticketTypeId },
     });
     if (!ticketType) throw new NotFoundException('Type de billet non trouvé');
-    if (ticketType.quantity < data.quantity) {
+    if (ticketType.available < data.quantity) {
       throw new Error('Stock insuffisant pour ce type de billet');
     }
 
@@ -28,44 +28,59 @@ export class OrdersService {
     const subtotal = unitPrice * data.quantity;
 
     // Apply promo code if provided
-    let discount = 0;
-    let promoCodeId: string | undefined;
+    let discountAmount = 0;
+    let promoCodeUsed: string | undefined;
     if (data.promoCode) {
       const promo = await this.prisma.promoCode.findFirst({
         where: { code: data.promoCode, isActive: true },
       });
       if (promo) {
-        discount = (subtotal * Number(promo.discountPercent)) / 100;
-        promoCodeId = promo.id;
+        if (promo.discountType === 'PERCENTAGE') {
+          discountAmount = (subtotal * Number(promo.discountValue)) / 100;
+        } else {
+          discountAmount = Number(promo.discountValue);
+        }
+        promoCodeUsed = promo.code;
       }
     }
 
-    const total = subtotal - discount;
+    const total = Math.max(0, subtotal - discountAmount);
 
-    // Create order with items
+    // Create order (scalar IDs only — unchecked input)
     const order = await this.prisma.order.create({
       data: {
         userId,
         eventId: data.eventId,
         status: 'PENDING',
+        subtotal,
+        fees: 0,
+        taxes: 0,
+        discount: discountAmount,
+        promoCodeUsed: promoCodeUsed ?? null,
         total,
         currency: event.currency || 'EUR',
-        ...(promoCodeId ? { promoCodeId } : {}),
-        OrderItem: {
-          create: {
-            ticketTypeId: data.ticketTypeId,
-            quantity: data.quantity,
-            price: unitPrice,
-          },
-        },
+        paymentMethod: 'CARD',
       },
+    });
+
+    // Create order item separately to avoid Prisma XOR type conflict
+    await this.prisma.orderItem.create({
+      data: {
+        orderId: order.id,
+        ticketTypeId: data.ticketTypeId,
+        quantity: data.quantity,
+        price: unitPrice,
+      },
+    });
+
+    // Return order with relations
+    return this.prisma.order.findUnique({
+      where: { id: order.id },
       include: {
         OrderItem: true,
         event: { select: { id: true, title: true, startDate: true } },
       },
     });
-
-    return order;
   }
 
   async findUserOrders(userId: string) {
