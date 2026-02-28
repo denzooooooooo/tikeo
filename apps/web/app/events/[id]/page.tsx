@@ -272,30 +272,49 @@ export default async function EventDetailPage({ params }: { params: { id: string
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Réserver vos billets</h3>
 
               <div className="space-y-4 mb-6">
-                {event.ticketTypes?.map((ticket: any) => (
-                  <div
-                    key={ticket.id}
-                    className="group border-2 border-gray-200 rounded-xl p-5 hover:border-[#5B7CFF] hover:shadow-lg transition-all duration-200 cursor-pointer"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <p className="font-bold text-lg text-gray-900 group-hover:text-[#5B7CFF] transition-colors">
-                          {ticket.name}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">{ticket.description}</p>
+                {event.ticketTypes?.length > 0 ? (
+                  event.ticketTypes.map((ticket: any) => (
+                    <div
+                      key={ticket.id}
+                      className="group border-2 border-gray-200 rounded-xl p-5 hover:border-[#5B7CFF] hover:shadow-lg transition-all duration-200 cursor-pointer"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <p className="font-bold text-lg text-gray-900 group-hover:text-[#5B7CFF] transition-colors">
+                            {ticket.name}
+                          </p>
+                          {ticket.description && (
+                            <p className="text-sm text-gray-600 mt-1">{ticket.description}</p>
+                          )}
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className="text-2xl font-bold text-[#5B7CFF]">
+                            {ticket.price === 0 ? (
+                              <span className="text-green-600 text-lg">Gratuit</span>
+                            ) : (
+                              <>
+                                {ticket.price.toLocaleString('fr-FR')}
+                                <span className="text-sm font-normal text-gray-500 ml-1">
+                                  {event.currency || 'FCFA'}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right ml-4">
-                        <p className="text-2xl font-bold text-[#5B7CFF]">{ticket.price}€</p>
-                      </div>
+                      {(ticket.available ?? ticket.quantity) > 0 && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <TicketIcon size={14} />
+                          <span>{ticket.available ?? ticket.quantity} places restantes</span>
+                        </div>
+                      )}
                     </div>
-                    {ticket.quantityAvailable && (
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <TicketIcon size={14} />
-                        <span>{ticket.quantityAvailable} places restantes</span>
-                      </div>
-                    )}
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-500 text-sm">
+                    Aucun type de billet disponible pour le moment.
                   </div>
-                ))}
+                )}
               </div>
 
               <Link
