@@ -438,7 +438,9 @@ export class EventsService {
                 minPerOrder: tt.minPerOrder ?? 1,
                 maxPerOrder: tt.maxPerOrder ?? 10,
                 isActive: true,
-                benefits: tt.benefits ?? [],
+                benefits: Array.isArray(tt.benefits)
+                  ? (tt.benefits.length > 0 ? JSON.stringify(tt.benefits) : null)
+                  : (tt.benefits || null),
               })),
             }
           : undefined,
