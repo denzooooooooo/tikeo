@@ -406,7 +406,9 @@ export class EventsService {
       .replace(/-+/g, '-')
       .trim() + '-' + Date.now();
 
-    const { ticketTypes, ...eventData } = dto;
+    // Extract fields not in Prisma schema (isFree) and optional fields with defaults
+    const { ticketTypes, isFree: _isFree, capacity: capacityFromDto, ...eventData } = dto;
+    const capacity = capacityFromDto || 100;
 
     const event = await this.prisma.event.create({
       data: {
@@ -418,7 +420,8 @@ export class EventsService {
         // Required fields with safe defaults if not provided by frontend
         coverImage: eventData.coverImage || '',
         venuePostalCode: eventData.venuePostalCode || '',
-        ticketsAvailable: eventData.capacity || 0,
+        capacity,
+        ticketsAvailable: capacity,
         minPrice: ticketTypes?.[0]?.price ?? 0,
         maxPrice: ticketTypes?.[ticketTypes?.length - 1]?.price ?? 0,
         ticketTypes: ticketTypes?.length
