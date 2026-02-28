@@ -33,10 +33,12 @@ export function ReviewForm({ eventId, onSuccess, onError }: ReviewFormProps) {
     setError('');
 
     try {
-      const token = localStorage.getItem('auth_token');
-      
+      const storedTokens = localStorage.getItem('auth_tokens');
+      const token = storedTokens ? JSON.parse(storedTokens).accessToken : null;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/reviews/events/${eventId}`,
+        `${apiUrl}/reviews/events/${eventId}`,
         {
           method: 'POST',
           headers: {

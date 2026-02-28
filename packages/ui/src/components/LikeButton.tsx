@@ -24,15 +24,17 @@ export function LikeButton({
 
   const handleLike = async () => {
     if (loading) return;
-    
+
     setLoading(true);
-    
+
     try {
-      const token = localStorage.getItem('auth_token');
+      const storedTokens = localStorage.getItem('auth_tokens');
+      const token = storedTokens ? JSON.parse(storedTokens).accessToken : null;
       const method = liked ? 'DELETE' : 'POST';
-      
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/likes/events/${eventId}`,
+        `${apiUrl}/likes/events/${eventId}`,
         {
           method,
           headers: {

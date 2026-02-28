@@ -15,11 +15,13 @@ import {
   ShareIcon,
   TicketIcon,
 } from '@tikeo/ui';
-import { LikeButton, ReviewForm } from '@tikeo/ui';
+import { LikeButton, FollowButton, ReviewForm } from '@tikeo/ui';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 async function getEvent(id: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events/${id}`, {
+    const res = await fetch(`${API_URL}/events/${id}`, {
       cache: 'no-store',
     });
 
@@ -132,12 +134,23 @@ export default async function EventDetailPage({ params }: { params: { id: string
                     )}
                   </p>
                 </div>
-                <Link
-                  href={`/organizers/${event.organizer?.id}`}
-                  className="px-6 py-3 bg-white border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:border-[#5B7CFF] hover:text-[#5B7CFF] transition-all duration-200"
-                >
-                  Voir le profil
-                </Link>
+                <div className="flex items-center gap-3">
+                  {event.organizer?.id && (
+                    <FollowButton
+                      organizerId={event.organizer.id}
+                      initialFollowed={event.isFollowingOrganizer || false}
+                      initialCount={event.organizer.followersCount || 0}
+                      size="md"
+                      showCount={false}
+                    />
+                  )}
+                  <Link
+                    href={`/organizers/${event.organizer?.id}`}
+                    className="px-5 py-2.5 bg-white border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:border-[#5B7CFF] hover:text-[#5B7CFF] transition-all duration-200 text-sm"
+                  >
+                    Voir le profil
+                  </Link>
+                </div>
               </div>
             </div>
 
@@ -211,7 +224,11 @@ export default async function EventDetailPage({ params }: { params: { id: string
                   </div>
                   <span className="font-semibold text-gray-900">Billets</span>
                 </div>
-                <p className="text-sm text-gray-600">Disponibles</p>
+                <p className="text-sm text-gray-600">
+                  {event.ticketTypes?.length > 0
+                    ? `${event.ticketTypes.length} type${event.ticketTypes.length > 1 ? 's' : ''}`
+                    : 'Disponibles'}
+                </p>
               </div>
             </div>
 
@@ -281,10 +298,13 @@ export default async function EventDetailPage({ params }: { params: { id: string
                 ))}
               </div>
 
-              <button className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white rounded-xl font-bold text-lg hover:shadow-2xl transition-all duration-200 mb-6">
+              <Link
+                href={`/events/${params.id}/checkout`}
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white rounded-xl font-bold text-lg hover:shadow-2xl transition-all duration-200 mb-6"
+              >
                 <TicketIcon size={24} />
                 Réserver maintenant
-              </button>
+              </Link>
 
               <div className="space-y-4 pt-6 border-t border-gray-200">
                 <div className="flex items-center gap-3 text-sm text-gray-600">
