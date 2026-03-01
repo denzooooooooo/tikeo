@@ -50,7 +50,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   // ✅ Listen on Railway port
-  const port = parseInt(process.env.PORT, 10) || 3001;
+  const port = parseInt(process.env.PORT, 10) || 3000;
   await app.listen(port, '0.0.0.0');
 
   console.log(`🚀 API Gateway running on port ${port}`);
