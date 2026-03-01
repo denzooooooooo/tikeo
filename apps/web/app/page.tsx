@@ -171,11 +171,12 @@ export default async function HomePage() {
   ]);
  
   // Debug info - show in development only
-  const debugInfo = process.env.NODE_ENV === 'development' ? null : (
+  const debugInfo = (
     <div className="fixed bottom-4 right-4 bg-black/80 text-white p-4 rounded-lg text-xs z-50">
       <p>API: {process.env.NEXT_PUBLIC_API_URL || 'NOT SET'}</p>
       <p>Events: {featuredEvents.length}</p>
       <p>Nearby: {nearbyEvents.length}</p>
+      <p>Status: {featuredEvents.length === 0 ? 'NO DATA - Check API' : 'OK'}</p>
     </div>
   );
  
