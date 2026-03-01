@@ -5,10 +5,14 @@
     "dockerfilePath": "services/api-gateway/Dockerfile"
   },
   "deploy": {
+    "numReplicas": 1,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
     "startCommand": "node services/api-gateway/dist/main.js",
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 300,
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 3
+    "env": {
+      "PORT": "8080"
+    }
   }
 }
