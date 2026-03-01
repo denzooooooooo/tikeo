@@ -33,7 +33,8 @@ async function getFeaturedEvents() {
     }
     const response = await res.json();
     const data = response.data || response || [];
-    console.log('[DEBUG] Events data:', data.length, 'events');
+    console.log('[DEBUG] Events data length:', data.length, 'events');
+    console.log('[DEBUG] Full API response:', JSON.stringify(response).substring(0, 500));
     
     return data.map((e: any) => ({
       id: e.id,
