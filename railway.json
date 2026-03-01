@@ -12,7 +12,7 @@
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 300,
     "env": {
-      "PORT": "8080"
+      "PORT": "3001"
     }
   }
 }
