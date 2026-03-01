@@ -96,7 +96,7 @@ const nextConfig = {
   },
 
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1',
   },
 
   eslint: {
@@ -145,11 +145,10 @@ const nextConfig = {
   },
 
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-    // En production, on pointe vers le VPS Hetzner
+    // En production, on pointe vers Railway
     // En développement, on pointe vers localhost
     const backendBase = process.env.NODE_ENV === 'production'
-      ? apiUrl.replace('/api/v1', '')
+      ? 'https://api-gateway-production-8ee0.up.railway.app'
       : 'http://localhost:3001';
 
     return [
