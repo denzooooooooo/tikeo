@@ -66,12 +66,12 @@ RUN chown -R nestjs:nodejs /app
 # Utiliser l'utilisateur non-root
 USER nestjs
 
-# Exposer le port
-EXPOSE 3001
+# Exposer le port (Railway utilise 8080 par défaut)
+EXPOSE 8080
 
-# Health check (uses dynamic PORT injected by Railway, defaults to 3001)
+# Health check (uses dynamic PORT injected by Railway, defaults to 8080)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3001}/api/v1/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-8080}/api/v1/health || exit 1
 
 # Démarrer l'application
 CMD ["node", "services/api-gateway/dist/main.js"]
