@@ -22,8 +22,9 @@ async function getFeaturedEvents() {
   console.log('[DEBUG] Fetching events from:', `${API_URL}/events?limit=5&status=PUBLISHED`);
   try {
     // Get published events (no featured endpoint needed)
+    // Force no cache for now to debug
     const res = await fetch(`${API_URL}/events?limit=5&status=PUBLISHED`, {
-      next: { revalidate: 60 },
+      cache: 'no-store',
     });
     console.log('[DEBUG] Events response status:', res.status);
     if (!res.ok) {
@@ -56,7 +57,7 @@ async function getNearbyEvents() {
   console.log('[DEBUG] Fetching nearby events...');
   try {
     const res = await fetch(`${API_URL}/events?limit=6&page=1&status=PUBLISHED`, {
-      next: { revalidate: 60 },
+      cache: 'no-store',
     });
     if (!res.ok) {
       console.error('[DEBUG] Nearby fetch failed:', res.status);
