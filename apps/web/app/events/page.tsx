@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   keywords: 'événements afrique, concerts abidjan, festivals dakar, lagos events, tikeo',
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 async function getEvents(searchParams: Record<string, string | undefined>) {
   try {
