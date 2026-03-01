@@ -19,42 +19,20 @@ console.log('[DEBUG] API_URL:', API_URL);
 console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
 
 async function getFeaturedEvents() {
-  console.log('[DEBUG] Fetching featured events from:', `${API_URL}/events/featured?limit=5`);
+  console.log('[DEBUG] Fetching events from:', `${API_URL}/events?limit=5&status=PUBLISHED`);
   try {
-    // First try featured events
-    const res = await fetch(`${API_URL}/events/featured?limit=5`, {
+    // Get published events (no featured endpoint needed)
+    const res = await fetch(`${API_URL}/events?limit=5&status=PUBLISHED`, {
       next: { revalidate: 60 },
     });
-    console.log('[DEBUG] Featured response status:', res.status);
+    console.log('[DEBUG] Events response status:', res.status);
     if (!res.ok) {
-      console.error('[DEBUG] Featured fetch failed:', res.status, res.statusText);
-      throw new Error('Failed to fetch featured');
+      console.error('[DEBUG] Events fetch failed:', res.status, res.statusText);
+      return [];
     }
-    const data = await res.json();
-    console.log('[DEBUG] Featured data:', data);
-    
-    // If no featured events, fall back to regular events
-    if (!data || data.length === 0) {
-      console.log('[DEBUG] No featured events, trying fallback...');
-      const fallbackRes = await fetch(`${API_URL}/events?limit=5`, {
-        next: { revalidate: 60 },
-      });
-      if (!fallbackRes.ok) return [];
-      const fallbackData = await fallbackRes.json();
-      const events = fallbackData?.data || fallbackData || [];
-      return events.map((e: any) => ({
-        id: e.id,
-        title: e.title,
-        coverImage: e.coverImage || null,
-        teaserVideo: e.teaserVideo || null,
-        startDate: e.startDate,
-        venueCity: e.venueCity,
-        venueCountry: e.venueCountry,
-        category: e.category,
-        price: e.ticketTypes?.[0]?.price ?? 0,
-        description: e.description,
-      }));
-    }
+    const response = await res.json();
+    const data = response.data || response || [];
+    console.log('[DEBUG] Events data:', data.length, 'events');
     
     return data.map((e: any) => ({
       id: e.id,
@@ -68,20 +46,26 @@ async function getFeaturedEvents() {
       price: e.ticketTypes?.[0]?.price ?? 0,
       description: e.description,
     }));
-  } catch {
+  } catch (error) {
+    console.error('[DEBUG] Error fetching events:', error);
     return [];
   }
 }
 
 async function getNearbyEvents() {
+  console.log('[DEBUG] Fetching nearby events...');
   try {
-    const res = await fetch(`${API_URL}/events?limit=6&page=1`, {
+    const res = await fetch(`${API_URL}/events?limit=6&page=1&status=PUBLISHED`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const events = data?.data || [];
-    return events.map((e: any) => ({
+    if (!res.ok) {
+      console.error('[DEBUG] Nearby fetch failed:', res.status);
+      return [];
+    }
+    const response = await res.json();
+    const data = response.data || response || [];
+    console.log('[DEBUG] Nearby events:', data.length);
+    return data.map((e: any) => ({
       id: e.id,
       title: e.title,
       coverImage: e.coverImage || 'https://picsum.photos/seed/event/400/300',
@@ -94,7 +78,8 @@ async function getNearbyEvents() {
       ticketsLeft: e.ticketsAvailable ?? e.capacity,
       totalTickets: e.capacity ?? 100,
     }));
-  } catch {
+  } catch (error) {
+    console.error('[DEBUG] Error nearby:', error);
     return [];
   }
 }
