@@ -172,7 +172,7 @@ export default async function HomePage() {
     getCategoryCounts(),
     getCountryCounts(),
   ]);
-
+ 
   return (
     <div className="min-h-screen">
       {/* Hero Carousel — Teaser plein écran */}
