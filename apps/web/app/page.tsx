@@ -13,7 +13,7 @@ import {
   HomeCTASection,
 } from './components/HomeBottomSections';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
 console.log('[DEBUG] API_URL:', API_URL);
 console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
