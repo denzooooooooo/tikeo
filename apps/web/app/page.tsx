@@ -15,17 +15,27 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+console.log('[DEBUG] API_URL:', API_URL);
+console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
+
 async function getFeaturedEvents() {
+  console.log('[DEBUG] Fetching featured events from:', `${API_URL}/events/featured?limit=5`);
   try {
     // First try featured events
     const res = await fetch(`${API_URL}/events/featured?limit=5`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) throw new Error('Failed to fetch featured');
+    console.log('[DEBUG] Featured response status:', res.status);
+    if (!res.ok) {
+      console.error('[DEBUG] Featured fetch failed:', res.status, res.statusText);
+      throw new Error('Failed to fetch featured');
+    }
     const data = await res.json();
+    console.log('[DEBUG] Featured data:', data);
     
     // If no featured events, fall back to regular events
     if (!data || data.length === 0) {
+      console.log('[DEBUG] No featured events, trying fallback...');
       const fallbackRes = await fetch(`${API_URL}/events?limit=5`, {
         next: { revalidate: 60 },
       });
@@ -173,8 +183,18 @@ export default async function HomePage() {
     getCountryCounts(),
   ]);
  
+  // Debug info - show in development only
+  const debugInfo = process.env.NODE_ENV === 'development' ? null : (
+    <div className="fixed bottom-4 right-4 bg-black/80 text-white p-4 rounded-lg text-xs z-50">
+      <p>API: {process.env.NEXT_PUBLIC_API_URL || 'NOT SET'}</p>
+      <p>Events: {featuredEvents.length}</p>
+      <p>Nearby: {nearbyEvents.length}</p>
+    </div>
+  );
+ 
   return (
     <div className="min-h-screen">
+      {debugInfo}
       {/* Hero Carousel — Teaser plein écran */}
       <HeroCarousel events={featuredEvents} />
 
