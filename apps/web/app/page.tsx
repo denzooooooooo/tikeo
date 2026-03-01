@@ -17,12 +17,35 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 async function getFeaturedEvents() {
   try {
+    // First try featured events
     const res = await fetch(`${API_URL}/events/featured?limit=5`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error('Failed to fetch featured');
     const data = await res.json();
-    if (!data || data.length === 0) return [];
+    
+    // If no featured events, fall back to regular events
+    if (!data || data.length === 0) {
+      const fallbackRes = await fetch(`${API_URL}/events?limit=5`, {
+        next: { revalidate: 60 },
+      });
+      if (!fallbackRes.ok) return [];
+      const fallbackData = await fallbackRes.json();
+      const events = fallbackData?.data || fallbackData || [];
+      return events.map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        coverImage: e.coverImage || null,
+        teaserVideo: e.teaserVideo || null,
+        startDate: e.startDate,
+        venueCity: e.venueCity,
+        venueCountry: e.venueCountry,
+        category: e.category,
+        price: e.ticketTypes?.[0]?.price ?? 0,
+        description: e.description,
+      }));
+    }
+    
     return data.map((e: any) => ({
       id: e.id,
       title: e.title,
