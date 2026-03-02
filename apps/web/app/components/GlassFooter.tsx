@@ -107,8 +107,7 @@ export function GlassFooter() {
               {[
                 { label: 'Qui sommes-nous', href: '/about' },
                 { label: 'Contact', href: '/contact' },
-                { label: 'Carrières', href: '/careers' },
-                { label: 'Presse', href: '/press' },
+                
               ].map((link) => (
                 <li key={link.label}>
                   <Link 
