@@ -3,7 +3,6 @@ import Link from 'next/link';
 import NearbyEventsSection from './components/NearbyEventsSection';
 import HomeCategoriesSection from './components/HomeCategoriesSection';
 import HomeCountriesSection from './components/HomeCountriesSection';
-import HomeContestsSection from './components/HomeContestsSection';
 import HomeFeaturesSection from './components/HomeFeaturesSection';
 import NewsletterSection from './components/NewsletterSection';
 import {
@@ -86,19 +85,6 @@ async function getNearbyEvents() {
   }
 }
 
-async function getContests() {
-  try {
-    const res = await fetch(`${API_URL}/contests?limit=3&status=ACTIVE`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.contests || data || [];
-  } catch {
-    return [];
-  }
-}
-
 async function getFeaturedOrganizers() {
   try {
     const res = await fetch(`${API_URL}/organizers?limit=4`, {
@@ -161,10 +147,9 @@ async function getCategoryCounts(): Promise<Record<string, number>> {
 }
 
 export default async function HomePage() {
-  const [featuredEvents, nearbyEvents, contests, organizers, categoryCounts, countryCounts] = await Promise.all([
+  const [featuredEvents, nearbyEvents, organizers, categoryCounts, countryCounts] = await Promise.all([
     getFeaturedEvents(),
     getNearbyEvents(),
-    getContests(),
     getFeaturedOrganizers(),
     getCategoryCounts(),
     getCountryCounts(),
@@ -178,7 +163,7 @@ export default async function HomePage() {
       <p><span className="text-gray-400">API_URL:</span> {apiUrl}</p>
       <p><span className="text-gray-400">Featured:</span> {featuredEvents.length} events</p>
       <p><span className="text-gray-400">Nearby:</span> {nearbyEvents.length} events</p>
-      <p><span className="text-gray-400">Contests:</span> {contests.length}</p>
+      <p><span className="text-gray-400">Contests:</span> 0</p>
       <p><span className="text-gray-400">Organizers:</span> {organizers.length}</p>
       <p><span className="text-gray-400">Status:</span> {featuredEvents.length === 0 ? '❌ NO DATA' : '✅ OK'}</p>
       {featuredEvents.length === 0 && (
@@ -239,9 +224,6 @@ export default async function HomePage() {
 
       {/* Catégories */}
       <HomeCategoriesSection categoryCounts={categoryCounts} />
-
-      {/* Concours & Votes */}
-      <HomeContestsSection contests={contests} />
 
       {/* Pourquoi Tikeo */}
       <HomeFeaturesSection />

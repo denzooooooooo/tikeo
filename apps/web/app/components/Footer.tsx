@@ -107,16 +107,6 @@ export function Footer() {
                   Dashboard
                 </Link>
               </li>
-              <li>
-                <Link href="/pricing" className="hover:text-white transition-colors">
-                  Tarifs
-                </Link>
-              </li>
-              <li>
-                <Link href="/resources" className="hover:text-white transition-colors">
-                  Ressources
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -132,21 +122,6 @@ export function Footer() {
               <li>
                 <Link href="/contact" className="hover:text-white transition-colors">
                   Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="/careers" className="hover:text-white transition-colors">
-                  Carrières
-                </Link>
-              </li>
-              <li>
-                <Link href="/press" className="hover:text-white transition-colors">
-                  Presse
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="hover:text-white transition-colors">
-                  Blog
                 </Link>
               </li>
             </ul>
@@ -168,9 +143,6 @@ export function Footer() {
               </Link>
               <Link href="/cookies" className="text-gray-400 hover:text-white transition-colors">
                 Cookies
-              </Link>
-              <Link href="/legal" className="text-gray-400 hover:text-white transition-colors">
-                Mentions légales
               </Link>
             </div>
           </div>

@@ -19,7 +19,7 @@ export class ReviewsService {
     }
 
     // Check if user already reviewed
-    const existingReview = await this.prisma.review.findFirst({
+    const existingReview = await this.prisma.eventReview.findFirst({
       where: { userId, eventId },
     });
 
@@ -36,14 +36,13 @@ export class ReviewsService {
       throw new BadRequestException('Vous devez avoir assisté à cet événement pour laisser un avis');
     }
 
-    const review = await this.prisma.review.create({
+    const review = await this.prisma.eventReview.create({
       data: {
         userId,
         eventId,
         rating: data.rating,
         title: data.title,
         content: data.content,
-        type: 'EVENT',
       },
       include: {
         user: {
@@ -63,7 +62,7 @@ export class ReviewsService {
     title?: string;
     content?: string;
   }) {
-    const review = await this.prisma.review.findFirst({
+    const review = await this.prisma.eventReview.findFirst({
       where: { id: reviewId, userId },
     });
 
@@ -71,7 +70,7 @@ export class ReviewsService {
       throw new NotFoundException('Avis non trouvé');
     }
 
-    const updatedReview = await this.prisma.review.update({
+    const updatedReview = await this.prisma.eventReview.update({
       where: { id: reviewId },
       data: {
         ...(data.rating && { rating: data.rating }),
@@ -92,7 +91,7 @@ export class ReviewsService {
   }
 
   async deleteEventReview(userId: string, reviewId: string) {
-    const review = await this.prisma.review.findFirst({
+    const review = await this.prisma.eventReview.findFirst({
       where: { id: reviewId, userId },
     });
 
@@ -101,7 +100,7 @@ export class ReviewsService {
     }
 
     const eventId = review.eventId;
-    await this.prisma.review.delete({ where: { id: reviewId } });
+    await this.prisma.eventReview.delete({ where: { id: reviewId } });
 
     // Update event average rating
     await this.updateEventRating(eventId);
@@ -113,8 +112,8 @@ export class ReviewsService {
     const skip = (page - 1) * limit;
 
     const [reviews, total] = await Promise.all([
-      this.prisma.review.findMany({
-        where: { eventId, type: 'EVENT' },
+      this.prisma.eventReview.findMany({
+        where: { eventId },
         include: {
           user: {
             select: { id: true, firstName: true, lastName: true, avatar: true },
@@ -124,7 +123,7 @@ export class ReviewsService {
         skip,
         take: limit,
       }),
-      this.prisma.review.count({ where: { eventId, type: 'EVENT' } }),
+      this.prisma.eventReview.count({ where: { eventId } }),
     ]);
 
     // Calculate average
@@ -150,7 +149,7 @@ export class ReviewsService {
     const skip = (page - 1) * limit;
 
     const [reviews, total] = await Promise.all([
-      this.prisma.review.findMany({
+      this.prisma.eventReview.findMany({
         where: { userId },
         include: {
           event: {
@@ -161,7 +160,7 @@ export class ReviewsService {
         skip,
         take: limit,
       }),
-      this.prisma.review.count({ where: { userId } }),
+      this.prisma.eventReview.count({ where: { userId } }),
     ]);
 
     return {
@@ -187,7 +186,7 @@ export class ReviewsService {
       throw new NotFoundException('Organisateur non trouvé');
     }
 
-    const existingReview = await this.prisma.review.findFirst({
+    const existingReview = await this.prisma.organizerReview.findFirst({
       where: { userId, organizerId },
     });
 
@@ -195,14 +194,13 @@ export class ReviewsService {
       throw new BadRequestException('Vous avez déjà noté cet organisateur');
     }
 
-    const review = await this.prisma.review.create({
+    const review = await this.prisma.organizerReview.create({
       data: {
         userId,
         organizerId,
         rating: data.rating,
         title: data.title,
         content: data.content,
-        type: 'ORGANIZER',
       },
       include: {
         user: {
@@ -221,8 +219,8 @@ export class ReviewsService {
     const skip = (page - 1) * limit;
 
     const [reviews, total] = await Promise.all([
-      this.prisma.review.findMany({
-        where: { organizerId, type: 'ORGANIZER' },
+      this.prisma.organizerReview.findMany({
+        where: { organizerId },
         include: {
           user: {
             select: { id: true, firstName: true, lastName: true, avatar: true },
@@ -232,7 +230,7 @@ export class ReviewsService {
         skip,
         take: limit,
       }),
-      this.prisma.review.count({ where: { organizerId, type: 'ORGANIZER' } }),
+      this.prisma.organizerReview.count({ where: { organizerId } }),
     ]);
 
     const organizer = await this.prisma.organizer.findUnique({
@@ -256,8 +254,8 @@ export class ReviewsService {
   // ============ HELPER METHODS ============
 
   private async updateEventRating(eventId: string) {
-    const aggregations = await this.prisma.review.aggregate({
-      where: { eventId, type: 'EVENT' },
+    const aggregations = await this.prisma.eventReview.aggregate({
+      where: { eventId },
       _avg: { rating: true },
       _count: { id: true },
     });
@@ -272,8 +270,8 @@ export class ReviewsService {
   }
 
   private async updateOrganizerRating(organizerId: string) {
-    const aggregations = await this.prisma.review.aggregate({
-      where: { organizerId, type: 'ORGANIZER' },
+    const aggregations = await this.prisma.organizerReview.aggregate({
+      where: { organizerId },
       _avg: { rating: true },
     });
 

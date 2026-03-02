@@ -285,11 +285,17 @@ model PromoCode {
   discountValue    Float
   minPurchase      Float?
   maxUses          Int?
+  maxUsesPerUser  Int?
   usedCount        Int      @default(0)
   validFrom        DateTime
   validUntil       DateTime
   isActive         Boolean  @default(true)
   applicableEvents String?
+  applicableCategories String?
+  
+  // Organizer relation
+  organizerId      String?
+  
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

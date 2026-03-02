@@ -10,23 +10,12 @@ import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { HealthModule } from './health/health.module';
-import { ContestsModule } from './contests/contests.module';
 import { OrganizersModule } from './organizers/organizers.module';
-import { BlogModule } from './blog/blog.module';
-import { VotesModule } from './votes/votes.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReviewsModule } from './reviews/reviews.module';
-import { LikesModule } from './likes/likes.module';
-import { FavoritesModule } from './favorites/favorites.module';
 import { SearchModule } from './search/search.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PromoCodesModule } from './promo-codes/promo-codes.module';
-import { HelpModule } from './help/help.module';
-// import { ActivityFeedModule } from './activity-feed/activity-feed.module';
-import { AIModule } from './ai/ai.module';
-import { AnalyticsModule } from './analytics/analytics.module';
-import { ContestantsModule } from './contestants/contestants.module';
-import { ContestVotesModule } from './contest-votes/contest-votes.module';
 import { EmailModule } from './email/email.module';
 
 @Module({
@@ -62,26 +51,14 @@ import { EmailModule } from './email/email.module';
     TicketsModule,
     OrdersModule,
     UsersModule,
-    
-    // Modules additionnels - ajoutés pour corriger les erreurs 404
-    ContestsModule,
     OrganizersModule,
-    BlogModule,
-    VotesModule,
     NotificationsModule,
     ReviewsModule,
-    LikesModule,
-    FavoritesModule,
     SearchModule,
     PaymentsModule,
     PromoCodesModule,
-    HelpModule,
-    // ActivityFeedModule, // Commenté temporairement - nécessite plus de travail
-    AIModule,
-    AnalyticsModule,
-    ContestantsModule,
-    ContestVotesModule,
     EmailModule,
   ],
 })
 export class AppModule {}
+

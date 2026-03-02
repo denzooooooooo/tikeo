@@ -147,20 +147,13 @@ export function Navbar() {
             <div className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
               <MegaMenu />
               <Link href="/events" className="px-3 py-2 text-gray-700 hover:text-[#5B7CFF] font-semibold text-sm rounded-xl hover:bg-[#5B7CFF]/8 transition-all">Événements</Link>
-              <Link href="/votes" className="px-3 py-2 text-gray-700 hover:text-[#5B7CFF] font-semibold text-sm rounded-xl hover:bg-[#5B7CFF]/8 transition-all flex items-center gap-1.5">
-                Votes
-                <span className="px-1.5 py-0.5 text-white text-[10px] font-bold rounded-full" style={{ background: 'linear-gradient(135deg,#5B7CFF,#7B61FF)' }}>NEW</span>
-              </Link>
               <DropMenu title="Plus">
                 <div className="px-3 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Découvrir</p></div>
                 <DLink href="/events?category=Festivals" icon={FestivalIcon}>Festivals</DLink>
-                <DLink href="/blog" icon={StarIcon}>Blog & Actualités</DLink>
-                <DLink href="/press" icon={ChartIcon}>Presse</DLink>
                 <div className="border-t border-gray-100 my-1" />
                 <div className="px-3 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tikeo</p></div>
                 <DLink href="/about" icon={UserIcon}>À propos</DLink>
                 <DLink href="/contact" icon={CalendarIcon}>Contact</DLink>
-                <DLink href="/affiliate" icon={StarIcon}>Affiliation</DLink>
               </DropMenu>
               <NavSearch />
             </div>

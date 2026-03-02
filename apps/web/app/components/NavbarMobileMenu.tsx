@@ -98,14 +98,6 @@ export default function NavbarMobileMenu({ user, isAuthenticated, onClose, onLog
           <Link href="/events" className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-[#5B7CFF]/8 hover:text-[#5B7CFF] rounded-xl font-medium text-sm transition-all" onClick={onClose}>
             <CalendarIcon size={18} /> Tous les événements
           </Link>
-          <Link href="/votes" className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-[#5B7CFF]/8 hover:text-[#5B7CFF] rounded-xl font-medium text-sm transition-all" onClick={onClose}>
-            <TrendingUpIcon size={18} />
-            <span>Votes & Concours</span>
-            <span className="ml-auto px-1.5 py-0.5 text-white text-[10px] font-bold rounded-full" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}>NEW</span>
-          </Link>
-          <Link href="/blog" className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-[#5B7CFF]/8 hover:text-[#5B7CFF] rounded-xl font-medium text-sm transition-all" onClick={onClose}>
-            <StarIcon size={18} /> Blog & Actualités
-          </Link>
         </div>
 
         {/* Create Event */}
