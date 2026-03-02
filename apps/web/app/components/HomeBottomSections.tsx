@@ -2,54 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
-
-// ── Follow Button Component ─────────────────────────────────────────────────
-function FollowButton({ organizerId, initialCount = 0, size = 'sm', showCount = true }: { organizerId: string; initialCount?: number; size?: 'sm' | 'md'; showCount?: boolean }) {
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [count, setCount] = useState(initialCount);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const handleFollow = async () => {
-    setIsLoading(true);
-    // Simuler le comportement pour l'instant
-    // API: POST /likes/organizers/:id/follow
-    setIsFollowing(!isFollowing);
-    setCount(isFollowing ? count - 1 : count + 1);
-    setIsLoading(false);
-  };
-  
-  const isSmall = size === 'sm';
-  const buttonClasses = isSmall 
-    ? 'px-3 py-1.5 text-xs' 
-    : 'px-4 py-2 text-sm';
-  
-  return (
-    <button
-      onClick={handleFollow}
-      disabled={isLoading}
-      className={`${buttonClasses} rounded-full font-semibold transition-all flex items-center justify-center gap-1.5 w-full ${
-        isFollowing 
-          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200' 
-          : 'text-white hover:opacity-90 border border-transparent'
-      }`}
-      style={!isFollowing ? { background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' } : {}}
-    >
-      {isFollowing ? (
-        <>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
-          <span>Abonné</span>
-          {showCount && count > 0 && <span className="opacity-70">({count})</span>}
-        </>
-      ) : (
-        <>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-          <span>Suivre</span>
-        </>
-      )}
-    </button>
-  );
-}
+import { FollowButton } from '@tikeo/ui';
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────────
 const CalendarIcon = () => (
