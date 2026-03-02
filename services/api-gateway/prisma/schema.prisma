@@ -276,37 +276,6 @@ model WrittenReview {
   @@map("written_reviews")
 }
 
-// Unified Review Model
-model Review {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Type: EVENT, ORGANIZER
-  type      String
-  
-  // For EVENT reviews
-  eventId   String?
-  event     Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
-  // For ORGANIZER reviews
-  organizerId String?
-  organizer   Organizer? @relation(fields: [organizerId], references: [id], onDelete: Cascade)
-  
-  rating    Int
-  title     String?
-  content   String?  @db.Text
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-  @@index([eventId])
-  @@index([organizerId])
-  @@index([type])
-  @@map("reviews")
-}
-
 // Promo Code
 model PromoCode {
   id               String   @id @default(cuid())
@@ -323,6 +292,8 @@ model PromoCode {
   applicableEvents String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  usages PromoCodeUsage[]
 
   @@index([code])
   @@map("promo_codes")
