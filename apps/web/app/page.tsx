@@ -87,12 +87,27 @@ async function getNearbyEvents() {
 
 async function getFeaturedOrganizers() {
   try {
-    const res = await fetch(`${API_URL}/organizers?limit=4`, {
+    const res = await fetch(`${API_URL}/organizers?limit=4&sortBy=popular`, {
       next: { revalidate: 300 },
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return data?.organizers || data || [];
+    const organizers = data?.organizers || data || [];
+    
+    // Enrich with additional data
+    return organizers.map((o: any) => ({
+      id: o.id,
+      companyName: o.companyName,
+      name: o.name,
+      logo: o.logo,
+      image: o.image,
+      verified: o.verified,
+      rating: o.rating,
+      _count: {
+        events: o.eventsCount || o._count?.events || 0,
+        subscribers: o.subscribersCount || o._count?.subscribers || 0,
+      },
+    }));
   } catch {
     return [];
   }

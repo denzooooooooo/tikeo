@@ -1,5 +1,55 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
+
+// ── Follow Button Component ─────────────────────────────────────────────────
+function FollowButton({ organizerId, initialCount = 0, size = 'sm', showCount = true }: { organizerId: string; initialCount?: number; size?: 'sm' | 'md'; showCount?: boolean }) {
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [count, setCount] = useState(initialCount);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleFollow = async () => {
+    setIsLoading(true);
+    // Simuler le comportement pour l'instant
+    // API: POST /likes/organizers/:id/follow
+    setIsFollowing(!isFollowing);
+    setCount(isFollowing ? count - 1 : count + 1);
+    setIsLoading(false);
+  };
+  
+  const isSmall = size === 'sm';
+  const buttonClasses = isSmall 
+    ? 'px-3 py-1.5 text-xs' 
+    : 'px-4 py-2 text-sm';
+  
+  return (
+    <button
+      onClick={handleFollow}
+      disabled={isLoading}
+      className={`${buttonClasses} rounded-full font-semibold transition-all flex items-center justify-center gap-1.5 w-full ${
+        isFollowing 
+          ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200' 
+          : 'text-white hover:opacity-90 border border-transparent'
+      }`}
+      style={!isFollowing ? { background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' } : {}}
+    >
+      {isFollowing ? (
+        <>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
+          <span>Abonné</span>
+          {showCount && count > 0 && <span className="opacity-70">({count})</span>}
+        </>
+      ) : (
+        <>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+          <span>Suivre</span>
+        </>
+      )}
+    </button>
+  );
+}
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────────
 const CalendarIcon = () => (
@@ -145,8 +195,10 @@ interface OrganizerItem {
   logo?: string | null;
   image?: string | null;
   verified?: boolean;
-  _count?: { events?: number };
+  _count?: { events?: number; subscribers?: number };
   eventsCount?: number;
+  subscribersCount?: number;
+  rating?: number | null;
 }
 
 interface HomeOrganizersSectionProps {
@@ -168,15 +220,19 @@ export function HomeOrganizersSection({ organizers }: HomeOrganizersSectionProps
             Voir tout <ArrowRightIcon />
           </Link>
         </div>
+        
         {organizers.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {organizers.map((org) => {
               const displayName = org.companyName || org.name || 'Organisateur';
               const displayImage = org.logo || org.image;
               const eventsCount = org._count?.events ?? org.eventsCount ?? 0;
+              const subscribersCount = org._count?.subscribers ?? org.subscribersCount ?? 0;
+              const rating = org.rating ?? 0;
+              
               return (
-                <Link key={org.id} href={`/organizers/${org.id}`} className="group">
-                  <div className="bg-white rounded-2xl p-6 text-center shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div key={org.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col">
+                  <Link href={`/organizers/${org.id}`} className="flex-shrink-0">
                     <div className="relative w-16 h-16 mx-auto mb-4">
                       {displayImage ? (
                         <Image src={displayImage} alt={displayName} fill className="object-cover rounded-full" />
@@ -187,18 +243,55 @@ export function HomeOrganizersSection({ organizers }: HomeOrganizersSectionProps
                       )}
                       {org.verified && (
                         <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-white" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
-                        </div>
-                      )}
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                      </div>
+                    )}
                     </div>
-                    <h3 className="font-bold text-gray-900 group-hover:text-[#5B7CFF] transition-colors text-sm">{displayName}</h3>
-                    {eventsCount > 0 && <p className="text-xs text-gray-400 mt-1">{eventsCount} événements</p>}
+                    <h3 className="font-bold text-gray-900 text-center group-hover:text-[#5B7CFF] transition-colors text-sm mb-1">{displayName}</h3>
+                  </Link>
+                  
+                  {/* Stats */}
+                  <div className="flex items-center justify-center gap-3 mb-4 text-xs text-gray-500">
+                    {eventsCount > 0 && (
+                      <span className="flex items-center gap-1">
+                        <CalendarIcon />
+                        {eventsCount} événements
+                      </span>
+                    )}
+                    {rating > 0 && (
+                      <span className="flex items-center gap-0.5">
+                        <StarIcon />
+                        {rating.toFixed(1)}
+                      </span>
+                    )}
                   </div>
-                </Link>
+                  
+                  {/* Follow Button */}
+                  <div className="mt-auto">
+                    <FollowButton 
+                      organizerId={org.id} 
+                      initialCount={subscribersCount}
+                      size="sm"
+                      showCount={true}
+                    />
+                  </div>
+                </div>
               );
             })}
           </div>
-        ) : null}
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-400">Aucun organisateur pour le moment</p>
+          </div>
+        )}
+        
+        {/* Mobile "See All" button */}
+        <div className="sm:hidden mt-6 text-center">
+          <Link href="/organizers" className="inline-flex items-center gap-2 px-5 py-3 border-2 border-[#5B7CFF] text-[#5B7CFF] rounded-xl font-semibold hover:bg-[#5B7CFF] hover:text-white transition-all">
+            Voir tous les organisateurs <ArrowRightIcon />
+          </Link>
+        </div>
+        
         {/* Become organizer CTA */}
         <div className="mt-12 p-8 rounded-2xl text-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(91,124,255,0.07), rgba(123,97,255,0.07))', border: '1px solid rgba(91,124,255,0.15)' }}>
           <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(91,124,255,0.08) 0%, transparent 70%)' }} />
