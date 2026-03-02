@@ -139,8 +139,6 @@ export default async function EventDetailPage({ params }: { params: { id: string
                     {event.organizer?.id && (
                       <FollowButton
                         organizerId={event.organizer.id}
-                        initialFollowed={event.isFollowingOrganizer || false}
-                        initialCount={event.organizer.followersCount || 0}
                         size="sm"
                         showCount={false}
                       />
