@@ -40,7 +40,6 @@
     "src/contest-votes",
     "src/favorites",
     "src/help",
-    "src/likes",
     "src/notifications",
     "src/organizers",
     "src/payments",
@@ -50,3 +49,4 @@
     "src/votes"
   ]
 }
+

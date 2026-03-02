@@ -17,6 +17,7 @@ import { SearchModule } from './search/search.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { EmailModule } from './email/email.module';
+import { LikesModule } from './likes/likes.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { EmailModule } from './email/email.module';
     PaymentsModule,
     PromoCodesModule,
     EmailModule,
+    LikesModule,
   ],
 })
 export class AppModule {}
