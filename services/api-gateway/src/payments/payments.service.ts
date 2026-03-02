@@ -16,9 +16,7 @@ export class PaymentsService implements OnModuleInit {
       this.logger.warn('⚠️ STRIPE_SECRET_KEY not configured - Payments service will run in demo mode');
       this.stripe = null;
     } else {
-      this.stripe = new Stripe(stripeKey, {
-        apiVersion: '2023-10-16',
-      });
+      this.stripe = new Stripe(stripeKey);
       this.logger.log('✅ Stripe initialized');
     }
   }
