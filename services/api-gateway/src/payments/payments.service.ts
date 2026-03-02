@@ -1,18 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import Stripe from 'stripe';
 
 @Injectable()
-export class PaymentsService {
-  private stripe: Stripe;
+export class PaymentsService implements OnModuleInit {
+  private stripe: Stripe | null = null;
+  private readonly logger = new Logger(PaymentsService.name);
 
-  constructor(private prisma: PrismaService) {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-    });
+  constructor(private prisma: PrismaService) {}
+
+  async onModuleInit() {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    
+    if (!stripeKey) {
+      this.logger.warn('⚠️ STRIPE_SECRET_KEY not configured - Payments service will run in demo mode');
+      this.stripe = null;
+    } else {
+      this.stripe = new Stripe(stripeKey, {
+        apiVersion: '2023-10-16',
+      });
+      this.logger.log('✅ Stripe initialized');
+    }
+  }
+
+  private checkStripe() {
+    if (!this.stripe) {
+      throw new Error('Stripe is not configured. Please set STRIPE_SECRET_KEY environment variable.');
+    }
   }
 
   async createPaymentIntent(orderId: string, amount: number) {
-    const paymentIntent = await this.stripe.paymentIntents.create({
+    this.checkStripe();
+    const paymentIntent = await this.stripe!.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
       currency: 'eur',
       metadata: {
