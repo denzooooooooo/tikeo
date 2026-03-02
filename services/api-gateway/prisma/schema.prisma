@@ -144,6 +144,10 @@ model Event {
   views  Int @default(0)
   shares Int @default(0)
 
+  // Rating fields
+  averageRating Float @default(0)
+  totalReviews  Int @default(0)
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   publishedAt DateTime?
@@ -270,6 +274,37 @@ model WrittenReview {
   createdAt DateTime @default(now())
 
   @@map("written_reviews")
+}
+
+// Unified Review Model
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Type: EVENT, ORGANIZER
+  type      String
+  
+  // For EVENT reviews
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // For ORGANIZER reviews
+  organizerId String?
+  organizer   Organizer? @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  rating    Int
+  title     String?
+  content   String?  @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([organizerId])
+  @@index([type])
+  @@map("reviews")
 }
 
 // Promo Code
@@ -547,4 +582,19 @@ model Payment {
 
   @@index([orderId])
   @@map("payments")
+}
+
+// PromoCode Usage - Track usage of promo codes
+model PromoCodeUsage {
+  id         String   @id @default(cuid())
+  promoCodeId String
+  promoCode  PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  userId     String
+  orderId    String
+  discount   Float
+  usedAt     DateTime @default(now())
+
+  @@index([promoCodeId])
+  @@index([userId])
+  @@map("promo_code_usages")
 }
