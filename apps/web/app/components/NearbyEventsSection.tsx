@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { FollowButton } from '@tikeo/ui';
 
 interface NearbyEvent {
   id: string;
@@ -15,6 +16,7 @@ interface NearbyEvent {
   price: number;
   category: string;
   organizer?: string;
+  organizerId?: string | null;
   ticketsLeft?: number;
   totalTickets?: number;
 }
@@ -79,7 +81,6 @@ function EventCard({ event }: { event: NearbyEvent }) {
   const [isHovered, setIsHovered] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 200) + 20);
-  const [followed, setFollowed] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleMouseEnter = () => {
@@ -104,12 +105,6 @@ function EventCard({ event }: { event: NearbyEvent }) {
     setLikeCount(prev => liked ? prev - 1 : prev + 1);
   };
 
-  const handleFollow = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setFollowed(!followed);
-  };
-
   const rawDate = event.startDate || event.date || '';
   const dateObj = rawDate ? new Date(rawDate) : null;
   const dateParts = dateObj && !isNaN(dateObj.getTime())
@@ -125,10 +120,10 @@ function EventCard({ event }: { event: NearbyEvent }) {
   const isLowStock = ticketsLeft < 20;
 
   // Handle organizer - could be string or object { id, name }
-  const organizerName = typeof event.organizer === 'object' && event.organizer !== null
-    ? event.organizer.name || event.organizer.nameEn || 'Organisateur'
-    : (event.organizer || 'Organisateur');
-  const organizerInitial = typeof organizerName === 'string' && organizerName.length > 0
+  const organizerName = typeof event.organizer === 'string' 
+    ? event.organizer 
+    : 'Organisateur';
+  const organizerInitial = organizerName.length > 0
     ? organizerName.charAt(0).toUpperCase()
     : 'O';
 
@@ -252,24 +247,28 @@ function EventCard({ event }: { event: NearbyEvent }) {
 
         {/* Organizer + Follow */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-2">
+          <Link href={event.organizerId ? `/organizers/${event.organizerId}` : '#'} className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}>
               {organizerInitial}
             </div>
             <span className="text-xs text-gray-600 font-medium truncate max-w-[90px]">{organizerName}</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleFollow}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                followed
-                  ? 'bg-[#5B7CFF]/10 text-[#5B7CFF] border border-[#5B7CFF]/30'
-                  : 'bg-gray-100 text-gray-600 hover:bg-[#5B7CFF]/10 hover:text-[#5B7CFF] border border-transparent'
-              }`}
-            >
-              {followed ? <CheckIcon /> : <UserPlusIcon />}
-              <span>{followed ? 'Suivi' : 'Suivre'}</span>
-            </button>
+            {event.organizerId ? (
+              <FollowButton
+                organizerId={event.organizerId}
+                size="sm"
+                showCount={false}
+              />
+            ) : (
+              <button
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-400 cursor-not-allowed"
+                disabled
+              >
+                <UserPlusIcon />
+                <span>Suivre</span>
+              </button>
+            )}
             <Link
               href={`/events/${event.id}`}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-white transition-all hover:shadow-md hover:shadow-[#5B7CFF]/30"
