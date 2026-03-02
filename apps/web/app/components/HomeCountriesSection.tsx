@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 
-const COUNTRIES = [
+// Default countries with visual assets
+const DEFAULT_COUNTRIES = [
   { code: 'NG', name: 'Nigeria', flag: '🇳🇬', image: 'https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?w=600&q=80', gradient: 'from-green-700/70 to-green-900/80', genre: 'Afrobeats', city: 'Lagos' },
   { code: 'CI', name: "Côte d'Ivoire", flag: '🇨🇮', image: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=600&q=80', gradient: 'from-orange-600/70 to-green-800/80', genre: 'Coupé-Décalé', city: 'Abidjan' },
   { code: 'SN', name: 'Sénégal', flag: '🇸🇳', image: 'https://images.unsplash.com/photo-1580746738099-b2d4b5d4b9b7?w=600&q=80', gradient: 'from-yellow-600/70 to-green-800/80', genre: 'Mbalax', city: 'Dakar' },
@@ -14,16 +15,64 @@ const COUNTRIES = [
   { code: 'ML', name: 'Mali', flag: '🇲🇱', image: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=600&q=80', gradient: 'from-yellow-600/70 to-red-800/80', genre: 'Blues du désert', city: 'Bamako' },
 ];
 
+// Fallback visual for unknown countries
+const DEFAULT_VISUALS = {
+  gradient: 'from-blue-600/70 to-purple-800/80',
+  genre: 'Événements',
+  city: 'Capitale',
+};
+
+// Helper to get country visuals from default list
+function getCountryVisuals(countryName: string) {
+  const found = DEFAULT_COUNTRIES.find(c => 
+    c.name.toLowerCase() === countryName.toLowerCase() ||
+    c.name.toLowerCase().includes(countryName.toLowerCase()) ||
+    countryName.toLowerCase().includes(c.name.toLowerCase())
+  );
+  return found || { ...DEFAULT_VISUALS, flag: '🌍', image: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=600&q=80' };
+}
+
 interface HomeCountriesSectionProps {
   countryCounts?: Record<string, number>;
 }
 
 export default function HomeCountriesSection({ countryCounts = {} }: HomeCountriesSectionProps) {
-  // Only show countries that have at least 1 event
-  const activeCountries = COUNTRIES.filter((c) => (countryCounts[c.name] ?? 0) > 0);
+  // Get all countries from API that have events
+  const apiCountryNames = Object.keys(countryCounts);
+  
+  // Get countries from default list that have events
+  const activeDefaultCountries = DEFAULT_COUNTRIES.filter((c) => (countryCounts[c.name] ?? 0) > 0);
+  
+  // Get countries from API that are NOT in default list (dynamic countries)
+  const dynamicCountries = apiCountryNames
+    .filter(name => !DEFAULT_COUNTRIES.some(dc => dc.name.toLowerCase() === name.toLowerCase()))
+    .map(name => {
+      const visuals = getCountryVisuals(name);
+      return {
+        code: name.substring(0, 2).toUpperCase(),
+        name,
+        ...visuals,
+        count: countryCounts[name] || 0,
+      };
+    });
+  
+  // Combine: active default countries + dynamic countries from API
+  // Sort by event count (descending)
+  const activeDefaultWithCounts = activeDefaultCountries.map(c => ({
+    ...c,
+    count: countryCounts[c.name] || 0,
+  }));
+  
+  const allActiveCountries = [...activeDefaultWithCounts, ...dynamicCountries]
+    .sort((a, b) => b.count - a.count);
+  
+  // If no data from API yet, show all default countries (graceful fallback for empty DB)
+  const displayCountries = allActiveCountries.length > 0 
+    ? allActiveCountries 
+    : DEFAULT_COUNTRIES.map(c => ({ ...c, count: 0 }));
 
-  // If no data from API yet, show all countries (graceful fallback for empty DB)
-  const displayCountries = activeCountries.length > 0 ? activeCountries : COUNTRIES;
+  const totalActiveCountries = allActiveCountries.length;
+  const totalEvents = Object.values(countryCounts).reduce((sum, count) => sum + count, 0);
 
   return (
     <section className="py-20 bg-white relative overflow-hidden">
@@ -33,7 +82,7 @@ export default function HomeCountriesSection({ countryCounts = {} }: HomeCountri
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <span className="inline-block px-4 py-1.5 bg-gradient-to-r from-[#5B7CFF]/10 to-[#7B61FF]/10 rounded-full mb-4 text-sm font-bold text-[#5B7CFF] border border-[#5B7CFF]/20">
-            Afrique — Berceau de la musique mondiale
+            {totalActiveCountries > 0 ? 'Événements dans le monde' : 'Afrique — Berceau de la musique mondiale'}
           </span>
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4 leading-tight">
             Événements{' '}
@@ -42,15 +91,15 @@ export default function HomeCountriesSection({ countryCounts = {} }: HomeCountri
             </span>
           </h2>
           <p className="text-lg text-gray-500 max-w-xl mx-auto">
-            {activeCountries.length > 0
-              ? `${activeCountries.length} pays actifs, des événements en direct`
+            {totalActiveCountries > 0
+              ? `${totalActiveCountries} pays actifs, ${totalEvents.toLocaleString('fr-FR')} événements en direct`
               : "10 pays africains, des milliers d'événements, une culture musicale unique"}
           </p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {displayCountries.map((c) => {
-            const count = countryCounts[c.name] ?? 0;
+          {displayCountries.slice(0, 10).map((c) => {
+            const count = c.count ?? 0;
             return (
               <Link
                 key={c.code}
@@ -98,3 +147,4 @@ export default function HomeCountriesSection({ countryCounts = {} }: HomeCountri
     </section>
   );
 }
+

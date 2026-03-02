@@ -99,24 +99,13 @@ async function getFeaturedOrganizers() {
 }
 
 async function getCountryCounts(): Promise<Record<string, number>> {
-  const countryNames = ['Nigeria', "Côte d'Ivoire", 'Sénégal', 'Gabon', 'Cameroun', 'Congo RDC', 'Ghana', 'Afrique du Sud', 'Maroc', 'Mali'];
   try {
-    const results = await Promise.all(
-      countryNames.map(async (country) => {
-        try {
-          const res = await fetch(
-            `${API_URL}/events?country=${encodeURIComponent(country)}&limit=1`,
-            { next: { revalidate: 3600 } }
-          );
-          if (!res.ok) return [country, 0] as [string, number];
-          const data = await res.json();
-          return [country, data.total ?? data.count ?? 0] as [string, number];
-        } catch {
-          return [country, 0] as [string, number];
-        }
-      })
-    );
-    return Object.fromEntries(results);
+    const res = await fetch(`${API_URL}/events/countries/counts`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data || {};
   } catch {
     return {};
   }
@@ -155,28 +144,11 @@ export default async function HomePage() {
     getCountryCounts(),
   ]);
  
-  // Debug info - always show for debugging
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'NOT_SET';
-  const debugInfo = (
-    <div className="fixed bottom-4 right-4 bg-black/90 text-white p-4 rounded-lg text-xs z-50 max-w-sm">
-      <p className="font-bold text-yellow-400 mb-2">🐛 DEBUG PANEL</p>
-      <p><span className="text-gray-400">API_URL:</span> {apiUrl}</p>
-      <p><span className="text-gray-400">Featured:</span> {featuredEvents.length} events</p>
-      <p><span className="text-gray-400">Nearby:</span> {nearbyEvents.length} events</p>
-      <p><span className="text-gray-400">Contests:</span> 0</p>
-      <p><span className="text-gray-400">Organizers:</span> {organizers.length}</p>
-      <p><span className="text-gray-400">Status:</span> {featuredEvents.length === 0 ? '❌ NO DATA' : '✅ OK'}</p>
-      {featuredEvents.length === 0 && (
-        <p className="text-red-400 mt-2">
-          ℹ️ API works: curl "https://tikeoh.com/api/v1/events"
-        </p>
-      )}
-    </div>
-  );
+ 
+  
  
   return (
     <div className="min-h-screen">
-      {debugInfo}
       {/* Hero Carousel — Teaser plein écran */}
       <HeroCarousel events={featuredEvents} />
 

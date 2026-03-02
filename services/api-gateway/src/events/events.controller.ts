@@ -88,6 +88,13 @@ export class EventsController {
     return this.eventsService.getCountries();
   }
 
+  // ─── GET /events/countries/counts ─────────────────────────────────────────────
+  @Get('countries/counts')
+  @ApiOperation({ summary: 'Nombre d\'événements par pays (10 pays africains)' })
+  async getCountryCounts() {
+    return this.eventsService.getCountryCounts();
+  }
+
   // ─── GET /events/cities ──────────────────────────────────────────────────────
   @Get('cities')
   @ApiOperation({ summary: 'Liste des villes avec des événements' })

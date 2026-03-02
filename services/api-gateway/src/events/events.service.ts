@@ -549,6 +549,36 @@ export class EventsService {
     return events.map((e) => e.venueCountry).sort();
   }
 
+  // Nouveau endpoint : retourne le nombre d'événements par pays (dynamique - tous les pays avec événements)
+  async getCountryCounts(): Promise<Record<string, number>> {
+    // Requête pour compter les événements par pays
+    const countryCounts = await this.prisma.event.groupBy({
+      by: ['venueCountry'],
+      where: {
+        status: 'PUBLISHED',
+        visibility: 'PUBLIC',
+        venueCountry: {
+          not: '',
+        },
+      },
+      _count: {
+        venueCountry: true,
+      },
+    });
+
+    // Créer un objet avec le compte pour chaque pays
+    const counts: Record<string, number> = {};
+    
+    // Remplir avec les données réelles
+    countryCounts.forEach((item) => {
+      if (item.venueCountry) {
+        counts[item.venueCountry] = item._count.venueCountry;
+      }
+    });
+
+    return counts;
+  }
+
   async getCities(country?: string) {
     const where: any = { status: 'PUBLISHED', visibility: 'PUBLIC' };
     if (country) {
