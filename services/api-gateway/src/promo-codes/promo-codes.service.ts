@@ -33,6 +33,14 @@ export class PromoCodesService {
       throw new BadRequestException('Le pourcentage doit être entre 1% et 100%');
     }
 
+    // Convert arrays to JSON strings for storage
+    const applicableEventsStr = data.applicableEvents?.length 
+      ? JSON.stringify(data.applicableEvents) 
+      : null;
+    const applicableCategoriesStr = data.applicableCategories?.length 
+      ? JSON.stringify(data.applicableCategories) 
+      : null;
+
     const promoCode = await this.prisma.promoCode.create({
       data: {
         code: data.code.toUpperCase(),
@@ -41,11 +49,11 @@ export class PromoCodesService {
         minPurchase: data.minPurchase,
         maxUses: data.maxUses,
         maxUsesPerUser: data.maxUsesPerUser,
-        startsAt: data.startsAt || new Date(),
-        expiresAt: data.expiresAt,
+        validFrom: data.startsAt || new Date(),
+        validUntil: data.expiresAt,
         organizerId,
-        applicableEvents: data.applicableEvents || [],
-        applicableCategories: data.applicableCategories || [],
+        applicableEvents: applicableEventsStr,
+        applicableCategories: applicableCategoriesStr,
       },
     });
 
@@ -57,11 +65,6 @@ export class PromoCodesService {
   async validatePromoCode(code: string, userId: string, eventId?: string, totalAmount?: number) {
     const promoCode = await this.prisma.promoCode.findFirst({
       where: { code: code.toUpperCase() },
-      include: {
-        organizer: {
-          select: { id: true, companyName: true },
-        },
-      },
     });
 
     if (!promoCode) {
@@ -70,11 +73,11 @@ export class PromoCodesService {
 
     // Check if active
     const now = new Date();
-    if (promoCode.startsAt && now < promoCode.startsAt) {
+    if (promoCode.validFrom && now < promoCode.validFrom) {
       throw new BadRequestException('Ce code promo n\'est pas encore actif');
     }
 
-    if (promoCode.expiresAt && now > promoCode.expiresAt) {
+    if (promoCode.validUntil && now > promoCode.validUntil) {
       throw new BadRequestException('Ce code promo a expiré');
     }
 
@@ -88,9 +91,23 @@ export class PromoCodesService {
       throw new BadRequestException(`Achats minimums de ${promoCode.minPurchase}€ requis`);
     }
 
+    // Parse applicable events and categories
+    let applicableEvents: string[] = [];
+    let applicableCategories: string[] = [];
+    try {
+      if (promoCode.applicableEvents) {
+        applicableEvents = JSON.parse(promoCode.applicableEvents);
+      }
+      if (promoCode.applicableCategories) {
+        applicableCategories = JSON.parse(promoCode.applicableCategories);
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+
     // Check event applicability
-    if (eventId && promoCode.applicableEvents.length > 0) {
-      if (!promoCode.applicableEvents.includes(eventId)) {
+    if (eventId && applicableEvents.length > 0) {
+      if (!applicableEvents.includes(eventId)) {
         throw new BadRequestException('Ce code promo n\'est pas applicable à cet événement');
       }
     }
@@ -126,7 +143,6 @@ export class PromoCodesService {
         discountValue: promoCode.discountValue,
       },
       discount,
-      organizer: promoCode.organizer,
     };
   }
 
@@ -142,6 +158,7 @@ export class PromoCodesService {
         promoCodeId: validation.promoCode.id,
         userId,
         orderId,
+        discount: validation.discount,
       },
     });
 
@@ -171,17 +188,8 @@ export class PromoCodesService {
     const promoCode = await this.prisma.promoCode.findUnique({
       where: { id },
       include: {
-        organizer: {
-          select: { id: true, companyName: true },
-        },
         usages: {
           take: 10,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            user: {
-              select: { id: true, firstName: true, lastName: true },
-            },
-          },
         },
       },
     });
@@ -201,8 +209,8 @@ export class PromoCodesService {
     minPurchase?: number;
     maxUses?: number;
     maxUsesPerUser?: number;
-    startsAt?: Date;
-    expiresAt?: Date;
+    validFrom?: Date;
+    validUntil?: Date;
     isActive?: boolean;
   }) {
     const promoCode = await this.prisma.promoCode.findFirst({
@@ -254,13 +262,13 @@ export class PromoCodesService {
 
     const totalDiscount = await this.prisma.promoCodeUsage.aggregate({
       where: { promoCodeId: id },
-      _sum: { discountAmount: true },
+      _sum: { discount: true },
     });
 
     return {
       ...promoCode,
       totalUsage,
-      totalDiscount: totalDiscount._sum.discountAmount || 0,
+      totalDiscount: totalDiscount._sum.discount || 0,
     };
   }
 }

@@ -35,32 +35,6 @@ export class NotificationsController {
     });
   }
 
-  @Get('preferences')
-  async getPreferences(@Request() req) {
-    return this.notificationsService.getNotificationPreferences(req.user.id);
-  }
-
-  @Put('preferences')
-  async updatePreferences(
-    @Request() req,
-    @Body()
-    body: {
-      email?: boolean;
-      push?: boolean;
-      sms?: boolean;
-      orderConfirmation?: boolean;
-      eventReminders?: boolean;
-      newEvents?: boolean;
-      promotions?: boolean;
-      organizerUpdates?: boolean;
-    },
-  ) {
-    return this.notificationsService.updateNotificationPreferences(
-      req.user.id,
-      body,
-    );
-  }
-
   @Get(':id')
   async getNotification(@Request() req, @Param('id') id: string) {
     return this.notificationsService.getNotificationById(req.user.id, id);

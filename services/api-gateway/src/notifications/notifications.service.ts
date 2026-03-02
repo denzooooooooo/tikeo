@@ -92,7 +92,7 @@ export class NotificationsService {
 
     return this.prisma.notification.update({
       where: { id: notificationId },
-      data: { read: true },
+      data: { read: true, readAt: new Date() },
     });
   }
 
@@ -102,7 +102,7 @@ export class NotificationsService {
         userId,
         read: false,
       },
-      data: { read: true },
+      data: { read: true, readAt: new Date() },
     });
   }
 
@@ -140,13 +140,16 @@ export class NotificationsService {
     message: string;
     data?: Record<string, any>;
   }) {
+    // Convert data object to JSON string for storage
+    const dataStr = data.data ? JSON.stringify(data.data) : null;
+
     return this.prisma.notification.create({
       data: {
         userId: data.userId,
-        type: data.type as any,
+        type: data.type,
         title: data.title,
         message: data.message,
-        data: data.data,
+        data: dataStr,
         read: false,
       },
     });
@@ -162,57 +165,17 @@ export class NotificationsService {
       data?: Record<string, any>;
     }>,
   ) {
+    const data = notifications.map(n => ({
+      userId: n.userId,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      data: n.data ? JSON.stringify(n.data) : null,
+      read: false,
+    }));
+
     return this.prisma.notification.createMany({
-      data: notifications.map(n => ({
-        ...n,
-        type: n.type as any,
-        read: false,
-      })) as any,
-    });
-  }
-
-  async getNotificationPreferences(userId: string) {
-    const preferences = await this.prisma.notificationPreference.findUnique({
-      where: { userId },
-    });
-
-    if (!preferences) {
-      // Return default preferences
-      return {
-        email: true,
-        push: true,
-        sms: false,
-        orderConfirmation: true,
-        eventReminders: true,
-        newEvents: true,
-        promotions: false,
-        organizerUpdates: true,
-      };
-    }
-
-    return preferences;
-  }
-
-  async updateNotificationPreferences(
-    userId: string,
-    preferences: {
-      email?: boolean;
-      push?: boolean;
-      sms?: boolean;
-      orderConfirmation?: boolean;
-      eventReminders?: boolean;
-      newEvents?: boolean;
-      promotions?: boolean;
-      organizerUpdates?: boolean;
-    },
-  ) {
-    return this.prisma.notificationPreference.upsert({
-      where: { userId },
-      update: preferences,
-      create: {
-        userId,
-        ...preferences,
-      },
+      data,
     });
   }
 
