@@ -7,12 +7,24 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // ✅ CORS configuration
-  const allowedOrigins =
-    process.env.ALLOWED_ORIGINS?.split(',') || [
-      'http://localhost:3000',        // local dev
-      'https://tikeoh.com',           // prod
-      'https://www.tikeoh.com',       // prod
-    ];
+  // En développement: localhost:3000 (NestJS local) et localhost:4000 (Next.js)
+  // En production: les domaines Tikeo
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:4000',
+    'https://tikeoh.com',
+    'https://www.tikeoh.com',
+  ];
+  
+  // Ajouter les origines depuis la variable d'environnement si elle existe
+  if (process.env.ALLOWED_ORIGINS) {
+    const envOrigins = process.env.ALLOWED_ORIGINS.split(',');
+    envOrigins.forEach((origin: string) => {
+      if (!allowedOrigins.includes(origin.trim())) {
+        allowedOrigins.push(origin.trim());
+      }
+    });
+  }
 
   app.enableCors({
     origin: allowedOrigins,

@@ -145,11 +145,11 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // En production, on pointe vers Railway
-    // En développement, on pointe vers localhost
+    // En production, on pointe vers Railway (port 3001)
+    // En développement, on pointe vers localhost:3001
     const backendBase = process.env.NODE_ENV === 'production'
       ? 'https://api-gateway-production-8ee0.up.railway.app'
-      : 'http://localhost:3001';
+      : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
     return [
       {
