@@ -13,7 +13,7 @@ import {
   RefreshIcon,
   ShareIcon,
   TicketIcon,
-} from '@tikeo/ui';
+} from '@tikeo/ui'; 
 import { LikeButton, FollowButton, ReviewForm } from '@tikeo/ui';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
