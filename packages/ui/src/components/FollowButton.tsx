@@ -40,8 +40,8 @@ export function FollowButton({
 
         if (response.ok) {
           const data = await response.json();
-          setFollowed(data.isFollowing || false);
-          setCount(data.subscribersCount || initialCount);
+          setFollowed(data.isFollowing || data.isSubscribed || false);
+          setCount(data.subscribersCount || data.subscribers || initialCount);
         }
       } catch (error) {
         console.log('Using initial follow state');
@@ -75,12 +75,16 @@ export function FollowButton({
       );
 
       if (response.ok) {
-        const newFollowed = !followed;
+        const data = await response.json();
+        // Use server response to update state
+        const newFollowed = data.subscribed !== undefined ? data.subscribed : !followed;
         setFollowed(newFollowed);
-        setCount(newFollowed ? count + 1 : count - 1);
+        setCount(data.subscribers !== undefined ? data.subscribers : count);
       } else if (response.status === 401) {
         // Not logged in - show alert or redirect
         alert('Veuillez vous connecter pour suivre cet organisateur');
+      } else {
+        console.error('Follow request failed with status:', response.status);
       }
     } catch (error) {
       console.error('Error toggling follow:', error);

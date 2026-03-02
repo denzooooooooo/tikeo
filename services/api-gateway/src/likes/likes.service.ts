@@ -242,7 +242,7 @@ export class LikesService {
    * Get subscription status and count for an organizer
    */
   async getOrganizerSubscriptionStatus(organizerId: string, userId?: string) {
-    const [subscribers, userSubscription] = await Promise.all([
+    const [subscribersCount, userSubscription] = await Promise.all([
       this.getOrganizerSubscribersCount(organizerId),
       userId
         ? this.prisma.organizerSubscription.findUnique({
@@ -257,8 +257,8 @@ export class LikesService {
     ]);
 
     return {
-      subscribers,
-      isSubscribed: !!userSubscription,
+      subscribers: subscribersCount,
+      isFollowing: !!userSubscription,
     };
   }
 
