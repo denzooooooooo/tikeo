@@ -14,6 +14,7 @@ async function bootstrap() {
     'http://localhost:4000',
     'https://tikeoh.com',
     'https://www.tikeoh.com',
+    'https://tikeo.vercel.app',
   ];
   
   // Ajouter les origines depuis la variable d'environnement si elle existe
@@ -27,7 +28,7 @@ async function bootstrap() {
   }
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: true,
     credentials: true,
   });
 
