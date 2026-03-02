@@ -85,6 +85,52 @@ export default function CheckoutPage() {
     setDiscount(discountAmount);
   };
 
+  const handlePayment = async () => {
+    if (!selectedTicket || !eventId) return;
+
+    setIsLoading(true);
+    try {
+      // Create order first
+      const orderRes = await fetch(`${API_URL}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId,
+          ticketTypeId: selectedTicket.id,
+          quantity,
+          promoCode: discount > 0 ? 'APPLIED' : null,
+        }),
+      });
+
+      if (!orderRes.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const order = await orderRes.json();
+
+      // Create payment intent
+      const paymentRes = await fetch(`${API_URL}/payments/create-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.id,
+          amount: total,
+        }),
+      });
+
+      const { clientSecret } = await paymentRes.json();
+
+      // Here you would integrate with Stripe Elements
+      // For now, we'll just show a success message
+      alert('Paiement simulé avec succès!');
+    } catch (err) {
+      console.error('Payment error:', err);
+      alert('Erreur lors du paiement');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const subtotal = selectedTicket ? selectedTicket.price * quantity : 0;
   const discountAmount = subtotal * (discount / 100);
   const total = subtotal - discountAmount;
@@ -246,10 +292,11 @@ export default function CheckoutPage() {
               </div>
 
               <button
-                disabled={!selectedTicket}
+                disabled={!selectedTicket || isLoading}
+                onClick={handlePayment}
                 className="w-full mt-6 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Procéder au paiement
+                {isLoading ? 'Traitement...' : 'Procéder au paiement'}
               </button>
 
               <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">

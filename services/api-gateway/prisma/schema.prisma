@@ -81,8 +81,22 @@ model Organizer {
   totalTicketsSold Int     @default(0)
   followersCount   Int     @default(0)
 
-  stripeAccountId String?
+  stripeAccountID String?
   stripeConnected Boolean @default(false)
+
+  // Payout Configuration
+  payoutMethod      String?  // MOBILE_MONEY, PAYPAL, BANK_TRANSFER
+  payoutPhone       String?  // For mobile money (Orange, MTN, Moov, etc.)
+  payoutEmail       String?  // For PayPal
+  payoutIban        String?  // For bank transfer
+  payoutBankName    String?  // Bank name
+  payoutSwift       String?  // SWIFT code
+  payoutStatus      String?  // PENDING, VERIFIED, REJECTED
+  payoutVerifiedAt  DateTime?
+
+  // Commission Configuration
+  baseCommissionRate Float   @default(0.30)  // 0.30% base commission
+  commissionPerTicket Float   @default(0.10)  // Additional per ticket
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
