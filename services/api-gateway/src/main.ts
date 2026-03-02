@@ -61,14 +61,12 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
-  // ✅ Listen on Railway port
-  const port = parseInt(process.env.PORT, 10) || 8080;
+  // ✅ Listen on Railway port (3001 from railway.json, fallback to 8080)
+  const port = parseInt(process.env.PORT, 10) || 3001;
   await app.listen(port, '0.0.0.0');
 
   console.log(`🚀 API Gateway running on port ${port}`);
-  console.log(
-    `📚 Swagger docs available at: ${allowedOrigins[0]}/api/docs (replace with your front URL)`
-  );
+  console.log(`📚 Swagger docs available at: https://api-gateway-production-8ee0.up.railway.app/api/docs`);
 }
 
 bootstrap();
