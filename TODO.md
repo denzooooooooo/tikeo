@@ -1,11 +1,28 @@
-# Railway Deployment Fix — TODO
+# TIKEO - Plan de correction complet
 
-## Issues Identified
-- [ ] Fix 1: `railway.json` — add `startCommand` to use compiled output (root crash fix)
-- [ ] Fix 2: `main.ts` — bind to `0.0.0.0` explicitly for Railway network compatibility
-- [ ] Fix 3: `Dockerfile` — fix HEALTHCHECK to use dynamic `${PORT:-3001}`
+## Priorité 1 - Token (CRITIQUE)
+- [ ] Corriger `profile/page.tsx` - mauvaise clé token (`token` → `auth_tokens`)
+- [ ] Corriger `dashboard/settings/page.tsx` - mauvaise clé token
 
-## Progress
-- [x] railway.json updated — added `startCommand: "node services/api-gateway/dist/main.js"`
-- [x] main.ts updated — `app.listen(port, '0.0.0.0')`
-- [x] Dockerfile updated — HEALTHCHECK uses `${PORT:-3001}`
+## Priorité 2 - Like System
+- [ ] Corriger `EventCard.tsx` - bouton like fonctionnel avec API
+
+## Priorité 3 - Backend endpoints manquants
+- [ ] Ajouter `GET /events/my` (événements de l'organisateur connecté)
+- [ ] Ajouter `GET /users/stats` (stats utilisateur)
+- [ ] Ajouter `GET/PATCH /users/preferences` (préférences utilisateur)
+
+## Priorité 4 - Dashboard
+- [ ] Supprimer données hardcodées du fallback
+
+## Priorité 5 - Profil
+- [ ] Supprimer bio/phone/location hardcodés
+
+## Priorité 6 - Catégories Home
+- [ ] Passer les vrais comptages depuis la DB
+
+## Priorité 7 - Recherche
+- [ ] Vérifier et corriger la navigation de recherche
+
+## Statut
+- [ ] En cours...

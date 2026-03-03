@@ -45,7 +45,13 @@ export default function ProfilePage() {
   const [userStats, setUserStats] = useState<UserStats>({ ticketsPurchased: 0, eventsAttended: 0, favorites: 0, reviews: 0 });
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
 
-  const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+  const getToken = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const stored = localStorage.getItem('auth_tokens');
+      return stored ? JSON.parse(stored).accessToken : null;
+    } catch { return null; }
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -58,11 +64,11 @@ export default function ProfilePage() {
   const fetchProfileData = async () => {
     setIsPageLoading(true);
     const token = getToken();
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
     try {
       const [statsRes, ordersRes] = await Promise.allSettled([
         fetch(`${API_URL}/users/stats`, { headers }),
-        fetch(`${API_URL}/orders?limit=5`, { headers }),
+        fetch(`${API_URL}/orders/my`, { headers }),
       ]);
       if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
         const data = await statsRes.value.json();
@@ -134,10 +140,10 @@ export default function ProfilePage() {
     email: user.email,
     avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`,
     isVerified: user.role === 'USER',
-    bio: 'Passionné de musique et de événements culturels.',
-    joinedDate: '2023-06-15',
-    phone: '+33 6 12 34 56 78',
-    location: 'Paris, France',
+    bio: (user as any).bio || '',
+    joinedDate: (user as any).createdAt || '',
+    phone: (user as any).phone || '',
+    location: (user as any).location || '',
   };
 
   return (

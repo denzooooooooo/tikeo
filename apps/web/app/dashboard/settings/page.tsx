@@ -31,14 +31,20 @@ export default function SettingsPage() {
   }, []);
 
   const fetchPreferences = async () => {
-    const token = localStorage.getItem('token');
+    let token: string | null = null;
+    try {
+      const stored = localStorage.getItem('auth_tokens');
+      token = stored ? JSON.parse(stored).accessToken : null;
+    } catch { /* ignore */ }
+
     if (!token) {
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/preferences`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+      const response = await fetch(`${apiUrl}/users/preferences`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -63,11 +69,16 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
-    const token = localStorage.getItem('token');
+    let token: string | null = null;
+    try {
+      const stored = localStorage.getItem('auth_tokens');
+      token = stored ? JSON.parse(stored).accessToken : null;
+    } catch { /* ignore */ }
     if (!token) return;
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/preferences`, {
+      const response = await fetch(`${apiUrl}/users/preferences`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

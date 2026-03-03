@@ -1,9 +1,22 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CalendarIcon, LocationIcon, PlayIcon, HeartIcon } from '@tikeo/ui';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('auth_tokens');
+    if (!stored) return null;
+    return JSON.parse(stored).accessToken || null;
+  } catch {
+    return null;
+  }
+}
 
 interface EventCardProps {
   id: string;
@@ -17,6 +30,8 @@ interface EventCardProps {
   minPrice: number;
   currency?: string;
   isFeatured?: boolean;
+  initialLikes?: number;
+  initialLiked?: boolean;
 }
 
 export function EventCard({
@@ -31,9 +46,65 @@ export function EventCard({
   minPrice,
   currency = 'EUR',
   isFeatured = false,
+  initialLikes = 0,
+  initialLiked = false,
 }: EventCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [liked, setLiked] = useState(initialLiked);
+  const [likesCount, setLikesCount] = useState(initialLikes);
+  const [likeLoading, setLikeLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Fetch real like status on mount
+  useEffect(() => {
+    async function fetchLikeStatus() {
+      try {
+        const token = getAuthToken();
+        const res = await fetch(`${API_URL}/likes/events/${id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setLiked(data.isLiked || false);
+          setLikesCount(data.likes || 0);
+        }
+      } catch {
+        // keep initial values
+      }
+    }
+    fetchLikeStatus();
+  }, [id]);
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (likeLoading) return;
+
+    const token = getAuthToken();
+    if (!token) {
+      // Redirect to login
+      window.location.href = '/login';
+      return;
+    }
+
+    setLikeLoading(true);
+    const method = liked ? 'DELETE' : 'POST';
+    try {
+      const res = await fetch(`${API_URL}/likes/events/${id}`, {
+        method,
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLiked(data.liked);
+        setLikesCount(data.likes);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -116,13 +187,12 @@ export function EventCard({
 
         {/* Favorite Button */}
         <button
-          className="absolute top-4 right-4 z-20 w-10 h-10 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center hover:scale-110 transition-transform"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
+          className={`absolute top-4 right-4 z-20 w-10 h-10 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center hover:scale-110 transition-transform ${likeLoading ? 'opacity-50' : ''}`}
+          onClick={handleLike}
+          disabled={likeLoading}
+          title={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
         >
-          <HeartIcon size={20} className="text-gray-700" />
+          <HeartIcon size={20} className={liked ? 'text-red-500 fill-red-500' : 'text-gray-700'} />
         </button>
 
         {/* Date Badge */}
