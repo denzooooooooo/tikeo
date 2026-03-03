@@ -1,155 +1,150 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { TicketIcon, CalendarIcon, MapPinIcon, ChevronRightIcon } from '@tikeo/ui';
+import Link from 'next/link';
+import { TicketIcon, CalendarIcon } from '@tikeo/ui';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('auth_tokens');
+    return stored ? JSON.parse(stored).accessToken : null;
+  } catch { return null; }
+}
 
 interface Ticket {
   id: string;
-  eventId: string;
-  eventTitle: string;
-  eventDate: string;
-  eventVenue: string;
-  ticketType: string;
-  price: number;
-  currency: string;
+  qrCode?: string;
   status: string;
-  seatInfo: string | null;
-  purchaseDate: string;
+  createdAt: string;
+  order?: {
+    id: string;
+    event?: {
+      id: string;
+      title: string;
+      slug: string;
+      startDate: string;
+      venueName: string;
+      venueCity: string;
+      coverImage?: string;
+    };
+  };
+  ticketType?: {
+    name: string;
+    price: number;
+  };
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  VALID: 'Valide',
+  USED: 'Utilisé',
+  CANCELLED: 'Annulé',
+  REFUNDED: 'Remboursé',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  VALID: 'bg-green-100 text-green-700',
+  USED: 'bg-gray-100 text-gray-600',
+  CANCELLED: 'bg-red-100 text-red-600',
+  REFUNDED: 'bg-yellow-100 text-yellow-700',
+};
 
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [filter, setFilter] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
   useEffect(() => {
-    fetchTickets();
-  }, []);
-
-  const fetchTickets = async () => {
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
     if (!token) {
-      setIsLoading(false);
+      setIsLoggedIn(false);
+      setLoading(false);
       return;
     }
+    setIsLoggedIn(true);
+    fetchTickets(token);
+  }, []);
 
+  const fetchTickets = async (token: string) => {
+    setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/tickets/my-tickets`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await fetch(`${API_URL}/tickets/my-tickets`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTickets(data);
-      } else {
-        setTickets([
-          {
-            id: 'tkt1',
-            eventId: 'evt1',
-            eventTitle: 'Festival de Musique 2024',
-            eventDate: '2024-06-15T20:00:00Z',
-            eventVenue: 'Paris, AccorHotels Arena',
-            ticketType: 'VIP',
-            price: 89.99,
-            currency: 'EUR',
-            status: 'VALID',
-            seatInfo: 'Section A, Rang 5, Place 12',
-            purchaseDate: '2024-01-10T14:30:00Z',
-          },
-        ]);
+      if (res.ok) {
+        const data = await res.json();
+        setTickets(Array.isArray(data) ? data : data.tickets || []);
+      } else if (res.status === 401) {
+        setIsLoggedIn(false);
       }
-    } catch (error) {
-      console.error('Error fetching tickets:', error);
-      setTickets([
-        {
-          id: 'tkt1',
-          eventId: 'evt1',
-          eventTitle: 'Festival de Musique 2024',
-          eventDate: '2024-06-15T20:00:00Z',
-          eventVenue: 'Paris, AccorHotels Arena',
-          ticketType: 'VIP',
-          price: 89.99,
-          currency: 'EUR',
-          status: 'VALID',
-          seatInfo: 'Section A, Rang 5, Place 12',
-          purchaseDate: '2024-01-10T14:30:00Z',
-        },
-      ]);
+    } catch (err) {
+      console.error('Error fetching tickets:', err);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'VALID':
-        return 'bg-green-100 text-green-700';
-      case 'USED':
-        return 'bg-gray-100 text-gray-700';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-700';
-      case 'REFUNDED':
-        return 'bg-yellow-100 text-yellow-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
+  const isUpcoming = (date?: string) => date ? new Date(date) > new Date() : false;
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'VALID':
-        return 'Valide';
-      case 'USED':
-        return 'Utilis';
-      case 'CANCELLED':
-        return 'Annul';
-      case 'REFUNDED':
-        return 'Rembours';
-      default:
-        return status;
-    }
-  };
-
-  const isUpcoming = (date: string) => {
-    return new Date(date) > new Date();
-  };
-
-  const filteredTickets = tickets.filter(ticket => {
+  const filteredTickets = tickets.filter((t) => {
     if (filter === 'all') return true;
-    if (filter === 'upcoming') return isUpcoming(ticket.eventDate);
-    if (filter === 'past') return !isUpcoming(ticket.eventDate);
-    return ticket.status === filter;
+    if (filter === 'upcoming') return isUpcoming(t.order?.event?.startDate);
+    if (filter === 'past') return !isUpcoming(t.order?.event?.startDate);
+    return t.status === filter;
   });
 
-  if (isLoading) {
+  if (!isLoggedIn && !loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-[#5B7CFF] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="w-20 h-20 mx-auto mb-6 bg-[#5B7CFF]/10 rounded-full flex items-center justify-center">
+            <TicketIcon className="text-[#5B7CFF]" size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">Connectez-vous pour voir vos billets</h2>
+          <p className="text-gray-600 mb-6">Accédez à tous vos billets et codes QR.</p>
+          <div className="flex gap-3 justify-center">
+            <Link href="/login" className="px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-semibold hover:bg-[#4B6CFF] transition-colors">
+              Se connecter
+            </Link>
+            <Link href="/events" className="px-6 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:border-[#5B7CFF] hover:text-[#5B7CFF] transition-colors">
+              Voir les événements
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Mes billets</h1>
-          <p className="text-gray-600 mt-2">Grez vos billets d&apos;vnements</p>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
+              <TicketIcon className="text-white" size={28} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Mes billets</h1>
+              <p className="text-white/80">{tickets.length} billet{tickets.length !== 1 ? 's' : ''} au total</p>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Filters */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
           {[
-            { key: 'all', label: 'Tout' },
-            { key: 'upcoming', label: ' venir' },
-            { key: 'past', label: 'Passs' },
-            { key: 'VALID', label: 'Valids' },
+            { key: 'all', label: 'Tous' },
+            { key: 'upcoming', label: 'À venir' },
+            { key: 'past', label: 'Passés' },
+            { key: 'VALID', label: 'Valides' },
+            { key: 'USED', label: 'Utilisés' },
           ].map((item) => (
             <button
               key={item.key}
@@ -165,118 +160,157 @@ export default function TicketsPage() {
           ))}
         </div>
 
-        {filteredTickets.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-4 border-[#5B7CFF] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filteredTickets.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <TicketIcon className="text-gray-400" size={32} />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Aucun billet</h3>
-            <p className="text-gray-500 mb-6">Vous n&apos;avez pas encore de billets.</p>
-            <a href="/events" className="inline-block px-6 py-2 bg-[#5B7CFF] text-white rounded-lg font-semibold hover:bg-[#7B61FF] transition-colors">
-              Dcouvrir des vnements
-            </a>
+            <p className="text-gray-500 mb-6">
+              {filter === 'all' ? "Vous n'avez pas encore de billets." : "Aucun billet dans cette catégorie."}
+            </p>
+            <Link href="/events" className="inline-block px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-semibold hover:bg-[#4B6CFF] transition-colors">
+              Découvrir des événements
+            </Link>
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredTickets.map((ticket) => (
-              <div
-                key={ticket.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => setSelectedTicket(ticket)}
-              >
-                <div className="flex">
-                  <div className="flex-1 p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <span className="inline-block px-2 py-1 bg-[#5B7CFF]/10 text-[#5B7CFF] text-xs font-medium rounded-full mb-2">
-                          {ticket.ticketType}
-                        </span>
-                        <h3 className="text-lg font-semibold text-gray-900">{ticket.eventTitle}</h3>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(ticket.status)}`}>
-                        {getStatusText(ticket.status)}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <CalendarIcon size={16} />
-                        <span>
-                          {new Date(ticket.eventDate).toLocaleDateString('fr-FR', {
-                            weekday: 'short',
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+            {filteredTickets.map((ticket) => {
+              const event = ticket.order?.event;
+              return (
+                <div
+                  key={ticket.id}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => setSelectedTicket(ticket)}
+                >
+                  <div className="flex">
+                    <div className="flex-1 p-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <span className="inline-block px-2 py-1 bg-[#5B7CFF]/10 text-[#5B7CFF] text-xs font-semibold rounded-full mb-2">
+                            {ticket.ticketType?.name || 'Standard'}
+                          </span>
+                          <h3 className="text-lg font-bold text-gray-900">
+                            {event?.title || 'Événement'}
+                          </h3>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[ticket.status] || 'bg-gray-100 text-gray-600'}`}>
+                          {STATUS_LABELS[ticket.status] || ticket.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <MapPinIcon size={16} />
-                        <span>{ticket.eventVenue}</span>
-                      </div>
-                      {ticket.seatInfo && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[#5B7CFF]"></span>
-                          <span>{ticket.seatInfo}</span>
+                      {event && (
+                        <div className="space-y-1.5 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <CalendarIcon size={14} className="text-gray-400" />
+                            <span>
+                              {new Date(event.startDate).toLocaleDateString('fr-FR', {
+                                weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400">📍</span>
+                            <span>{event.venueName}, {event.venueCity}</span>
+                          </div>
                         </div>
                       )}
+                      <p className="text-xs text-gray-400 mt-3">
+                        Acheté le {new Date(ticket.createdAt).toLocaleDateString('fr-FR')}
+                      </p>
                     </div>
-                  </div>
-
-                  <div className="w-24 bg-gray-50 flex items-center justify-center border-l border-gray-100">
-                    <div className="w-16 h-16 bg-white rounded-lg p-2 shadow-sm flex items-center justify-center">
-                      <span className="text-2xl">QR</span>
+                    {/* QR placeholder */}
+                    <div className="w-20 bg-gray-50 flex items-center justify-center border-l border-gray-100">
+                      <div className="w-14 h-14 bg-white rounded-lg shadow-sm flex items-center justify-center text-xs font-mono text-gray-400 text-center p-1">
+                        QR
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
+      {/* Ticket Detail Modal */}
       {selectedTicket && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedTicket(null)}>
-          <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedTicket(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-sm w-full overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] p-6 text-white">
-              <h3 className="text-xl font-bold">{selectedTicket.eventTitle}</h3>
-              <p className="opacity-90">{selectedTicket.ticketType}</p>
+              <h3 className="text-xl font-bold">{selectedTicket.order?.event?.title || 'Billet'}</h3>
+              <p className="text-white/80 text-sm">{selectedTicket.ticketType?.name || 'Standard'}</p>
             </div>
             <div className="p-6">
-              <div className="flex justify-center mb-6">
-                <div className="w-48 h-48 bg-white border-4 border-gray-100 rounded-xl p-4 flex items-center justify-center">
-                  <span className="text-4xl font-mono">{selectedTicket.id.toUpperCase()}</span>
+              {/* QR Code display */}
+              <div className="flex justify-center mb-5">
+                <div className="w-44 h-44 bg-gray-50 border-2 border-gray-200 rounded-xl flex flex-col items-center justify-center">
+                  {selectedTicket.qrCode ? (
+                    <img src={selectedTicket.qrCode} alt="QR Code" className="w-full h-full object-contain p-2" />
+                  ) : (
+                    <>
+                      <div className="text-4xl mb-2">🎫</div>
+                      <p className="text-xs text-gray-400 font-mono text-center px-2 break-all">
+                        {selectedTicket.id.slice(0, 12).toUpperCase()}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
+
               <div className="text-center mb-4">
-                <p className="text-sm text-gray-500">Code de votre billet</p>
-                <p className="text-2xl font-mono font-bold text-gray-900">{selectedTicket.id.toUpperCase()}</p>
+                <p className="text-xs text-gray-400 mb-1">Code billet</p>
+                <p className="text-lg font-mono font-bold text-gray-900 tracking-wider">
+                  {selectedTicket.id.slice(0, 16).toUpperCase()}
+                </p>
               </div>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between py-2 border-b border-gray-100">
-                  <span className="text-gray-500">Date</span>
-                  <span className="font-medium">{new Date(selectedTicket.eventDate).toLocaleDateString('fr-FR')}</span>
+
+              <div className="space-y-2 text-sm border-t border-gray-100 pt-4">
+                {selectedTicket.order?.event && (
+                  <>
+                    <div className="flex justify-between py-1.5 border-b border-gray-50">
+                      <span className="text-gray-500">Date</span>
+                      <span className="font-medium">
+                        {new Date(selectedTicket.order.event.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-gray-50">
+                      <span className="text-gray-500">Lieu</span>
+                      <span className="font-medium text-right max-w-[60%]">
+                        {selectedTicket.order.event.venueName}, {selectedTicket.order.event.venueCity}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between py-1.5 border-b border-gray-50">
+                  <span className="text-gray-500">Statut</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[selectedTicket.status] || 'bg-gray-100 text-gray-600'}`}>
+                    {STATUS_LABELS[selectedTicket.status] || selectedTicket.status}
+                  </span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-gray-100">
-                  <span className="text-gray-500">Lieu</span>
-                  <span className="font-medium text-right">{selectedTicket.eventVenue}</span>
-                </div>
-                {selectedTicket.seatInfo && (
-                  <div className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="text-gray-500">Place</span>
-                    <span className="font-medium">{selectedTicket.seatInfo}</span>
+                {selectedTicket.ticketType?.price !== undefined && (
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-gray-500">Prix</span>
+                    <span className="font-bold text-[#5B7CFF]">
+                      {selectedTicket.ticketType.price === 0 ? 'Gratuit' : `${selectedTicket.ticketType.price}€`}
+                    </span>
                   </div>
                 )}
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-500">Prix</span>
-                  <span className="font-medium">{selectedTicket.price.toFixed(2)} {selectedTicket.currency}</span>
-                </div>
               </div>
+
               <button
                 onClick={() => setSelectedTicket(null)}
-                className="w-full mt-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                className="w-full mt-5 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
               >
                 Fermer
               </button>
@@ -284,8 +318,6 @@ export default function TicketsPage() {
           </div>
         </div>
       )}
-
-      <Footer />
     </div>
   );
 }
