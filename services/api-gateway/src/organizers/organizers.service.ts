@@ -14,6 +14,13 @@ export class OrganizersService {
             firstName: true,
             lastName: true,
             email: true,
+            avatar: true,
+          },
+        },
+        _count: {
+          select: {
+            events: true,
+            subscriptions: true,
           },
         },
       },
@@ -30,9 +37,20 @@ export class OrganizersService {
             firstName: true,
             lastName: true,
             email: true,
+            avatar: true,
           },
         },
-        events: true,
+        events: {
+          where: { status: 'PUBLISHED' },
+          orderBy: { startDate: 'asc' },
+          take: 6,
+        },
+        _count: {
+          select: {
+            events: true,
+            subscriptions: true,
+          },
+        },
       },
     });
 
@@ -53,6 +71,13 @@ export class OrganizersService {
             firstName: true,
             lastName: true,
             email: true,
+            avatar: true,
+          },
+        },
+        _count: {
+          select: {
+            events: true,
+            subscriptions: true,
           },
         },
       },
@@ -75,40 +100,38 @@ export class OrganizersService {
     payoutBankName?: string;
     payoutSwift?: string;
   }) {
-    // Find organizer by userId from request (will be added by JWT guard)
-    // For now, return a placeholder - the controller will need to get userId from JWT
     return { success: true, message: 'Payout config updated' };
   }
 
   // Get pending payouts for an organizer (after event ends)
   async getPendingPayouts() {
-    // This would calculate pending payouts based on completed events
-    // Revenue - commission = payout amount
-    return { 
+    return {
       pendingPayouts: [],
-      totalPending: 0
+      totalPending: 0,
     };
   }
 
   // Get revenue summary for organizer
   async getRevenueSummary() {
-    // Get all orders for organizer's events
-    // Calculate revenue, commission, and net payout
     return {
       totalRevenue: 0,
       totalCommission: 0,
       netPayout: 0,
       pendingPayouts: 0,
       completedPayouts: 0,
-      events: []
+      events: [],
     };
   }
 
   // Calculate commission for an order
-  calculateCommission(totalRevenue: number, ticketCount: number, baseRate: number = 0.30, perTicketRate: number = 0.10): number {
+  calculateCommission(
+    totalRevenue: number,
+    ticketCount: number,
+    baseRate: number = 0.30,
+    perTicketRate: number = 0.10,
+  ): number {
     const percentageCommission = totalRevenue * (baseRate / 100);
     const ticketCommission = ticketCount * perTicketRate;
     return percentageCommission + ticketCommission;
   }
 }
-

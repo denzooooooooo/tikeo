@@ -54,18 +54,19 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
           {/* Logo */}
           <div className="flex-shrink-0">
             <div className="w-40 h-40 lg:w-48 lg:h-48 bg-white rounded-2xl shadow-xl p-2">
-              <div className="w-full h-full bg-gradient-to-br from-[#5B7CFF] to-[#7B61FF] rounded-xl flex items-center justify-center overflow-hidden">
-                {organizer.logo ? (
+          <div className="w-full h-full bg-gradient-to-br from-[#5B7CFF] to-[#7B61FF] rounded-xl flex items-center justify-center overflow-hidden">
+                {/* Priorité: avatar utilisateur > logo organisateur */}
+                {(organizer.user?.avatar || organizer.logo) ? (
                   <Image
-                    src={organizer.logo}
-                    alt={organizer.companyName}
+                    src={organizer.user?.avatar || organizer.logo}
+                    alt={organizer.companyName || `${organizer.user?.firstName} ${organizer.user?.lastName}`}
                     width={200}
                     height={200}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <span className="text-6xl font-bold text-white">
-                    {typeof organizer.companyName === 'string' && organizer.companyName.length > 0 ? organizer.companyName.charAt(0) : 'O'}
+                    {(organizer.companyName || organizer.user?.firstName || 'O').charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
@@ -78,7 +79,7 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
-                    {organizer.companyName}
+                    {organizer.companyName || `${organizer.user?.firstName || ''} ${organizer.user?.lastName || ''}`.trim()}
                   </h1>
                   {organizer.verified && (
                     <VerifiedIcon className="text-[#5B7CFF]" size={28} />
@@ -122,12 +123,14 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
 
               {/* Social Links & Follow Button */}
               <div className="flex items-center gap-3">
-                <FollowButton 
-                  organizerId={params.id}
-                  initialFollowed={organizer.isFollowed || false}
-                  initialCount={organizer.followersCount || 0}
-                  size="md"
-                />
+                {/* FollowButton uses userId (UserFollow system) */}
+                {organizer.userId && (
+                  <FollowButton
+                    userId={organizer.userId}
+                    initialCount={organizer._count?.subscriptions || organizer.followersCount || 0}
+                    size="md"
+                  />
+                )}
                 {organizer.facebookUrl && (
                   <a
                     href={organizer.facebookUrl}
@@ -190,12 +193,12 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
           <div className="bg-gradient-to-br from-[#5B7CFF] to-[#7B61FF] rounded-2xl p-6 text-white">
-            <div className="text-4xl font-bold mb-1">{organizer.totalEvents || 0}</div>
+          <div className="text-4xl font-bold mb-1">{organizer._count?.events || organizer.totalEvents || 0}</div>
             <div className="text-white/80">Événements</div>
           </div>
           <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white">
-            <div className="text-4xl font-bold mb-1">{organizer.totalTicketsSold?.toLocaleString() || 0}</div>
-            <div className="text-white/80">Billets vendus</div>
+            <div className="text-4xl font-bold mb-1">{organizer._count?.subscriptions || organizer.followersCount || 0}</div>
+            <div className="text-white/80">Abonnés</div>
           </div>
           <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-6 text-white">
             <div className="text-4xl font-bold mb-1">{organizer.rating?.toFixed(1) || 'N/A'}</div>
@@ -221,9 +224,10 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
             </Link>
           </div>
 
-          {events.length > 0 ? (
+          {/* Use events from organizer._count or fetched separately */}
+          {(organizer.events?.length > 0 || events?.length > 0) ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event: any) => (
+              {(organizer.events || events || []).map((event: any) => (
                 <Link
                   key={event.id}
                   href={`/events/${event.slug}`}
@@ -292,7 +296,7 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
                 Aucun événement à venir
               </h3>
               <p className="text-gray-600">
-                Revenez bientôt pour découvrir les nouveaux événements de {organizer.companyName}
+                Revenez bientôt pour découvrir les nouveaux événements de {organizer.companyName || organizer.user?.firstName}
               </p>
             </div>
           )}
@@ -303,7 +307,7 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div>
               <h3 className="text-2xl font-bold mb-2">
-                Organisez un événement avec {organizer.companyName}
+                Organisez un événement avec {organizer.companyName || organizer.user?.firstName}
               </h3>
               <p className="text-gray-400">
                 Une question ? Besoin d&apos;informations ? N&apos;hésitez pas à nous contacter.

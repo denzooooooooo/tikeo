@@ -147,8 +147,10 @@ interface OrganizerItem {
   name?: string;
   logo?: string | null;
   image?: string | null;
+  userAvatar?: string | null;
+  userId?: string | null;
   verified?: boolean;
-  _count?: { events?: number; subscribers?: number };
+  _count?: { events?: number; subscriptions?: number };
   eventsCount?: number;
   subscribersCount?: number;
   rating?: number | null;
@@ -178,9 +180,10 @@ export function HomeOrganizersSection({ organizers }: HomeOrganizersSectionProps
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {organizers.map((org) => {
               const displayName = org.companyName || org.name || 'Organisateur';
-              const displayImage = org.logo || org.image;
+              // Priorité: avatar utilisateur > logo organisateur > image
+              const displayImage = org.userAvatar || org.logo || org.image;
               const eventsCount = org._count?.events ?? org.eventsCount ?? 0;
-              const subscribersCount = org._count?.subscribers ?? org.subscribersCount ?? 0;
+              const subscribersCount = org._count?.subscriptions ?? org.subscribersCount ?? 0;
               const rating = org.rating ?? 0;
               
               return (
@@ -219,14 +222,18 @@ export function HomeOrganizersSection({ organizers }: HomeOrganizersSectionProps
                     )}
                   </div>
                   
-                  {/* Follow Button */}
+                  {/* Follow Button — uses userId for UserFollow system */}
                   <div className="mt-auto">
-                    <FollowButton 
-                      organizerId={org.id} 
-                      initialCount={subscribersCount}
-                      size="sm"
-                      showCount={true}
-                    />
+                    {org.userId ? (
+                      <FollowButton
+                        userId={org.userId}
+                        initialCount={subscribersCount}
+                        size="sm"
+                        showCount={true}
+                      />
+                    ) : (
+                      <div className="text-xs text-gray-400 text-center py-2">—</div>
+                    )}
                   </div>
                 </div>
               );

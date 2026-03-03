@@ -83,15 +83,17 @@ async function getFeaturedOrganizers() {
     // Enrich with additional data
     return organizers.map((o: any) => ({
       id: o.id,
-      companyName: o.companyName,
-      name: o.name,
-      logo: o.logo,
-      image: o.image,
+      companyName: o.companyName || `${o.user?.firstName || ''} ${o.user?.lastName || ''}`.trim(),
+      name: o.name || o.user?.firstName,
+      logo: o.logo || null,
+      image: o.image || null,
+      userAvatar: o.user?.avatar || null,
+      userId: o.user?.id || o.userId || null,
       verified: o.verified,
       rating: o.rating,
       _count: {
-        events: o.eventsCount || o._count?.events || 0,
-        subscribers: o.subscribersCount || o._count?.subscribers || 0,
+        events: o._count?.events || o.eventsCount || 0,
+        subscriptions: o._count?.subscriptions || o.subscribersCount || 0,
       },
     }));
   } catch {
