@@ -16,9 +16,10 @@ const ChevronLeftIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fi
 const ChevronRightIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>;
 const GlobeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>;
 
-// ─── Données pays ───────────────────────────────────────────────────────
-const AFRICAN_COUNTRIES = [
+// ─── Pays disponibles (mondial) ───────────────────────────────────────────────
+const AVAILABLE_COUNTRIES = [
   { value: '', label: 'Tous les pays' },
+  // Afrique
   { value: "Côte d'Ivoire", label: "🇨🇮 Côte d'Ivoire" },
   { value: 'Sénégal', label: '🇸🇳 Sénégal' },
   { value: 'Nigeria', label: '🇳🇬 Nigeria' },
@@ -34,6 +35,14 @@ const AFRICAN_COUNTRIES = [
   { value: 'Tanzanie', label: '🇹🇿 Tanzanie' },
   { value: 'Éthiopie', label: '🇪🇹 Éthiopie' },
   { value: 'Maroc', label: '🇲🇦 Maroc' },
+  // Europe
+  { value: 'France', label: '🇫🇷 France' },
+  { value: 'Belgique', label: '🇧🇪 Belgique' },
+  { value: 'Suisse', label: '🇨🇭 Suisse' },
+  { value: 'Canada', label: '🇨🇦 Canada' },
+  // Autres
+  { value: 'États-Unis', label: '🇺🇸 États-Unis' },
+  { value: 'Royaume-Uni', label: '🇬🇧 Royaume-Uni' },
 ];
 
 const CATEGORIES = [
@@ -92,7 +101,7 @@ interface Props {
   searchParams: Record<string, string | undefined>;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
 export default function EventsPageClient({ initialEvents, initialMeta, searchParams }: Props) {
   const router = useRouter();
@@ -212,11 +221,18 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
 
   const hasActiveFilters = search || country || category || isFree || minPrice || maxPrice;
 
-  const formatPrice = (price: number, currency = 'XOF') => {
+  const formatPrice = (price: number, eventCountry?: string) => {
     if (price === 0) return 'Gratuit';
-    if (currency === 'NGN') return `₦${price.toLocaleString()}`;
-    if (currency === 'GHS') return `GH₵${price.toLocaleString()}`;
-    if (currency === 'KES') return `KSh${price.toLocaleString()}`;
+    const c = (eventCountry || '').toLowerCase();
+    if (c.includes('nigeria')) return `₦${price.toLocaleString()}`;
+    if (c.includes('ghana')) return `GH₵${price.toLocaleString()}`;
+    if (c.includes('kenya')) return `KSh${price.toLocaleString()}`;
+    if (c.includes('afrique du sud')) return `R${price.toLocaleString()}`;
+    if (c.includes('france') || c.includes('belgique') || c.includes('suisse')) return `${price.toLocaleString()} €`;
+    if (c.includes('états-unis')) return `$${price.toLocaleString()}`;
+    if (c.includes('royaume-uni')) return `£${price.toLocaleString()}`;
+    if (c.includes('canada')) return `CA$${price.toLocaleString()}`;
+    // Default: FCFA for West/Central Africa
     return `${price.toLocaleString()} FCFA`;
   };
 
@@ -236,13 +252,13 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-4">
               <GlobeIcon />
-              <span className="text-sm font-semibold text-white uppercase tracking-wide">Événements Africains</span>
+              <span className="text-sm font-semibold text-white uppercase tracking-wide">Événements Mondiaux</span>
             </div>
             <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
               Tous les événements
             </h1>
             <p className="text-xl text-white/85 max-w-2xl mx-auto">
-              Découvrez les meilleurs événements à travers toute l&apos;Afrique
+              Découvrez les meilleurs événements partout dans le monde
             </p>
           </div>
         </div>
@@ -281,7 +297,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
                 onChange={(e) => handleCountryChange(e.target.value)}
                 className="flex-1 bg-transparent outline-none text-gray-700 text-sm font-medium cursor-pointer"
               >
-                {AFRICAN_COUNTRIES.map((c) => (
+              {AVAILABLE_COUNTRIES.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </select>
@@ -445,8 +461,8 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
 
                       {/* Category badge */}
                       <div className="absolute top-4 left-4 z-20">
-                        <span className="px-3 py-1 bg-white/95 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-900">
-                          {catEmoji} {event.category}
+                      <span className="px-3 py-1 bg-white/95 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-900">
+                          {catEmoji} {CATEGORIES.find(c => c.value === event.category)?.name ?? event.category}
                         </span>
                       </div>
 
@@ -470,7 +486,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
                       {/* Price badge */}
                       <div className="absolute bottom-4 right-4 z-20">
                         <span className="px-3 py-1.5 bg-white text-gray-900 text-sm font-bold rounded-full shadow-lg">
-                          {formatPrice(event.minPrice)}
+                          {formatPrice(event.minPrice, event.venueCountry)}
                         </span>
                       </div>
                     </div>
