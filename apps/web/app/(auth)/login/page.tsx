@@ -309,7 +309,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
         </div>
       </div>
 
-      {/* ── CÔTÉ DROIT — Visuel africain ── */}
+      {/* ── CÔTÉ DROIT — Visuel ── */}
       <div className="hidden lg:flex lg:flex-1 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #5B7CFF 0%, #7B61FF 50%, #9D4EDD 100%)' }}>
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
 
@@ -329,14 +329,14 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
             La billetterie<br />de l&apos;Afrique
           </h2>
           <p className="text-lg text-white/80 mb-10 max-w-sm">
-            Découvrez et réservez les meilleurs événements à travers tout le continent africain
+            Découvrez et réservez les meilleurs événements à travers tout le monde entier
           </p>
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-4 w-full max-w-sm mb-10">
             <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4 text-white">
               <div className="text-2xl font-bold">12+</div>
-              <div className="text-white/70 text-xs">Pays africains</div>
+              <div className="text-white/70 text-xs">Pays disponibles</div>
             </div>
             <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4 text-white">
               <div className="text-2xl font-bold">500K+</div>
@@ -357,7 +357,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
             {[
               'Paiement en FCFA, NGN, GHS, KES',
               'Billets QR Code sécurisés',
-              'Support en français et anglais',
+              'Support multilingue',
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-3 text-white/90 text-sm">
                 <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-white">

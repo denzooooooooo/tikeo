@@ -160,7 +160,7 @@ export default async function HomePage() {
         <HomeSearchBar />
       </div>
 
-      {/* 15 pays africains */}
+      {/* Section pays */}
       <HomeCountriesSection countryCounts={countryCounts} />
 
       {/* Événements à proximité avec teaser au survol */}

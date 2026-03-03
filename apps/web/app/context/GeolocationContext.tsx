@@ -31,7 +31,7 @@ interface GeolocationContextType extends GeolocationState {
   isDefault: boolean;
 }
 
-// ── Pays africains en PRIORITÉ (plateforme africaine) ──
+// ── Pays en prioritéÉ (plateforme mondiale) ──
 const AFRICAN_COUNTRIES: Country[] = [
   { code: 'CI', name: 'Côte d\'Ivoire', flag: '🇨🇮', currency: 'XOF', timezone: 'Africa/Abidjan', region: 'Afrique de l\'Ouest' },
   { code: 'SN', name: 'Sénégal', flag: '🇸🇳', currency: 'XOF', timezone: 'Africa/Dakar', region: 'Afrique de l\'Ouest' },
@@ -60,7 +60,7 @@ const AFRICAN_COUNTRIES: Country[] = [
   { code: 'MG', name: 'Madagascar', flag: '🇲🇬', currency: 'MGA', timezone: 'Indian/Antananarivo', region: 'Afrique Australe' },
 ];
 
-// ── Autres pays (diaspora africaine) ──
+// ── Autres pays (utilisateurs internationaux) ──
 const OTHER_COUNTRIES: Country[] = [
   { code: 'FR', name: 'France', flag: '🇫🇷', currency: 'EUR', timezone: 'Europe/Paris' },
   { code: 'BE', name: 'Belgique', flag: '🇧🇪', currency: 'EUR', timezone: 'Europe/Brussels' },
@@ -84,10 +84,10 @@ const OTHER_COUNTRIES: Country[] = [
 // Liste complète : Afrique d'abord, puis diaspora
 const defaultCountries: Country[] = [...AFRICAN_COUNTRIES, ...OTHER_COUNTRIES];
 
-// Codes pays africains pour détection rapide
+// Codes pays pour détection rapide
 const AFRICAN_COUNTRY_CODES = new Set(AFRICAN_COUNTRIES.map(c => c.code));
 
-// Défaut : Côte d'Ivoire (plateforme africaine)
+// Défaut : Côte d'Ivoire (plateforme mondiale)
 const defaultState: GeolocationState = {
   country: 'CI',
   countryName: 'Côte d\'Ivoire',

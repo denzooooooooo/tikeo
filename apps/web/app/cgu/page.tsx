@@ -258,7 +258,7 @@ export default function CGUPage() {
             </h2>
             <div className="text-gray-600 space-y-4">
               <p>
-                Les présentes CGU sont régies par le droit français. En cas de litige, les tribunaux français seront seuls compétents.
+                Les présentes CGU sont régies par les lois applicables. En cas de litige, les parties s'efforceront de trouver une solution amiable.
               </p>
               <p>
                 Si une disposition des présentes CGU est déclarée nulle ou inapplicable, les autres dispositions demeurent en vigueur.

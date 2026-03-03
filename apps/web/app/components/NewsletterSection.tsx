@@ -47,7 +47,7 @@ export default function NewsletterSection() {
               </span>
             </h2>
             <p className="text-lg text-white/55 mb-10 leading-relaxed">
-              Rejoignez plus de <strong className="text-white/80">50 000 passionnés</strong> qui reçoivent chaque semaine les meilleures offres et événements africains.
+              Rejoignez plus de <strong className="text-white/80">50 000 passionnés</strong> qui reçoivent chaque semaine les meilleures offres et événements du monde entier.
             </p>
 
             {/* Benefits */}
@@ -74,7 +74,7 @@ export default function NewsletterSection() {
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-[#5B7CFF]" style={{ background: 'rgba(91,124,255,0.12)', border: '1px solid rgba(91,124,255,0.2)' }}>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
                 </div>
-                <span className="text-white/70 text-sm font-medium">Actualités musique &amp; culture africaine</span>
+                <span className="text-white/70 text-sm font-medium">Actualités musique &amp; culture mondiale</span>
               </div>
             </div>
 

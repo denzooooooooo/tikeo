@@ -175,7 +175,7 @@ export default function DashboardPage() {
                 <h1 className="text-3xl lg:text-4xl font-bold text-white">
                   Bonjour, {user?.firstName || 'Organisateur'} 👋
                 </h1>
-                <p className="text-white/80 mt-1">Gérez vos événements africains depuis ici</p>
+                <p className="text-white/80 mt-1">Gérez vos événements depuis ici</p>
               </div>
               <Link
                 href="/dashboard/events/create"
@@ -322,7 +322,7 @@ export default function DashboardPage() {
                   <div className="text-center py-12 px-6">
                     <div className="text-5xl mb-3">🎪</div>
                     <h3 className="font-bold text-gray-900 mb-2">Aucun événement</h3>
-                    <p className="text-gray-500 text-sm mb-4">Créez votre premier événement africain</p>
+                    <p className="text-gray-500 text-sm mb-4">Créez votre premier événement</p>
                     <Link href="/dashboard/events/create" className="inline-flex items-center gap-2 px-5 py-2.5 text-white font-bold rounded-xl text-sm" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}>
                       <PlusIcon /> Créer un événement
                     </Link>

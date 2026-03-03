@@ -5,7 +5,7 @@ import EventsPageClient from './EventsPageClient';
 export const metadata: Metadata = {
   title: 'Événements Africains | Tikeo',
   description: 'Découvrez les meilleurs événements à travers toute l\'Afrique. Concerts, festivals, conférences tech, gastronomie et plus encore.',
-  keywords: 'événements afrique, concerts abidjan, festivals dakar, lagos events, tikeo',
+  keywords: 'événements monde, concerts, festivals, conférences, tikeo',
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';

@@ -16,7 +16,7 @@ const ChevronLeftIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fi
 const ChevronRightIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>;
 const GlobeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>;
 
-// ─── Données africaines ───────────────────────────────────────────────────────
+// ─── Données pays ───────────────────────────────────────────────────────
 const AFRICAN_COUNTRIES = [
   { value: '', label: 'Tous les pays' },
   { value: "Côte d'Ivoire", label: "🇨🇮 Côte d'Ivoire" },
@@ -55,7 +55,7 @@ const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Prix décroissant' },
 ];
 
-// ─── Fallback data africaine ──────────────────────────────────────────────────
+// ─── Fallback data ──────────────────────────────────────────────────
 const FALLBACK_EVENTS = [
   { id: 'abidjan-music-festival-2025', title: 'Abidjan Music Festival 2025', coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80', startDate: new Date(Date.now() + 15 * 86400000).toISOString(), venueCity: 'Abidjan', venueCountry: "Côte d'Ivoire", category: 'MUSIC', minPrice: 5000, ticketsAvailable: 17550, capacity: 50000, organizer: { companyName: 'Abidjan Productions', verified: true } },
   { id: 'afrobeats-lagos-concert-2025', title: 'Afrobeats Lagos Concert', coverImage: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80', startDate: new Date(Date.now() + 10 * 86400000).toISOString(), venueCity: 'Lagos', venueCountry: 'Nigeria', category: 'MUSIC', minPrice: 5000, ticketsAvailable: 15000, capacity: 80000, organizer: { companyName: 'Lagos Vibes', verified: true } },
@@ -567,7 +567,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-2xl font-bold text-gray-900 mb-3">Aucun événement trouvé</h3>
             <p className="text-gray-500 mb-8 max-w-md mx-auto">
-              Essayez de modifier vos filtres ou explorez d&apos;autres pays africains
+              Essayez de modifier vos filtres ou explorez d&apos;autres pays disponibles
             </p>
             <button
               onClick={resetFilters}

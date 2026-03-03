@@ -93,7 +93,7 @@ export default function HomeCountriesSection({ countryCounts = {} }: HomeCountri
           <p className="text-lg text-gray-500 max-w-xl mx-auto">
             {totalActiveCountries > 0
               ? `${totalActiveCountries} pays actifs, ${totalEvents.toLocaleString('fr-FR')} événements en direct`
-              : "10 pays africains, des milliers d'événements, une culture musicale unique"}
+              : "Des milliers d'événements partout dans le monde"}
           </p>
         </div>
 
