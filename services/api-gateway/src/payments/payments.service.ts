@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { RedisService } from '../redis/redis.service';
 import Stripe from 'stripe';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class PaymentsService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private redis: RedisService,
   ) {}
 
   async onModuleInit() {
@@ -90,7 +92,31 @@ export class PaymentsService implements OnModuleInit {
       });
 
       if (order) {
+        // ✅ Update event stats + invalidate Redis cache
+        const eventData = await this.prisma.event.findUnique({
+          where: { id: order.eventId },
+          select: { slug: true, title: true, startDate: true, venueName: true },
+        });
+        const totalQty = order.OrderItem.reduce((s, i) => s + i.quantity, 0);
+        await this.prisma.event.update({
+          where: { id: order.eventId },
+          data: {
+            ticketsAvailable: { decrement: totalQty },
+            ticketsSold: { increment: totalQty },
+          },
+        });
+        if (eventData) {
+          await this.redis.del(`event:${order.eventId}`);
+          await this.redis.del(`event:slug:${eventData.slug}`);
+        }
+
         for (const item of order.OrderItem) {
+          // ✅ Decrement available count for paid tickets
+          await this.prisma.ticketType.update({
+            where: { id: item.ticketTypeId },
+            data: { available: { decrement: item.quantity }, sold: { increment: item.quantity } },
+          });
+
           for (let i = 0; i < item.quantity; i++) {
             await this.prisma.ticket.create({
               data: {
@@ -114,7 +140,7 @@ export class PaymentsService implements OnModuleInit {
           where: { id: order.userId },
           select: { email: true },
         });
-        const event = await this.prisma.event.findUnique({
+        const event = eventData ?? await this.prisma.event.findUnique({
           where: { id: order.eventId },
           select: { title: true, startDate: true, venueName: true },
         });
@@ -183,6 +209,20 @@ export class PaymentsService implements OnModuleInit {
       where: { orderId: payment.orderId },
       data: { status: 'CANCELLED' },
     });
+
+    // ✅ Restore available count on refund
+    const refundedOrder = await this.prisma.order.findUnique({
+      where: { id: payment.orderId },
+      include: { OrderItem: true },
+    });
+    if (refundedOrder) {
+      for (const item of refundedOrder.OrderItem) {
+        await this.prisma.ticketType.update({
+          where: { id: item.ticketTypeId },
+          data: { available: { increment: item.quantity } },
+        });
+      }
+    }
 
     return { success: true, refund };
   }

@@ -372,44 +372,63 @@ export default function CheckoutPage() {
                       <p className="text-gray-500">Aucun billet disponible pour cet événement.</p>
                     ) : (
                       <div className="space-y-3">
-                        {event.ticketTypes.map((ticket) => (
-                          <label
-                            key={ticket.id}
-                            className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                              selectedTicket?.id === ticket.id
-                                ? 'border-[#5B7CFF] bg-[#5B7CFF]/5'
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <input
-                                  type="radio"
-                                  name="ticket"
-                                  checked={selectedTicket?.id === ticket.id}
-                                  onChange={() => setSelectedTicket(ticket)}
-                                  className="w-5 h-5 text-[#5B7CFF]"
-                                />
-                                <div>
-                                  <p className="font-bold text-gray-900">{ticket.name}</p>
-                                  {ticket.description && (
-                                    <p className="text-sm text-gray-600">{ticket.description}</p>
-                                  )}
-                                  {ticket.available !== undefined && (
-                                    <p className="text-xs text-gray-400">{ticket.available} disponibles</p>
+                        {event.ticketTypes.map((ticket) => {
+                          const isSoldOut = ticket.available !== undefined && ticket.available <= 0;
+                          return (
+                            <label
+                              key={ticket.id}
+                              className={`block p-4 rounded-xl border-2 transition-all ${
+                                isSoldOut
+                                  ? 'border-gray-100 bg-gray-50 opacity-60 cursor-not-allowed'
+                                  : selectedTicket?.id === ticket.id
+                                  ? 'border-[#5B7CFF] bg-[#5B7CFF]/5 cursor-pointer'
+                                  : 'border-gray-200 hover:border-gray-300 cursor-pointer'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="radio"
+                                    name="ticket"
+                                    checked={selectedTicket?.id === ticket.id}
+                                    onChange={() => !isSoldOut && setSelectedTicket(ticket)}
+                                    disabled={isSoldOut}
+                                    className="w-5 h-5 text-[#5B7CFF]"
+                                  />
+                                  <div>
+                                    <p className="font-bold text-gray-900">{ticket.name}</p>
+                                    {ticket.description && (
+                                      <p className="text-sm text-gray-600">{ticket.description}</p>
+                                    )}
+                                    {isSoldOut ? (
+                                      <p className="text-xs font-semibold text-red-500">Épuisé</p>
+                                    ) : ticket.available !== undefined && ticket.available <= 10 ? (
+                                      <p className="text-xs font-semibold text-orange-500">
+                                        ⚡ Plus que {ticket.available} disponible{ticket.available > 1 ? 's' : ''}
+                                      </p>
+                                    ) : ticket.available !== undefined ? (
+                                      <p className="text-xs text-gray-400">{ticket.available} disponibles</p>
+                                    ) : null}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className={`font-bold text-lg ${isSoldOut ? 'text-gray-400' : 'text-[#5B7CFF]'}`}>
+                                    {ticket.price === 0 ? 'Gratuit' : `${ticket.price.toFixed(2)}€`}
+                                  </p>
+                                  {isSoldOut && (
+                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
+                                      Complet
+                                    </span>
                                   )}
                                 </div>
                               </div>
-                              <p className="font-bold text-[#5B7CFF] text-lg">
-                                {ticket.price === 0 ? 'Gratuit' : `${ticket.price.toFixed(2)}€`}
-                              </p>
-                            </div>
-                          </label>
-                        ))}
+                            </label>
+                          );
+                        })}
                       </div>
                     )}
 
-                    {selectedTicket && (
+                    {selectedTicket && (selectedTicket.available === undefined || selectedTicket.available > 0) && (
                       <div className="mt-6">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Quantité</label>
                         <div className="flex items-center gap-4">
@@ -427,6 +446,11 @@ export default function CheckoutPage() {
                             +
                           </button>
                         </div>
+                        {selectedTicket.available !== undefined && selectedTicket.available < quantity && (
+                          <p className="text-xs text-red-500 mt-2">
+                            Seulement {selectedTicket.available} billet{selectedTicket.available > 1 ? 's' : ''} disponible{selectedTicket.available > 1 ? 's' : ''}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -513,7 +537,7 @@ export default function CheckoutPage() {
                 {/* CTA Button - only on step 1 */}
                 {step === 'selection' && (
                   <button
-                    disabled={!selectedTicket || isProcessing}
+                    disabled={!selectedTicket || isProcessing || (selectedTicket?.available !== undefined && selectedTicket.available <= 0)}
                     onClick={handleProceedToPayment}
                     className="w-full mt-6 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >

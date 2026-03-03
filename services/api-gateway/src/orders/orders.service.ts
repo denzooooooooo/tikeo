@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { RedisService } from '../redis/redis.service';
 
 export interface CreateOrderDto {
   eventId: string;
@@ -14,6 +15,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private redis: RedisService,
   ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
@@ -98,7 +100,22 @@ export class OrdersService {
 
     // For free events: generate tickets immediately + send confirmation email
     if (isFree) {
-      const orderItem = order.OrderItem[0];
+      // ✅ Decrement ticketType.available + update event stats + invalidate cache
+      await this.prisma.ticketType.update({
+        where: { id: ticketTypeId },
+        data: { available: { decrement: quantity }, sold: { increment: quantity } },
+      });
+      await this.prisma.event.update({
+        where: { id: eventId },
+        data: {
+          ticketsAvailable: { decrement: quantity },
+          ticketsSold: { increment: quantity },
+        },
+      });
+      // Invalidate Redis cache so next fetch shows updated availability
+      await this.redis.del(`event:${eventId}`);
+      await this.redis.del(`event:slug:${event.slug}`);
+
       for (let i = 0; i < quantity; i++) {
         await this.prisma.ticket.create({
           data: {
