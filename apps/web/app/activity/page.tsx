@@ -15,7 +15,15 @@ import {
   LoadingSpinner,
 } from '@tikeo/ui';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('auth_tokens');
+    return stored ? JSON.parse(stored).accessToken : null;
+  } catch { return null; }
+}
 
 interface Activity {
   id: string;
@@ -55,17 +63,16 @@ export default function ActivityFeedPage() {
 
   const fetchActivities = async () => {
     setIsLoading(true);
+    const token = getAuthToken();
     try {
       const params = filter !== 'all' ? `?type=${filter}` : '';
-      const response = await fetch(`${API_URL}/users/activity${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+      const response = await fetch(`${API_URL}/activity-feed${params}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       
       if (response.ok) {
         const data = await response.json();
-        setActivities(data.activities || []);
+        setActivities(data.activities || data || []);
       }
     } catch (error) {
       console.error('Error fetching activities:', error);

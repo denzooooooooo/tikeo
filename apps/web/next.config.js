@@ -92,6 +92,26 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'avatars.githubusercontent.com',
       },
+      // QR code generation service (used in tickets page)
+      {
+        protocol: 'https',
+        hostname: 'api.qrserver.com',
+      },
+      // Avatar generation service (used in profile page)
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+      },
+      // Cloudinary (common image hosting)
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+      // Railway uploads
+      {
+        protocol: 'https',
+        hostname: '*.railway.app',
+      },
     ],
   },
 

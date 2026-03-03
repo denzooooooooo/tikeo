@@ -21,7 +21,7 @@ import {
   CameraIcon,
 } from '@tikeo/ui';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
 interface UserStats {
   ticketsPurchased: number;
