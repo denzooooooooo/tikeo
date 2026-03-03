@@ -23,7 +23,7 @@ const CheckCircleIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fi
 const ClockIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
 const MapPinIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>;
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
 interface DashboardStats {
   totalEvents: number;
@@ -47,13 +47,16 @@ interface RecentEvent {
   coverImage: string;
 }
 
+const ScanIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><line x1="7" x2="17" y1="12" y2="12" /></svg>;
+
 const quickLinks = [
   { id: 1, title: 'Créer un événement', href: '/dashboard/events/create', Icon: PlusIcon, color: 'bg-[#5B7CFF]', desc: 'Nouvel événement' },
   { id: 2, title: 'Mes événements', href: '/dashboard/events', Icon: CalendarIcon, color: 'bg-purple-500', desc: 'Gérer' },
-  { id: 3, title: 'Commandes', href: '/dashboard/orders', Icon: TicketIcon, color: 'bg-green-500', desc: 'Voir les ventes' },
-  { id: 4, title: 'Analytics', href: '/dashboard/analytics', Icon: BarChartIcon, color: 'bg-orange-500', desc: 'Statistiques' },
-  { id: 5, title: 'Codes promo', href: '/dashboard/promo-codes', Icon: TagIcon, color: 'bg-pink-500', desc: 'Promotions' },
-  { id: 6, title: 'Paramètres', href: '/dashboard/settings', Icon: SettingsIcon, color: 'bg-gray-500', desc: 'Configuration' },
+  { id: 3, title: 'Scanner billets', href: '/dashboard/scanner', Icon: ScanIcon, color: 'bg-emerald-500', desc: 'Valider à l\'entrée' },
+  { id: 4, title: 'Commandes', href: '/dashboard/orders', Icon: TicketIcon, color: 'bg-green-500', desc: 'Voir les ventes' },
+  { id: 5, title: 'Analytics', href: '/dashboard/analytics', Icon: BarChartIcon, color: 'bg-orange-500', desc: 'Statistiques' },
+  { id: 6, title: 'Codes promo', href: '/dashboard/promo-codes', Icon: TagIcon, color: 'bg-pink-500', desc: 'Promotions' },
+  { id: 7, title: 'Paramètres', href: '/dashboard/settings', Icon: SettingsIcon, color: 'bg-gray-500', desc: 'Configuration' },
 ];
 
 function StatCard({ title, value, subtitle, Icon, color, trend }: {

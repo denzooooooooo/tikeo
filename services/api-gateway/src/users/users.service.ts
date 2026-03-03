@@ -106,4 +106,31 @@ export class UsersService {
       },
     });
   }
+
+  /**
+   * Get public profile of a user (no sensitive data)
+   */
+  async getPublicProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        createdAt: true,
+        // No email, no role, no sensitive data
+      },
+    });
+
+    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatar: user.avatar,
+      createdAt: user.createdAt,
+    };
+  }
 }

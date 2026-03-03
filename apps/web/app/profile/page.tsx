@@ -200,23 +200,29 @@ export default function ProfilePage() {
                     <MailIcon size={16} />
                     {userData.email}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <PhoneIcon size={16} />
-                    {userData.phone}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <LocationIcon size={16} />
-                    {userData.location}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <CalendarIcon size={16} />
-                    Membre depuis {new Date(userData.joinedDate).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-                  </div>
+                  {userData.phone && (
+                    <div className="flex items-center gap-1">
+                      <PhoneIcon size={16} />
+                      {userData.phone}
+                    </div>
+                  )}
+                  {userData.location && (
+                    <div className="flex items-center gap-1">
+                      <LocationIcon size={16} />
+                      {userData.location}
+                    </div>
+                  )}
+                  {userData.joinedDate && (
+                    <div className="flex items-center gap-1">
+                      <CalendarIcon size={16} />
+                      Membre depuis {new Date(userData.joinedDate).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap justify-center md:justify-start gap-3">
                   <Link
-                    href="/profile/edit"
+                    href="/settings"
                     className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#5B7CFF] text-white rounded-xl font-medium hover:bg-[#7B61FF] transition-colors"
                   >
                     <EditIcon size={18} />

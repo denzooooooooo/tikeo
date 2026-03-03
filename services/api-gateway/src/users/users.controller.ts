@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Request, UseGuards, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UsersService } from './users.service';
@@ -51,5 +51,12 @@ export class UsersController {
   @ApiOperation({ summary: "Mettre à jour le profil" })
   async updateMe(@Request() req: any, @Body() body: any) {
     return this.usersService.updateUserProfile(req.user.id, body);
+  }
+
+  // GET /users/:userId/public — Profil public d'un utilisateur (sans auth)
+  @Get(':userId/public')
+  @ApiOperation({ summary: "Profil public d'un utilisateur" })
+  async getPublicProfile(@Param('userId') userId: string) {
+    return this.usersService.getPublicProfile(userId);
   }
 }
