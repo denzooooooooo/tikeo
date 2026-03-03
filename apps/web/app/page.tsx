@@ -62,6 +62,7 @@ async function getNearbyEvents() {
       category: e.category,
       organizer: e.organizer?.companyName || 'Organisateur',
       organizerId: e.organizer?.id || null,
+      organizerUserId: e.organizer?.userId || null,
       ticketsLeft: e.ticketsAvailable ?? e.capacity,
       totalTickets: e.capacity ?? 100,
     }));

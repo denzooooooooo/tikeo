@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { FollowButton } from '@tikeo/ui';
+import { FollowButton, LikeButton } from '@tikeo/ui';
 
 interface NearbyEvent {
   id: string;
@@ -17,6 +17,7 @@ interface NearbyEvent {
   category: string;
   organizer?: string;
   organizerId?: string | null;
+  organizerUserId?: string | null;
   ticketsLeft?: number;
   totalTickets?: number;
 }
@@ -79,8 +80,6 @@ const CheckIcon = () => (
 // ── Event Card ─────────────────────────────────────────────────────────────────
 function EventCard({ event }: { event: NearbyEvent }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 200) + 20);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleMouseEnter = () => {
@@ -96,13 +95,6 @@ function EventCard({ event }: { event: NearbyEvent }) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
-  };
-
-  const handleLike = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setLiked(!liked);
-    setLikeCount(prev => liked ? prev - 1 : prev + 1);
   };
 
   const rawDate = event.startDate || event.date || '';
@@ -180,18 +172,14 @@ function EventCard({ event }: { event: NearbyEvent }) {
           </div>
         </div>
 
-        {/* Like button */}
-        <button
-          onClick={handleLike}
-          className={`absolute bottom-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl backdrop-blur-sm border transition-all duration-200 ${
-            liked
-              ? 'bg-red-500/90 border-red-400 text-white'
-              : 'bg-black/30 border-white/20 text-white hover:bg-red-500/80 hover:border-red-400'
-          }`}
-        >
-          <HeartIcon filled={liked} />
-          <span className="text-xs font-bold">{likeCount}</span>
-        </button>
+        {/* Real Like button — connected to API */}
+        <div className="absolute bottom-3 right-3" onClick={e => e.preventDefault()}>
+          <LikeButton
+            eventId={event.id}
+            size="sm"
+            showCount={true}
+          />
+        </div>
       </div>
 
       {/* Content */}
@@ -254,9 +242,9 @@ function EventCard({ event }: { event: NearbyEvent }) {
             <span className="text-xs text-gray-600 font-medium truncate max-w-[90px]">{organizerName}</span>
           </Link>
           <div className="flex items-center gap-2">
-            {event.organizerId ? (
+            {event.organizerUserId ? (
               <FollowButton
-                organizerId={event.organizerId}
+                userId={event.organizerUserId}
                 size="sm"
                 showCount={false}
               />
