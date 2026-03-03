@@ -16,7 +16,7 @@ import {
 } from '@tikeo/ui'; 
 import { LikeButton, FollowButton, ReviewForm } from '@tikeo/ui';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
 async function getEvent(id: string) {
   try {
@@ -136,19 +136,21 @@ export default async function EventDetailPage({ params }: { params: { id: string
                   </p>
                   {/* Buttons on mobile: row below name */}
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    {event.organizer?.id && (
+                    {event.organizer?.userId && (
                       <FollowButton
-                        organizerId={event.organizer.id}
+                        userId={event.organizer.userId}
                         size="sm"
                         showCount={false}
                       />
                     )}
-                    <Link
-                      href={`/organizers/${event.organizer?.id}`}
-                      className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg font-semibold text-gray-700 hover:border-[#5B7CFF] hover:text-[#5B7CFF] transition-all text-xs"
-                    >
-                      Voir le profil
-                    </Link>
+                    {event.organizer?.userId && (
+                      <Link
+                        href={`/profile/${event.organizer.userId}`}
+                        className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg font-semibold text-gray-700 hover:border-[#5B7CFF] hover:text-[#5B7CFF] transition-all text-xs"
+                      >
+                        Voir le profil
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

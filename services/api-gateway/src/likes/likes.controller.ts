@@ -165,6 +165,20 @@ export class LikesController {
     return this.likesService.toggleFollow(req.user.id, userId);
   }
 
+  // GET /likes/users/:userId/follow-status - Check if current user follows target user
+  @Get('users/:userId/follow-status')
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({ summary: "Vérifier si l'utilisateur courant suit un utilisateur" })
+  @ApiParam({ name: 'userId', description: "ID de l'utilisateur cible" })
+  @ApiResponse({ status: 200, description: 'Statut de follow récupéré' })
+  async getUserFollowStatus(
+    @Param('userId') userId: string,
+    @Request() req: any,
+  ) {
+    const currentUserId = req.user?.id;
+    return this.likesService.getUserFollowStatus(userId, currentUserId);
+  }
+
   // GET /likes/users/:userId/followers - Get user followers
   @Get('users/:userId/followers')
   @ApiOperation({ summary: "Récupérer les followers d'un utilisateur" })

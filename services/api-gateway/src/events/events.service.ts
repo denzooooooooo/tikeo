@@ -147,6 +147,7 @@ export class EventsService {
         organizer: {
           select: {
             id: true,
+            userId: true,
             companyName: true,
             description: true,
             logo: true,
@@ -192,6 +193,7 @@ export class EventsService {
         organizer: {
           select: {
             id: true,
+            userId: true,
             companyName: true,
             description: true,
             logo: true,

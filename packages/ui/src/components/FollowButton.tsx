@@ -3,123 +3,98 @@
 import { useState, useEffect } from 'react';
 import { UsersIcon } from './Icons';
 
-const TOKEN_KEY = 'auth_tokens';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('auth_tokens');
+    return stored ? JSON.parse(stored).accessToken : null;
+  } catch { return null; }
+}
 
 interface FollowButtonProps {
-  organizerId: string;
+  /** ID de l'utilisateur à suivre (userId du créateur de l'événement) */
+  userId: string;
   initialFollowed?: boolean;
   initialCount?: number;
   size?: 'sm' | 'md' | 'lg';
   showCount?: boolean;
+  /** @deprecated Utiliser userId à la place */
+  organizerId?: string;
 }
 
 export function FollowButton({
+  userId,
   organizerId,
   initialFollowed = false,
   initialCount = 0,
   size = 'md',
   showCount = true,
 }: FollowButtonProps) {
+  // Support legacy organizerId prop - use userId if provided, else fall back to organizerId
+  const targetUserId = userId || organizerId || '';
+
   const [followed, setFollowed] = useState(initialFollowed);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>('');
 
-  // Fetch initial status from API on mount
+  // Fetch real follow status from API on mount
   useEffect(() => {
+    if (!targetUserId) { setInitialized(true); return; }
+
     async function fetchStatus() {
+      const token = getToken();
       try {
-        const storedTokens = localStorage.getItem(TOKEN_KEY);
-        const tokenData = storedTokens ? JSON.parse(storedTokens) : null;
-        const token = tokenData?.accessToken;
-        
-        if (!token) {
-          console.log('[FollowButton] No token found, using initial state');
-          setDebugInfo('No token - guest mode');
-          setInitialized(true);
-          return;
+        // Use user follow-status endpoint (works for both logged in and guest)
+        const res = await fetch(`${API_URL}/likes/users/${targetUserId}/follow-status`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setFollowed(data.isFollowing || false);
+          setCount(data.followers ?? initialCount);
         }
-        
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
-        console.log('[FollowButton] Fetching follow status for organizer:', organizerId);
-
-        const response = await fetch(
-          `${apiUrl}/likes/organizers/${organizerId}`,
-          {
-            headers: { 'Authorization': `Bearer ${token}` },
-          }
-        );
-
-        console.log('[FollowButton] Response status:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('[FollowButton] Response data:', data);
-          setFollowed(data.isFollowing || data.isSubscribed || false);
-          setCount(data.subscribersCount || data.subscribers || initialCount);
-          setDebugInfo(`Connected - following: ${data.isFollowing || data.isSubscribed}`);
-        } else {
-          console.log('[FollowButton] API error, using initial state');
-          setDebugInfo(`API error: ${response.status}`);
-        }
-      } catch (error) {
-        console.log('[FollowButton] Error fetching status:', error);
-        setDebugInfo('Error');
+      } catch {
+        // keep initial state on error
       } finally {
         setInitialized(true);
       }
     }
 
     fetchStatus();
-  }, [organizerId, initialCount]);
+  }, [targetUserId]);
 
   const handleFollow = async () => {
     if (loading) return;
-    
     setLoading(true);
-    
+
     try {
-      const storedTokens = localStorage.getItem(TOKEN_KEY);
-      const tokenData = storedTokens ? JSON.parse(storedTokens) : null;
-      const token = tokenData?.accessToken;
-      
+      const token = getToken();
       if (!token) {
-        alert('Veuillez vous connecter pour suivre cet organisateur');
+        alert('Veuillez vous connecter pour suivre cet utilisateur');
         setLoading(false);
         return;
       }
-      
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+
       const method = followed ? 'DELETE' : 'POST';
 
-      console.log('[FollowButton] Toggling follow:', { organizerId, method });
-
-      const response = await fetch(
-        `${apiUrl}/likes/organizers/${organizerId}/follow`,
-        {
-          method,
-          headers: { 
-            'Authorization': `Bearer ${token}`, 
-            'Content-Type': 'application/json' 
-          },
-        }
-      );
-
-      console.log('[FollowButton] Toggle response:', response.status);
+      const response = await fetch(`${API_URL}/likes/users/${targetUserId}/follow`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('[FollowButton] Toggle data:', data);
-        // Use server response to update state
-        const newFollowed = data.subscribed !== undefined ? data.subscribed : !followed;
+        const newFollowed = data.following !== undefined ? data.following : !followed;
         setFollowed(newFollowed);
-        setCount(data.subscribers !== undefined ? data.subscribers : count);
-        setDebugInfo(`Updated - following: ${newFollowed}`);
+        setCount(prev => newFollowed ? prev + 1 : Math.max(0, prev - 1));
       } else if (response.status === 401) {
-        alert('Veuillez vous connecter pour suivre cet organisateur');
-      } else {
-        console.error('Follow request failed with status:', response.status);
+        alert('Veuillez vous connecter pour suivre cet utilisateur');
       }
     } catch (error) {
       console.error('Error toggling follow:', error);
@@ -157,7 +132,6 @@ export function FollowButton({
           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
       } ${sizeClasses[size]}`}
       aria-label={followed ? 'Ne plus suivre' : 'Suivre'}
-      title={debugInfo}
     >
       <UsersIcon size={size === 'sm' ? 14 : size === 'lg' ? 20 : 16} />
       <span>{followed ? 'Abonné' : 'Suivre'}</span>
