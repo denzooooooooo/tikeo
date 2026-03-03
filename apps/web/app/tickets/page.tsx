@@ -77,7 +77,9 @@ export default function TicketsPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setTickets(Array.isArray(data) ? data : data.tickets || []);
+        // API returns array directly or { tickets: [...] }
+        const ticketList = Array.isArray(data) ? data : (data.tickets || []);
+        setTickets(ticketList);
       } else if (res.status === 401) {
         setIsLoggedIn(false);
       }
@@ -223,10 +225,15 @@ export default function TicketsPage() {
                         Acheté le {new Date(ticket.createdAt).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
-                    {/* QR placeholder */}
+                    {/* Real QR Code via qrserver.com API */}
                     <div className="w-20 bg-gray-50 flex items-center justify-center border-l border-gray-100">
-                      <div className="w-14 h-14 bg-white rounded-lg shadow-sm flex items-center justify-center text-xs font-mono text-gray-400 text-center p-1">
-                        QR
+                      <div className="w-14 h-14 bg-white rounded-lg shadow-sm p-1 flex items-center justify-center">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=56x56&data=${encodeURIComponent(ticket.qrCode || ticket.id)}&bgcolor=ffffff&color=000000&margin=2`}
+                          alt="QR Code"
+                          className="w-full h-full object-contain"
+                          loading="lazy"
+                        />
                       </div>
                     </div>
                   </div>
@@ -252,19 +259,14 @@ export default function TicketsPage() {
               <p className="text-white/80 text-sm">{selectedTicket.ticketType?.name || 'Standard'}</p>
             </div>
             <div className="p-6">
-              {/* QR Code display */}
+              {/* Real QR Code in modal */}
               <div className="flex justify-center mb-5">
-                <div className="w-44 h-44 bg-gray-50 border-2 border-gray-200 rounded-xl flex flex-col items-center justify-center">
-                  {selectedTicket.qrCode ? (
-                    <img src={selectedTicket.qrCode} alt="QR Code" className="w-full h-full object-contain p-2" />
-                  ) : (
-                    <>
-                      <div className="text-4xl mb-2">🎫</div>
-                      <p className="text-xs text-gray-400 font-mono text-center px-2 break-all">
-                        {selectedTicket.id.slice(0, 12).toUpperCase()}
-                      </p>
-                    </>
-                  )}
+                <div className="w-48 h-48 bg-white border-2 border-gray-200 rounded-xl p-3 flex items-center justify-center shadow-sm">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(selectedTicket.qrCode || selectedTicket.id)}&bgcolor=ffffff&color=000000&margin=4`}
+                    alt="QR Code billet"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               </div>
 
