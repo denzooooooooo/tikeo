@@ -166,8 +166,8 @@ export class EventsService {
     });
 
     if (event) {
-      // Cache for 5 minutes
-      await this.redis.set(cacheKey, JSON.stringify(event), 300);
+      // Cache for 2 minutes
+      await this.redis.set(cacheKey, JSON.stringify(event), 120);
       
       // Increment view count
       await this.prisma.event.update({
@@ -260,7 +260,7 @@ export class EventsService {
       ],
     });
 
-    await this.redis.set(cacheKey, JSON.stringify(events), 600);
+    await this.redis.set(cacheKey, JSON.stringify(events), 60); // 1 min cache
 
     return events;
   }

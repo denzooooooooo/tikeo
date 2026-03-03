@@ -1,3 +1,7 @@
+// Force dynamic rendering on every request — no CDN caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import HeroCarousel from './components/HeroCarousel';
 import HomeSearchBar from './components/HomeSearchBar';
 import NearbyEventsSection from './components/NearbyEventsSection';
@@ -14,27 +18,14 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
-console.log('[DEBUG] API_URL:', API_URL);
-console.log('[DEBUG] NODE_ENV:', process.env.NODE_ENV);
-
 async function getFeaturedEvents() {
-  console.log('[DEBUG] Fetching events from:', `${API_URL}/events?limit=5&status=PUBLISHED`);
   try {
-    // Get published events (no featured endpoint needed)
-    // Force no cache for now to debug
-    const res = await fetch(`${API_URL}/events?limit=5&status=PUBLISHED`, {
+    const res = await fetch(`${API_URL}/events?limit=6&sortBy=popular`, {
       cache: 'no-store',
     });
-    console.log('[DEBUG] Events response status:', res.status);
-    if (!res.ok) {
-      console.error('[DEBUG] Events fetch failed:', res.status, res.statusText);
-      return [];
-    }
+    if (!res.ok) return [];
     const response = await res.json();
     const data = response.data || response || [];
-    console.log('[DEBUG] Events data length:', data.length, 'events');
-    console.log('[DEBUG] Full API response:', JSON.stringify(response).substring(0, 500));
-    
     return data.map((e: any) => ({
       id: e.id,
       title: e.title,
@@ -44,28 +35,22 @@ async function getFeaturedEvents() {
       venueCity: e.venueCity,
       venueCountry: e.venueCountry,
       category: e.category,
-      price: e.ticketTypes?.[0]?.price ?? 0,
+      price: e.ticketTypes?.[0]?.price ?? e.minPrice ?? 0,
       description: e.description,
     }));
-  } catch (error) {
-    console.error('[DEBUG] Error fetching events:', error);
+  } catch {
     return [];
   }
 }
 
 async function getNearbyEvents() {
-  console.log('[DEBUG] Fetching nearby events...');
   try {
-    const res = await fetch(`${API_URL}/events?limit=6&page=1&status=PUBLISHED`, {
+    const res = await fetch(`${API_URL}/events?limit=8&page=1`, {
       cache: 'no-store',
     });
-    if (!res.ok) {
-      console.error('[DEBUG] Nearby fetch failed:', res.status);
-      return [];
-    }
+    if (!res.ok) return [];
     const response = await res.json();
     const data = response.data || response || [];
-    console.log('[DEBUG] Nearby events:', data.length);
     return data.map((e: any) => ({
       id: e.id,
       title: e.title,
@@ -80,8 +65,7 @@ async function getNearbyEvents() {
       ticketsLeft: e.ticketsAvailable ?? e.capacity,
       totalTickets: e.capacity ?? 100,
     }));
-  } catch (error) {
-    console.error('[DEBUG] Error nearby:', error);
+  } catch {
     return [];
   }
 }
