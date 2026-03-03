@@ -93,7 +93,7 @@ export class OrdersService {
   }
 
   async findUserOrders(userId: string) {
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: { userId },
       include: {
         event: {
@@ -102,6 +102,18 @@ export class OrdersService {
             title: true,
             coverImage: true,
             startDate: true,
+            venueName: true,
+          },
+        },
+        OrderItem: {
+          include: {
+            ticketType: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+              },
+            },
           },
         },
         tickets: {
@@ -116,6 +128,13 @@ export class OrdersService {
         createdAt: 'desc',
       },
     });
+
+    // Normalize: rename OrderItem → items for frontend consistency
+    return orders.map((order) => ({
+      ...order,
+      items: order.OrderItem,
+      OrderItem: undefined,
+    }));
   }
 
   async findOne(id: string, userId: string) {
