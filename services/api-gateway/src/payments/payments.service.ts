@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import Stripe from 'stripe';
 
 @Injectable()
@@ -7,7 +8,10 @@ export class PaymentsService implements OnModuleInit {
   private stripe: Stripe | null = null;
   private readonly logger = new Logger(PaymentsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async onModuleInit() {
     const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -102,6 +106,41 @@ export class PaymentsService implements OnModuleInit {
                 total: item.price,
               } as any,
             });
+          }
+        }
+
+        // Send confirmation email (fire and forget)
+        const user = await this.prisma.user.findUnique({
+          where: { id: order.userId },
+          select: { email: true },
+        });
+        const event = await this.prisma.event.findUnique({
+          where: { id: order.eventId },
+          select: { title: true, startDate: true, venueName: true },
+        });
+        const ticketType = order.OrderItem[0]
+          ? await this.prisma.ticketType.findUnique({
+              where: { id: order.OrderItem[0].ticketTypeId },
+              select: { name: true },
+            })
+          : null;
+
+        if (user && event) {
+          this.emailService.sendOrderConfirmationEmail(user.email, {
+            orderId: order.id,
+            total: order.total,
+            eventTitle: event.title,
+            ticketCount: order.OrderItem.reduce((sum, i) => sum + i.quantity, 0),
+          }).catch(() => {});
+
+          if (ticketType) {
+            this.emailService.sendTicketEmail(user.email, {
+              eventTitle: event.title,
+              eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
+              venue: event.venueName || '',
+              ticketType: ticketType.name,
+              orderId: order.id,
+            }).catch(() => {});
           }
         }
       }

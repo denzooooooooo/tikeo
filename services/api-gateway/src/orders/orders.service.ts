@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 export interface CreateOrderDto {
   eventId: string;
@@ -10,7 +11,10 @@ export interface CreateOrderDto {
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
     const { eventId, ticketTypeId, quantity, promoCode } = dto;
@@ -62,7 +66,7 @@ export class OrdersService {
     // Free events are automatically confirmed (no payment needed)
     const isFree = total === 0;
 
-    // Create order
+    // Create order with items
     const order = await this.prisma.order.create({
       data: {
         userId,
@@ -91,6 +95,52 @@ export class OrdersService {
         },
       },
     });
+
+    // For free events: generate tickets immediately + send confirmation email
+    if (isFree) {
+      const orderItem = order.OrderItem[0];
+      for (let i = 0; i < quantity; i++) {
+        await this.prisma.ticket.create({
+          data: {
+            orderId: order.id,
+            eventId,
+            userId,
+            ticketTypeId,
+            qrCode: `TKT-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
+            status: 'VALID',
+            purchaseDate: new Date(),
+            price: 0,
+            fees: 0,
+            total: 0,
+          } as any,
+        });
+      }
+
+      // Get user email for confirmation
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, firstName: true },
+      });
+
+      if (user) {
+        // Send order confirmation email (fire and forget)
+        this.emailService.sendOrderConfirmationEmail(user.email, {
+          orderId: order.id,
+          total: 0,
+          eventTitle: order.event?.title || 'Événement',
+          ticketCount: quantity,
+        }).catch(() => {});
+
+        // Send ticket email
+        this.emailService.sendTicketEmail(user.email, {
+          eventTitle: order.event?.title || 'Événement',
+          eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
+          venue: event.venueName || '',
+          ticketType: ticketType.name,
+          orderId: order.id,
+        }).catch(() => {});
+      }
+    }
 
     return order;
   }
