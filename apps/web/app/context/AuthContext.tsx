@@ -37,19 +37,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state from localStorage on mount
+  // Initialize auth state from localStorage on mount — validate token against API
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         const storedTokens = localStorage.getItem(TOKEN_KEY);
         const storedUser = localStorage.getItem(USER_KEY);
 
-        if (storedTokens && storedUser) {
-          const parsedTokens: AuthTokens = JSON.parse(storedTokens);
-          const parsedUser: AuthUser = JSON.parse(storedUser);
+        if (!storedTokens || !storedUser) {
+          setIsLoading(false);
+          return;
+        }
 
-          // Verify token is still valid by checking expiry
-          // For now, we'll trust the token exists and attempt to use it
+        const parsedTokens: AuthTokens = JSON.parse(storedTokens);
+        const parsedUser: AuthUser = JSON.parse(storedUser);
+
+        if (!parsedTokens?.accessToken) {
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+          setIsLoading(false);
+          return;
+        }
+
+        // Validate token against API — if 401, clear session
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+          const res = await fetch(`${apiUrl}/users/me`, {
+            headers: { Authorization: `Bearer ${parsedTokens.accessToken}` },
+          });
+
+          if (res.ok) {
+            // Token valid — update user data from API (fresh data)
+            const freshUser = await res.json();
+            const updatedUser: AuthUser = {
+              id: freshUser.id || parsedUser.id,
+              email: freshUser.email || parsedUser.email,
+              firstName: freshUser.firstName || parsedUser.firstName,
+              lastName: freshUser.lastName || parsedUser.lastName,
+              avatar: freshUser.avatar || parsedUser.avatar,
+              role: freshUser.role || parsedUser.role,
+            };
+            localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+            setTokens(parsedTokens);
+            setUser(updatedUser);
+          } else if (res.status === 401) {
+            // Token expired or invalid — try refresh
+            if (parsedTokens.refreshToken) {
+              try {
+                const refreshRes = await fetch(`${apiUrl}/auth/refresh`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ refreshToken: parsedTokens.refreshToken }),
+                });
+                if (refreshRes.ok) {
+                  const data = await refreshRes.json();
+                  const newTokens: AuthTokens = {
+                    accessToken: data.accessToken,
+                    refreshToken: data.refreshToken,
+                  };
+                  localStorage.setItem(TOKEN_KEY, JSON.stringify(newTokens));
+                  setTokens(newTokens);
+                  setUser(parsedUser);
+                } else {
+                  // Refresh failed — clear session
+                  localStorage.removeItem(TOKEN_KEY);
+                  localStorage.removeItem(USER_KEY);
+                }
+              } catch {
+                localStorage.removeItem(TOKEN_KEY);
+                localStorage.removeItem(USER_KEY);
+              }
+            } else {
+              // No refresh token — clear session
+              localStorage.removeItem(TOKEN_KEY);
+              localStorage.removeItem(USER_KEY);
+            }
+          } else {
+            // Other error (network, 500...) — keep session to avoid false logout
+            setTokens(parsedTokens);
+            setUser(parsedUser);
+          }
+        } catch {
+          // Network error — keep session (user might be offline)
           setTokens(parsedTokens);
           setUser(parsedUser);
         }
