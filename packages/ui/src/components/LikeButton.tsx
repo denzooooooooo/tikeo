@@ -1,7 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HeartIcon } from './Icons';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem('auth_tokens');
+    return stored ? JSON.parse(stored).accessToken : null;
+  } catch { return null; }
+}
 
 interface LikeButtonProps {
   eventId: string;
@@ -22,31 +32,53 @@ export function LikeButton({
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
 
+  // Fetch real like status from API on mount (so refresh shows correct state)
+  useEffect(() => {
+    async function fetchStatus() {
+      const token = getToken();
+      try {
+        const res = await fetch(`${API_URL}/likes/events/${eventId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setLiked(data.isLiked || false);
+          setCount(data.likes ?? initialCount);
+        }
+      } catch {
+        // keep initial state on error
+      }
+    }
+    fetchStatus();
+  }, [eventId]);
+
   const handleLike = async () => {
     if (loading) return;
-
     setLoading(true);
 
     try {
-      const storedTokens = localStorage.getItem('auth_tokens');
-      const token = storedTokens ? JSON.parse(storedTokens).accessToken : null;
+      const token = getToken();
+      if (!token) {
+        alert('Veuillez vous connecter pour liker cet événement');
+        setLoading(false);
+        return;
+      }
       const method = liked ? 'DELETE' : 'POST';
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-      const response = await fetch(
-        `${apiUrl}/likes/events/${eventId}`,
-        {
-          method,
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/likes/events/${eventId}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (response.ok) {
-        setLiked(!liked);
-        setCount(liked ? count - 1 : count + 1);
+        const data = await response.json();
+        setLiked(data.liked !== undefined ? data.liked : !liked);
+        setCount(data.likes !== undefined ? data.likes : (liked ? count - 1 : count + 1));
+      } else if (response.status === 401) {
+        alert('Veuillez vous connecter pour liker cet événement');
       }
     } catch (error) {
       console.error('Error toggling like:', error);
