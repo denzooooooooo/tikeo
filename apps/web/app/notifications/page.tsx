@@ -173,7 +173,13 @@ export default function NotificationsPage() {
   const [showSettings, setShowSettings] = useState(false);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const getToken = () => (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+  const getToken = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const stored = localStorage.getItem('auth_tokens');
+      return stored ? JSON.parse(stored).accessToken : null;
+    } catch { return null; }
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -181,9 +187,12 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async () => {
     setIsLoading(true);
+    const token = getToken();
+    if (!token) { setIsLoading(false); return; }
     try {
-      const res = await fetch(`${API_URL}/notifications`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+      const res = await fetch(`${apiUrl}/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -198,10 +207,13 @@ export default function NotificationsPage() {
 
   const handleMarkAsRead = async (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    const token = getToken();
+    if (!token) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
     try {
-      await fetch(`${API_URL}/notifications/${id}/read`, {
+      await fetch(`${apiUrl}/notifications/${id}/read`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {
       console.error('Error marking notification as read:', err);
@@ -210,10 +222,13 @@ export default function NotificationsPage() {
 
   const handleDelete = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const token = getToken();
+    if (!token) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
     try {
-      await fetch(`${API_URL}/notifications/${id}`, {
+      await fetch(`${apiUrl}/notifications/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {
       console.error('Error deleting notification:', err);
@@ -222,10 +237,13 @@ export default function NotificationsPage() {
 
   const handleMarkAllAsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    const token = getToken();
+    if (!token) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
     try {
-      await fetch(`${API_URL}/notifications/read-all`, {
+      await fetch(`${apiUrl}/notifications/read-all`, {
         method: 'PATCH',
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {
       console.error('Error marking all as read:', err);
@@ -234,10 +252,13 @@ export default function NotificationsPage() {
 
   const handleDeleteAll = async () => {
     setNotifications([]);
+    const token = getToken();
+    if (!token) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
     try {
-      await fetch(`${API_URL}/notifications`, {
+      await fetch(`${apiUrl}/notifications`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {
       console.error('Error deleting all notifications:', err);
