@@ -167,9 +167,14 @@ export default function CheckoutPage() {
       setOrderId(order.id);
       setOrderTotal(order.total);
 
-      // Stripe must be configured to proceed with payment
+      // FREE EVENT — skip Stripe entirely
+      if (order.total === 0) {
+        setStep('success');
+        return;
+      }
+
+      // PAID EVENT — Stripe must be configured
       if (!stripePromise) {
-        // Cancel the pending order since we can't process payment
         setError(
           '⚠️ Le paiement en ligne n\'est pas disponible actuellement. ' +
           'Veuillez configurer la variable NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY sur Vercel ' +

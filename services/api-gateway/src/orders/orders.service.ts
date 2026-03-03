@@ -59,6 +59,9 @@ export class OrdersService {
 
     const total = subtotal + fees + taxes - discount;
 
+    // Free events are automatically confirmed (no payment needed)
+    const isFree = total === 0;
+
     // Create order
     const order = await this.prisma.order.create({
       data: {
@@ -71,8 +74,8 @@ export class OrdersService {
         promoCodeUsed,
         total,
         currency: 'EUR',
-        status: 'PENDING',
-        paymentMethod: 'STRIPE',
+        status: isFree ? 'CONFIRMED' : 'PENDING',
+        paymentMethod: isFree ? 'FREE' : 'STRIPE',
         OrderItem: {
           create: {
             ticketTypeId,
