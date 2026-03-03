@@ -167,32 +167,46 @@ export default function CheckoutPage() {
       setOrderId(order.id);
       setOrderTotal(order.total);
 
-      // If Stripe is configured, create payment intent
-      if (stripePromise) {
-        const paymentRes = await fetch(`${API_URL}/payments/create-payment-intent`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            orderId: order.id,
-            amount: order.total,
-          }),
-        });
-
-        if (paymentRes.ok) {
-          const paymentData = await paymentRes.json();
-          if (paymentData.clientSecret) {
-            setClientSecret(paymentData.clientSecret);
-            setStep('payment');
-            return;
-          }
-        }
+      // Stripe must be configured to proceed with payment
+      if (!stripePromise) {
+        // Cancel the pending order since we can't process payment
+        setError(
+          '⚠️ Le paiement en ligne n\'est pas disponible actuellement. ' +
+          'Veuillez configurer la variable NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY sur Vercel ' +
+          'et STRIPE_SECRET_KEY sur Railway pour activer les paiements Stripe.'
+        );
+        setIsProcessing(false);
+        return;
       }
 
-      // No Stripe configured — order created, show success
-      setStep('success');
+      // Create payment intent via backend
+      const paymentRes = await fetch(`${API_URL}/payments/create-payment-intent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          amount: order.total,
+        }),
+      });
+
+      if (!paymentRes.ok) {
+        const errData = await paymentRes.json().catch(() => ({}));
+        throw new Error(
+          errData.message ||
+          'Impossible d\'initialiser le paiement. Vérifiez que STRIPE_SECRET_KEY est configuré sur Railway.'
+        );
+      }
+
+      const paymentData = await paymentRes.json();
+      if (!paymentData.clientSecret) {
+        throw new Error('Réponse de paiement invalide du serveur');
+      }
+
+      setClientSecret(paymentData.clientSecret);
+      setStep('payment');
     } catch (err: any) {
       console.error('Payment error:', err);
       setError(err.message || 'Une erreur est survenue');
