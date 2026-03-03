@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import {
   CalendarIcon,
   ClockIcon,
@@ -13,8 +15,13 @@ import {
 } from '@tikeo/ui';
 import { PromoCodeInput } from '@tikeo/ui';
 import { ProtectedRoute } from '../../../components/ProtectedRoute';
+import { StripePaymentForm } from './StripePaymentForm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+
+// Initialize Stripe outside component to avoid re-creation
+const stripePromise = STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
 
 function getAuthToken(): string | null {
   try {
@@ -43,10 +50,14 @@ interface EventData {
   date: string;
   time?: string;
   venue?: string;
-  location?: string;
   coverImage?: string;
   ticketTypes: TicketType[];
 }
+
+// Step 1: Ticket selection
+// Step 2: Payment form (Stripe Elements)
+// Step 3: Success
+type CheckoutStep = 'selection' | 'payment' | 'success';
 
 export default function CheckoutPage() {
   const params = useParams();
@@ -61,6 +72,10 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = useState(0);
   const [promoCode, setPromoCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState<CheckoutStep>('selection');
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderTotal, setOrderTotal] = useState(0);
 
   useEffect(() => {
     if (eventId) {
@@ -90,9 +105,8 @@ export default function CheckoutPage() {
                 minute: '2-digit',
               })
             : data.time || '',
-          venue: data.venueName || data.venue || data.location || data.address || '',
-          coverImage:
-            data.coverImage || data.image || 'https://picsum.photos/seed/event/800/400',
+          venue: data.venueName || data.venue || data.location || '',
+          coverImage: data.coverImage || 'https://picsum.photos/seed/event/800/400',
           ticketTypes: (data.ticketTypes || data.tickets || []).map((t: any) => ({
             id: t.id,
             name: t.name || t.type,
@@ -114,7 +128,8 @@ export default function CheckoutPage() {
     if (code) setPromoCode(code);
   };
 
-  const handlePayment = async () => {
+  // Step 1 → Step 2: Create order and get clientSecret
+  const handleProceedToPayment = async () => {
     if (!selectedTicket || !eventId) return;
 
     setIsProcessing(true);
@@ -128,7 +143,7 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Step 1: Create order
+      // Create order
       const orderRes = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: {
@@ -149,49 +164,49 @@ export default function CheckoutPage() {
       }
 
       const order = await orderRes.json();
+      setOrderId(order.id);
+      setOrderTotal(order.total);
 
-      // Step 2: Create payment intent (requires Stripe configured on backend)
-      const paymentRes = await fetch(`${API_URL}/payments/create-payment-intent`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          orderId: order.id,
-          amount: order.total,
-        }),
-      });
+      // If Stripe is configured, create payment intent
+      if (stripePromise) {
+        const paymentRes = await fetch(`${API_URL}/payments/create-payment-intent`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            orderId: order.id,
+            amount: order.total,
+          }),
+        });
 
-      if (paymentRes.ok) {
-        const paymentData = await paymentRes.json();
-        // If Stripe is configured, redirect to Stripe checkout or use Stripe Elements
-        // For now, show success and redirect to orders page
-        if (paymentData.clientSecret) {
-          // TODO: Integrate Stripe Elements here
-          alert(`Commande créée! Référence: ${order.id}\nMontant: ${order.total.toFixed(2)}€\n\nIntégration Stripe en cours...`);
-          router.push('/orders');
-        } else {
-          alert(`Commande créée avec succès! Référence: ${order.id}`);
-          router.push('/orders');
-        }
-      } else {
-        // Payment service not configured (no Stripe key) - order created but payment pending
-        const errData = await paymentRes.json().catch(() => ({}));
-        if (errData.message?.includes('Stripe is not configured')) {
-          // Demo mode - order created successfully
-          alert(`✅ Commande créée avec succès!\n\nRéférence: ${order.id}\nMontant: ${order.total.toFixed(2)}€\n\n(Mode démo - paiement Stripe non configuré)`);
-          router.push('/orders');
-        } else {
-          throw new Error(errData.message || 'Erreur lors du paiement');
+        if (paymentRes.ok) {
+          const paymentData = await paymentRes.json();
+          if (paymentData.clientSecret) {
+            setClientSecret(paymentData.clientSecret);
+            setStep('payment');
+            return;
+          }
         }
       }
+
+      // No Stripe configured — order created, show success
+      setStep('success');
     } catch (err: any) {
       console.error('Payment error:', err);
-      setError(err.message || 'Une erreur est survenue lors du paiement');
+      setError(err.message || 'Une erreur est survenue');
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setStep('success');
+  };
+
+  const handlePaymentError = (message: string) => {
+    setError(message);
   };
 
   const subtotal = selectedTicket ? selectedTicket.price * quantity : 0;
@@ -203,6 +218,40 @@ export default function CheckoutPage() {
       <ProtectedRoute>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="w-10 h-10 border-4 border-[#5B7CFF] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  // Success screen
+  if (step === 'success') {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-10 max-w-md w-full text-center shadow-lg">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircleIcon size={40} className="text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Paiement réussi !</h2>
+            <p className="text-gray-600 mb-2">Votre commande a été confirmée.</p>
+            {orderId && (
+              <p className="text-sm text-gray-400 mb-6">Référence: {orderId}</p>
+            )}
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push('/orders')}
+                className="w-full bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold py-3 rounded-xl"
+              >
+                Voir mes commandes
+              </button>
+              <button
+                onClick={() => router.push('/tickets')}
+                className="w-full border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-50"
+              >
+                Voir mes billets
+              </button>
+            </div>
+          </div>
         </div>
       </ProtectedRoute>
     );
@@ -229,19 +278,34 @@ export default function CheckoutPage() {
         <div className="max-w-6xl mx-auto px-4">
           {/* Back Link */}
           <Link
-            href={`/events/${eventId}`}
+            href={step === 'payment' ? '#' : `/events/${eventId}`}
+            onClick={step === 'payment' ? (e) => { e.preventDefault(); setStep('selection'); setClientSecret(null); } : undefined}
             className="inline-flex items-center gap-2 text-gray-600 hover:text-[#5B7CFF] mb-6"
           >
             <ArrowLeftIcon size={20} />
-            Retour à l'événement
+            {step === 'payment' ? 'Retour à la sélection' : "Retour à l'événement"}
           </Link>
 
           {/* Error Banner */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
               {error}
+              <button onClick={() => setError(null)} className="ml-2 text-red-500 hover:text-red-700">✕</button>
             </div>
           )}
+
+          {/* Progress Steps */}
+          <div className="flex items-center gap-2 mb-8">
+            <div className={`flex items-center gap-2 ${step === 'selection' ? 'text-[#5B7CFF] font-bold' : 'text-gray-400'}`}>
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${step === 'selection' ? 'bg-[#5B7CFF] text-white' : 'bg-gray-200 text-gray-500'}`}>1</span>
+              <span className="hidden sm:inline">Sélection</span>
+            </div>
+            <div className="flex-1 h-px bg-gray-200"></div>
+            <div className={`flex items-center gap-2 ${step === 'payment' ? 'text-[#5B7CFF] font-bold' : 'text-gray-400'}`}>
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${step === 'payment' ? 'bg-[#5B7CFF] text-white' : 'bg-gray-200 text-gray-500'}`}>2</span>
+              <span className="hidden sm:inline">Paiement</span>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
@@ -280,83 +344,126 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Ticket Selection */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Choix des billets</h2>
-                {event.ticketTypes.length === 0 ? (
-                  <p className="text-gray-500">Aucun billet disponible pour cet événement.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {event.ticketTypes.map((ticket) => (
-                      <label
-                        key={ticket.id}
-                        className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                          selectedTicket?.id === ticket.id
-                            ? 'border-[#5B7CFF] bg-[#5B7CFF]/5'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="radio"
-                              name="ticket"
-                              checked={selectedTicket?.id === ticket.id}
-                              onChange={() => setSelectedTicket(ticket)}
-                              className="w-5 h-5 text-[#5B7CFF]"
-                            />
-                            <div>
-                              <p className="font-bold text-gray-900">{ticket.name}</p>
-                              {ticket.description && (
-                                <p className="text-sm text-gray-600">{ticket.description}</p>
-                              )}
-                              {ticket.available !== undefined && (
-                                <p className="text-xs text-gray-400">{ticket.available} disponibles</p>
-                              )}
+              {/* Step 1: Ticket Selection */}
+              {step === 'selection' && (
+                <>
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Choix des billets</h2>
+                    {event.ticketTypes.length === 0 ? (
+                      <p className="text-gray-500">Aucun billet disponible pour cet événement.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {event.ticketTypes.map((ticket) => (
+                          <label
+                            key={ticket.id}
+                            className={`block p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                              selectedTicket?.id === ticket.id
+                                ? 'border-[#5B7CFF] bg-[#5B7CFF]/5'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="radio"
+                                  name="ticket"
+                                  checked={selectedTicket?.id === ticket.id}
+                                  onChange={() => setSelectedTicket(ticket)}
+                                  className="w-5 h-5 text-[#5B7CFF]"
+                                />
+                                <div>
+                                  <p className="font-bold text-gray-900">{ticket.name}</p>
+                                  {ticket.description && (
+                                    <p className="text-sm text-gray-600">{ticket.description}</p>
+                                  )}
+                                  {ticket.available !== undefined && (
+                                    <p className="text-xs text-gray-400">{ticket.available} disponibles</p>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="font-bold text-[#5B7CFF] text-lg">
+                                {ticket.price === 0 ? 'Gratuit' : `${ticket.price.toFixed(2)}€`}
+                              </p>
                             </div>
-                          </div>
-                          <p className="font-bold text-[#5B7CFF] text-lg">
-                            {ticket.price === 0 ? 'Gratuit' : `${ticket.price.toFixed(2)}€`}
-                          </p>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedTicket && (
+                      <div className="mt-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Quantité</label>
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                            className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-xl font-bold"
+                          >
+                            -
+                          </button>
+                          <span className="text-xl font-bold w-8 text-center">{quantity}</span>
+                          <button
+                            onClick={() => setQuantity(Math.min(quantity + 1, selectedTicket.available ?? 10))}
+                            className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-xl font-bold"
+                          >
+                            +
+                          </button>
                         </div>
-                      </label>
-                    ))}
+                      </div>
+                    )}
                   </div>
-                )}
 
-                {selectedTicket && (
-                  <div className="mt-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quantité
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-xl font-bold"
-                      >
-                        -
-                      </button>
-                      <span className="text-xl font-bold w-8 text-center">{quantity}</span>
-                      <button
-                        onClick={() =>
-                          setQuantity(
-                            Math.min(
-                              quantity + 1,
-                              selectedTicket.available ?? 10
-                            )
-                          )
-                        }
-                        className="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-xl font-bold"
-                      >
-                        +
-                      </button>
-                    </div>
+                  {/* Promo Code */}
+                  <PromoCodeInput onApply={handleApplyDiscount} />
+                </>
+              )}
+
+              {/* Step 2: Stripe Payment Form */}
+              {step === 'payment' && clientSecret && stripePromise && (
+                <div className="bg-white rounded-2xl p-6 border border-gray-100">
+                  <h2 className="text-xl font-bold text-gray-900 mb-6">Informations de paiement</h2>
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret,
+                      appearance: {
+                        theme: 'stripe',
+                        variables: {
+                          colorPrimary: '#5B7CFF',
+                          borderRadius: '12px',
+                        },
+                      },
+                    }}
+                  >
+                    <StripePaymentForm
+                      orderId={orderId!}
+                      amount={orderTotal}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                    />
+                  </Elements>
+                </div>
+              )}
+
+              {/* Step 2: No Stripe configured */}
+              {step === 'payment' && !stripePromise && (
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
+                  <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">⚠️</span>
                   </div>
-                )}
-              </div>
-
-              {/* Promo Code */}
-              <PromoCodeInput onApply={handleApplyDiscount} />
+                  <h3 className="font-bold text-gray-900 mb-2">Paiement Stripe non configuré</h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    La clé publique Stripe (<code>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code>) n'est pas configurée.
+                    Votre commande a été créée avec succès.
+                  </p>
+                  <p className="text-xs text-gray-400 mb-6">Référence commande: {orderId}</p>
+                  <button
+                    onClick={() => setStep('success')}
+                    className="bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold py-3 px-6 rounded-xl"
+                  >
+                    Voir ma commande
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Sidebar - Order Summary */}
@@ -366,12 +473,9 @@ export default function CheckoutPage() {
 
                 <div className="space-y-3 pb-4 border-b border-gray-100">
                   <div className="flex justify-between text-gray-600">
-                    <span>
-                      {selectedTicket?.name || 'Sélectionnez un billet'} x {quantity}
-                    </span>
+                    <span>{selectedTicket?.name || 'Sélectionnez un billet'} x {quantity}</span>
                     <span>{subtotal.toFixed(2)}€</span>
                   </div>
-
                   {discount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Réduction ({discount}%)</span>
@@ -383,28 +487,31 @@ export default function CheckoutPage() {
                 <div className="py-4 border-b border-gray-100">
                   <div className="flex justify-between text-xl font-bold text-gray-900">
                     <span>Total</span>
-                    <span>{total.toFixed(2)}€</span>
+                    <span>{step === 'payment' ? orderTotal.toFixed(2) : total.toFixed(2)}€</span>
                   </div>
                 </div>
 
-                <button
-                  disabled={!selectedTicket || isProcessing}
-                  onClick={handlePayment}
-                  className="w-full mt-6 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      Traitement...
-                    </span>
-                  ) : (
-                    'Procéder au paiement'
-                  )}
-                </button>
+                {/* CTA Button - only on step 1 */}
+                {step === 'selection' && (
+                  <button
+                    disabled={!selectedTicket || isProcessing}
+                    onClick={handleProceedToPayment}
+                    className="w-full mt-6 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold py-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        Préparation...
+                      </span>
+                    ) : (
+                      'Procéder au paiement'
+                    )}
+                  </button>
+                )}
 
                 <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
                   <CheckCircleIcon size={16} className="text-green-500" />
-                  <span>Paiement sécurisé</span>
+                  <span>Paiement sécurisé par Stripe</span>
                 </div>
               </div>
             </div>
