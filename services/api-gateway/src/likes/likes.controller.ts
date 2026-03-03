@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { LikesService } from './likes.service';
 
 @ApiTags('likes')
@@ -23,6 +24,7 @@ export class LikesController {
 
   // GET /likes/events/:eventId - Get like status for an event
   @Get('events/:eventId')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: "Récupérer le statut des likes d'un événement" })
   @ApiParam({ name: 'eventId', description: "ID de l'événement" })
   @ApiResponse({ status: 200, description: 'Statut récupéré' })
@@ -81,8 +83,9 @@ export class LikesController {
 
   // ─── ORGANIZER FOLLOW/SUBSCRIBE ─────────────────────────────────────────────
 
-  // GET /likes/organizers/:organizerId - Get follow status
+  // GET /likes/organizers/:organizerId - Get follow status (optional auth - reads user if logged in)
   @Get('organizers/:organizerId')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: "Récupérer le statut d'abonnement d'un organisateur" })
   @ApiParam({ name: 'organizerId', description: "ID de l'organisateur" })
   @ApiResponse({ status: 200, description: 'Statut récupéré' })
