@@ -1,9 +1,96 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+
+export interface CreateOrderDto {
+  eventId: string;
+  ticketTypeId: string;
+  quantity: number;
+  promoCode?: string;
+}
 
 @Injectable()
 export class OrdersService {
   constructor(private prisma: PrismaService) {}
+
+  async createOrder(userId: string, dto: CreateOrderDto) {
+    const { eventId, ticketTypeId, quantity, promoCode } = dto;
+
+    // Verify event exists
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+    if (!event) throw new NotFoundException('Événement non trouvé');
+
+    // Verify ticket type exists and has availability
+    const ticketType = await this.prisma.ticketType.findFirst({
+      where: { id: ticketTypeId, eventId },
+    });
+    if (!ticketType) throw new NotFoundException('Type de billet non trouvé');
+    if (ticketType.available < quantity) {
+      throw new BadRequestException('Pas assez de billets disponibles');
+    }
+
+    // Calculate amounts
+    const subtotal = ticketType.price * quantity;
+    const fees = 0;
+    const taxes = 0;
+    let discount = 0;
+
+    // Apply promo code if provided
+    let promoCodeUsed: string | null = null;
+    if (promoCode && promoCode !== 'APPLIED') {
+      const promo = await this.prisma.promoCode.findFirst({
+        where: {
+          code: promoCode,
+          isActive: true,
+          validFrom: { lte: new Date() },
+          validUntil: { gte: new Date() },
+        },
+      });
+      if (promo) {
+        if (promo.discountType === 'PERCENTAGE') {
+          discount = subtotal * (promo.discountValue / 100);
+        } else {
+          discount = promo.discountValue;
+        }
+        promoCodeUsed = promoCode;
+      }
+    }
+
+    const total = subtotal + fees + taxes - discount;
+
+    // Create order
+    const order = await this.prisma.order.create({
+      data: {
+        userId,
+        eventId,
+        subtotal,
+        fees,
+        taxes,
+        discount,
+        promoCodeUsed,
+        total,
+        currency: 'EUR',
+        status: 'PENDING',
+        paymentMethod: 'STRIPE',
+        OrderItem: {
+          create: {
+            ticketTypeId,
+            quantity,
+            price: ticketType.price,
+          },
+        },
+      },
+      include: {
+        OrderItem: true,
+        event: {
+          select: { id: true, title: true },
+        },
+      },
+    });
+
+    return order;
+  }
 
   async findUserOrders(userId: string) {
     return this.prisma.order.findMany({

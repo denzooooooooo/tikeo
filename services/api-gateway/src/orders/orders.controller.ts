@@ -1,15 +1,35 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { OrdersService } from './orders.service';
-import { AuthGuard } from '@nestjs/passport';
+import { OrdersService, CreateOrderDto } from './orders.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('orders')
 @Controller('orders')
 export class OrdersController {
   constructor(private ordersService: OrdersService) {}
 
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Créer une commande' })
+  @ApiResponse({ status: 201, description: 'Commande créée avec succès' })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  async createOrder(@Body() dto: CreateOrderDto, @Request() req: any) {
+    return this.ordersService.createOrder(req.user.id, dto);
+  }
+
+  @Get('my')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Récupérer mes commandes' })
+  @ApiResponse({ status: 200, description: 'Commandes récupérées' })
+  async getMyOrders(@Request() req: any) {
+    return this.ordersService.findUserOrders(req.user.id);
+  }
+
   @Get('user/:userId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user orders' })
   @ApiResponse({ status: 200, description: 'Orders retrieved successfully' })
@@ -18,7 +38,7 @@ export class OrdersController {
   }
 
   @Get(':id/user/:userId')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get order by ID' })
   @ApiResponse({ status: 200, description: 'Order retrieved successfully' })
