@@ -2,6 +2,9 @@ import { Metadata } from 'next';
 import { Suspense } from 'react';
 import EventsPageClient from './EventsPageClient';
 
+// Force dynamic rendering so searchParams (category, search, etc.) are always fresh
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Événements | Tikeo',
   description: 'Découvrez les meilleurs événements partout dans le monde. Concerts, festivals, conférences tech, gastronomie et plus encore.',

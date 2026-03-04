@@ -116,6 +116,12 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
   const [country, setCountry] = useState(searchParams.country || '');
   const [category, setCategory] = useState(searchParams.category || '');
   const [sortBy, setSortBy] = useState(searchParams.sortBy || 'date');
+
+  // Sync events/meta when server re-renders with new initialEvents (e.g. after category filter)
+  useEffect(() => {
+    setEvents(initialEvents);
+    setMeta(initialMeta);
+  }, [initialEvents, initialMeta]);
   const [minPrice, setMinPrice] = useState(searchParams.minPrice || '');
   const [maxPrice, setMaxPrice] = useState(searchParams.maxPrice || '');
   const [isFree, setIsFree] = useState(searchParams.isFree === 'true');
