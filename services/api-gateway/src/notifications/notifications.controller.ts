@@ -1,9 +1,8 @@
 import {
   Controller,
   Get,
-  Put,
+  Patch,
   Delete,
-  Body,
   Param,
   Query,
   UseGuards,
@@ -26,13 +25,22 @@ export class NotificationsController {
     @Query('read') read?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
   ) {
     return this.notificationsService.getNotifications(req.user.id, {
       type,
       read: read !== undefined ? read === 'true' : undefined,
       page: page ? parseInt(page) : 1,
       limit: limit ? parseInt(limit) : 20,
+      sortBy,
     });
+  }
+
+  // ⚠️ read-all MUST be before :id to avoid route conflict
+  @Patch('read-all')
+  @HttpCode(HttpStatus.OK)
+  async markAllAsRead(@Request() req) {
+    return this.notificationsService.markAllAsRead(req.user.id);
   }
 
   @Get(':id')
@@ -40,27 +48,22 @@ export class NotificationsController {
     return this.notificationsService.getNotificationById(req.user.id, id);
   }
 
-  @Put(':id/read')
+  @Patch(':id/read')
+  @HttpCode(HttpStatus.OK)
   async markAsRead(@Request() req, @Param('id') id: string) {
     return this.notificationsService.markAsRead(req.user.id, id);
   }
 
-  @Put('read-all')
+  @Delete('all')
   @HttpCode(HttpStatus.OK)
-  async markAllAsRead(@Request() req) {
-    return this.notificationsService.markAllAsRead(req.user.id);
+  async deleteAllNotifications(@Request() req) {
+    return this.notificationsService.deleteAllNotifications(req.user.id);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deleteNotification(@Request() req, @Param('id') id: string) {
     return this.notificationsService.deleteNotification(req.user.id, id);
-  }
-
-  @Delete()
-  @HttpCode(HttpStatus.OK)
-  async deleteAllNotifications(@Request() req) {
-    return this.notificationsService.deleteAllNotifications(req.user.id);
   }
 }
 

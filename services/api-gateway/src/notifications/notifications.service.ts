@@ -23,9 +23,10 @@ export class NotificationsService {
       read?: boolean;
       page?: number;
       limit?: number;
+      sortBy?: string;
     } = {},
   ) {
-    const { type, read, page = 1, limit = 20 } = filters;
+    const { type, read, page = 1, limit = 20, sortBy } = filters;
     const skip = (page - 1) * limit;
 
     const where: any = { userId };
@@ -38,10 +39,15 @@ export class NotificationsService {
       where.read = read;
     }
 
+    // Build orderBy
+    let orderBy: any = { createdAt: 'desc' };
+    if (sortBy === 'oldest') orderBy = { createdAt: 'asc' };
+    else if (sortBy === 'unread') orderBy = [{ read: 'asc' }, { createdAt: 'desc' }];
+
     const [notifications, total, unreadCount] = await Promise.all([
       this.prisma.notification.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limit,
       }),
