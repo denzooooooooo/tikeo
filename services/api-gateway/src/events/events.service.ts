@@ -519,6 +519,29 @@ export class EventsService {
     return { message: 'Événement annulé avec succès' };
   }
 
+  async unpublish(id: string, userId: string) {
+    const event = await this.prisma.event.findUnique({
+      where: { id },
+      include: { organizer: true },
+    });
+    if (!event) throw new Error('Événement non trouvé');
+    if (event.organizer.userId !== userId) throw new Error('Non autorisé');
+
+    const unpublished = await this.prisma.event.update({
+      where: { id },
+      data: { status: 'DRAFT' },
+      include: {
+        organizer: { select: { id: true, companyName: true, logo: true, verified: true } },
+        ticketTypes: true,
+      },
+    });
+
+    await this.redis.del(`event:${id}`);
+    await this.redis.del('events:featured');
+
+    return unpublished;
+  }
+
   async publish(id: string, userId: string) {
     const event = await this.prisma.event.findUnique({
       where: { id },

@@ -191,6 +191,15 @@ export class EventsController {
     return this.eventsService.publish(id, req.user?.id);
   }
 
+  // ─── POST /events/:id/unpublish ───────────────────────────────────────────────
+  @Post(':id/unpublish')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Dépublier un événement (repasse en brouillon)' })
+  async unpublish(@Param('id') id: string, @Request() req: any) {
+    return this.eventsService.unpublish(id, req.user?.id);
+  }
+
   // ─── DELETE /events/admin/cleanup ─────────────────────────────────────────────
   @Delete('admin/cleanup')
   @UseGuards(JwtAuthGuard)

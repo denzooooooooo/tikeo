@@ -61,6 +61,8 @@ export default function DashboardEventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [unpublishingId, setUnpublishingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchMyEvents = useCallback(async () => {
@@ -100,12 +102,53 @@ export default function DashboardEventsPage() {
         },
       });
       if (!res.ok) throw new Error('Erreur lors de la publication');
-      // Refresh list
       await fetchMyEvents();
     } catch (err: any) {
       alert(err.message || 'Erreur lors de la publication');
     } finally {
       setPublishingId(null);
+    }
+  };
+
+  const handleUnpublish = async (eventId: string) => {
+    if (!confirm('Dépublier cet événement ? Il repassera en brouillon et ne sera plus visible.')) return;
+    setUnpublishingId(eventId);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_CONFIG.BASE_URL}/events/${eventId}/unpublish`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Erreur lors de la dépublication');
+      await fetchMyEvents();
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors de la dépublication');
+    } finally {
+      setUnpublishingId(null);
+    }
+  };
+
+  const handleDelete = async (eventId: string, eventTitle: string) => {
+    if (!confirm(`Supprimer définitivement "${eventTitle}" ? Cette action est irréversible.`)) return;
+    setDeletingId(eventId);
+    try {
+      const token = getToken();
+      const res = await fetch(`${API_CONFIG.BASE_URL}/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!res.ok) throw new Error('Erreur lors de la suppression');
+      await fetchMyEvents();
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors de la suppression');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -313,8 +356,20 @@ export default function DashboardEventsPage() {
                               onClick={() => handlePublish(event.id)}
                               disabled={publishingId === event.id}
                               className="px-3 py-1.5 text-xs font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                              title="Publier"
                             >
                               {publishingId === event.id ? '…' : 'Publier'}
+                            </button>
+                          )}
+                          {/* Unpublish button for PUBLISHED events */}
+                          {event.status === 'PUBLISHED' && (
+                            <button
+                              onClick={() => handleUnpublish(event.id)}
+                              disabled={unpublishingId === event.id}
+                              className="px-3 py-1.5 text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                              title="Dépublier"
+                            >
+                              {unpublishingId === event.id ? '…' : 'Dépublier'}
                             </button>
                           )}
                           <Link
@@ -338,6 +393,26 @@ export default function DashboardEventsPage() {
                           >
                             <TrendingUpIcon size={18} />
                           </Link>
+                          {/* Delete button — only for DRAFT or CANCELLED */}
+                          {(event.status === 'DRAFT' || event.status === 'CANCELLED') && (
+                            <button
+                              onClick={() => handleDelete(event.id, event.title)}
+                              disabled={deletingId === event.id}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                              title="Supprimer"
+                            >
+                              {deletingId === event.id ? (
+                                <span className="text-xs">…</span>
+                              ) : (
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                  <path d="M10 11v6M14 11v6" />
+                                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                </svg>
+                              )}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
