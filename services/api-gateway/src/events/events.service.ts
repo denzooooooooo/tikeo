@@ -123,8 +123,22 @@ export class EventsService {
       ];
     }
 
+    // Recalculer minPrice depuis les ticketTypes inclus (données fraîches)
+    const mappedEvents = sortedEvents.map((event) => {
+      const activeTT = (event.ticketTypes || []).filter((tt: any) => tt.isActive !== false);
+      if (activeTT.length > 0) {
+        const prices = activeTT.map((tt: any) => tt.price);
+        return {
+          ...event,
+          minPrice: Math.min(...prices),
+          maxPrice: Math.max(...prices),
+        };
+      }
+      return event;
+    });
+
     return {
-      data: sortedEvents,
+      data: mappedEvents,
       meta: {
         total,
         page,
@@ -579,6 +593,28 @@ export class EventsService {
 
   // ─── TICKET TYPE CRUD ────────────────────────────────────────────────────────
 
+  /**
+   * Synchronise minPrice et maxPrice de l'événement depuis ses types de billets actifs.
+   * À appeler après chaque création/modification/suppression de ticket type.
+   */
+  private async syncEventPrices(eventId: string) {
+    const ticketTypes = await this.prisma.ticketType.findMany({
+      where: { eventId, isActive: true },
+      orderBy: { price: 'asc' },
+    });
+
+    if (ticketTypes.length === 0) return;
+
+    const prices = ticketTypes.map((tt) => tt.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+
+    await this.prisma.event.update({
+      where: { id: eventId },
+      data: { minPrice, maxPrice },
+    });
+  }
+
   async createTicketType(eventId: string, dto: any, userId: string) {
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
@@ -603,6 +639,8 @@ export class EventsService {
       },
     });
 
+    // Synchroniser minPrice/maxPrice de l'événement
+    await this.syncEventPrices(eventId);
     await this.redis.del(`event:${eventId}`);
     return ticketType;
   }
@@ -635,6 +673,8 @@ export class EventsService {
       },
     });
 
+    // Synchroniser minPrice/maxPrice de l'événement après modification du prix
+    await this.syncEventPrices(eventId);
     await this.redis.del(`event:${eventId}`);
     return updated;
   }
@@ -656,6 +696,9 @@ export class EventsService {
     }
 
     await this.prisma.ticketType.delete({ where: { id: ttId } });
+
+    // Synchroniser minPrice/maxPrice de l'événement après suppression
+    await this.syncEventPrices(eventId);
     await this.redis.del(`event:${eventId}`);
     return { message: 'Type de billet supprimé' };
   }
