@@ -1,14 +1,7 @@
 'use client';
 
 
-import type { Metadata } from 'next';
-export const metadata: Metadata = {
-  title: 'Recherche d'evenements | Tikeo',
-  description: 'Recherchez des evenements partout dans le monde sur Tikeo : concerts, festivals, conferences, spectacles et bien plus encore.',
-  keywords: ['recherche', 'evenements', 'concerts', 'festivals', 'billets', 'tikeo'],
-  openGraph: { title: 'Rechercher des evenements - Tikeo', description: 'Trouvez les meilleurs evenements pres de chez vous.', url: 'https://tikeo.com/search' },
-  alternates: { canonical: 'https://tikeo.com/search' },
-};
+
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';

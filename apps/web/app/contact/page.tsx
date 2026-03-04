@@ -1,11 +1,4 @@
-import type { Metadata } from 'next';
-export const metadata: Metadata = {
-  title: 'Contact | Tikeo',
-  description: 'Contactez l'equipe Tikeo pour toute question sur notre plateforme de billetterie evenementielle. Support disponible 7j/7.',
-  keywords: ['contact', 'support', 'tikeo', 'aide', 'assistance'],
-  openGraph: { title: 'Contactez Tikeo', description: 'Notre equipe est disponible pour vous aider.', url: 'https://tikeo.com/contact' },
-  alternates: { canonical: 'https://tikeo.com/contact' },
-};
+
 
 "use client";
 

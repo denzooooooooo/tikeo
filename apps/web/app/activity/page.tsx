@@ -1,13 +1,7 @@
 'use client';
 
 
-import type { Metadata } from 'next';
-export const metadata: Metadata = {
-  title: 'Activite | Tikeo',
-  description: 'Suivez votre activite sur Tikeo : evenements visites, billets achetes, votes et interactions avec la communaute.',
-  openGraph: { title: 'Mon activite - Tikeo', description: 'Votre historique d'activite sur Tikeo.', url: 'https://tikeo.com/activity' },
-  alternates: { canonical: 'https://tikeo.com/activity' },
-};
+
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
