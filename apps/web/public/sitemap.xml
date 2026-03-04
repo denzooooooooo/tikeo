@@ -1,172 +1,175 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Main pages -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- ── Pages principales ── -->
   <url>
     <loc>https://tikeo.com/</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://tikeo.com/events</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://tikeo.com/events/categories</loc>
-    <changefreq>weekly</changefreq>
+    <loc>https://tikeo.com/search</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
-  
-  <!-- Auth pages -->
+
+  <!-- ── Authentification ── -->
   <url>
     <loc>https://tikeo.com/login</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://tikeo.com/register</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
-  
-  <!-- User pages -->
+  <url>
+    <loc>https://tikeo.com/forgot-password</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <!-- ── Pages utilisateur ── -->
   <url>
     <loc>https://tikeo.com/favorites</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://tikeo.com/orders</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://tikeo.com/tickets</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://tikeo.com/notifications</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://tikeo.com/profile</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
-  
-  <!-- Voting -->
   <url>
-    <loc>https://tikeo.com/votes</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://tikeo.com/votes/create</loc>
+    <loc>https://tikeo.com/activity</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.5</priority>
   </url>
-  
-  <!-- Dashboard -->
+  <url>
+    <loc>https://tikeo.com/settings</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- ── Dashboard organisateur ── -->
   <url>
     <loc>https://tikeo.com/dashboard</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://tikeo.com/dashboard/events/create</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://tikeo.com/dashboard/orders</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://tikeo.com/dashboard/analytics</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://tikeo.com/dashboard/settings</loc>
+    <loc>https://tikeo.com/dashboard/scanner</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
-  
-  <!-- Informational pages -->
+  <url>
+    <loc>https://tikeo.com/dashboard/promo-codes</loc>
+    <lastmod>2025-01-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- ── Pages institutionnelles ── -->
   <url>
     <loc>https://tikeo.com/about</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://tikeo.com/blog</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://tikeo.com/contact</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  <url>
-    <loc>https://tikeo.com/help</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://tikeo.com/careers</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://tikeo.com/press</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://tikeo.com/pricing</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://tikeo.com/resources</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://tikeo.com/affiliate</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <!-- Legal pages -->
+
+  <!-- ── Pages légales ── -->
   <url>
     <loc>https://tikeo.com/privacy</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>quarterly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://tikeo.com/terms</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>quarterly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://tikeo.com/cgu</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>quarterly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://tikeo.com/cookies</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>quarterly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.4</priority>
   </url>
   <url>
     <loc>https://tikeo.com/legal</loc>
+    <lastmod>2025-01-15</lastmod>
     <changefreq>quarterly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.4</priority>
   </url>
-</urlset>
 
+</urlset>
