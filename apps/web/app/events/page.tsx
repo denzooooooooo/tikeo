@@ -47,8 +47,6 @@ async function getEvents(searchParams: Record<string, string | undefined>) {
   }
 }
 
-export const dynamic = 'force-dynamic';
-
 export default async function EventsPage({
   searchParams,
 }: {
