@@ -104,7 +104,7 @@ async function getFeaturedOrganizers() {
 async function getCountryCounts(): Promise<Record<string, number>> {
   try {
     const res = await fetch(`${API_URL}/events/countries/counts`, {
-      next: { revalidate: 3600 },
+      cache: 'no-store',
     });
     if (!res.ok) return {};
     const data = await res.json();
