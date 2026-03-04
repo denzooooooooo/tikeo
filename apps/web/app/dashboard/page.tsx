@@ -114,6 +114,11 @@ export default function DashboardPage() {
   });
   const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [performance, setPerformance] = useState({
+    fillRate: 0,       // Taux de remplissage (billets vendus / capacité totale)
+    conversionRate: 0, // Taux de conversion (billets vendus / vues)
+    eventsThisMonth: 0, // Événements avec startDate ce mois-ci
+  });
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -134,10 +139,27 @@ export default function DashboardPage() {
           const draft = events.filter((e: any) => e.status === 'DRAFT').length;
           const totalSold = events.reduce((acc: number, e: any) => acc + (e.ticketsSold || 0), 0);
           const totalViews = events.reduce((acc: number, e: any) => acc + (e.views || 0), 0);
+          const totalCapacity = events.reduce((acc: number, e: any) => acc + (e.capacity || 0), 0);
           const totalRevenue = events.reduce((acc: number, e: any) => {
             const minPrice = e.minPrice || e.ticketTypes?.[0]?.price || 0;
             return acc + (e.ticketsSold || 0) * minPrice;
           }, 0);
+
+          // Événements avec startDate dans le mois courant
+          const now = new Date();
+          const eventsThisMonth = events.filter((e: any) => {
+            if (!e.startDate) return false;
+            const d = new Date(e.startDate);
+            return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+          }).length;
+
+          // Taux de remplissage réel
+          const fillRate = totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0;
+
+          // Taux de conversion réel (billets vendus / vues)
+          const conversionRate = totalViews > 0 ? Math.round((totalSold / totalViews) * 100) : 0;
+
+          setPerformance({ fillRate, conversionRate, eventsThisMonth });
 
           setStats({
             totalEvents: events.length,
@@ -224,7 +246,7 @@ export default function DashboardPage() {
                 subtitle={`${stats.publishedEvents} publiés · ${stats.draftEvents} brouillons`}
                 Icon={CalendarIcon}
                 color="bg-[#5B7CFF]/10 text-[#5B7CFF]"
-                trend="+2 ce mois"
+                trend={performance.eventsThisMonth > 0 ? `+${performance.eventsThisMonth} ce mois` : undefined}
                 href="/dashboard/events"
               />
               <StatCard
@@ -381,29 +403,53 @@ export default function DashboardPage() {
                 </Link>
               </div>
 
-              {/* Performance rapide */}
+              {/* Performance rapide — données réelles */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <h3 className="font-bold text-gray-900 mb-4">Performance ce mois</h3>
-                <div className="space-y-3">
-                  {[
-                    { label: 'Taux de conversion', value: 68, color: '#5B7CFF' },
-                    { label: 'Satisfaction client', value: 92, color: '#10b981' },
-                    { label: 'Taux de remplissage', value: 75, color: '#f97316' },
-                  ].map((item) => (
-                    <div key={item.label}>
-                      <div className="flex justify-between text-xs font-medium text-gray-600 mb-1">
-                        <span>{item.label}</span>
-                        <span className="font-bold" style={{ color: item.color }}>{item.value}%</span>
+                <h3 className="font-bold text-gray-900 mb-4">Performance globale</h3>
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2].map(i => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-3 bg-gray-200 rounded w-3/4 mb-2" />
+                        <div className="h-2 bg-gray-200 rounded-full" />
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${item.value}%`, backgroundColor: item.color }}
-                        />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {[
+                      {
+                        label: 'Taux de conversion',
+                        value: performance.conversionRate,
+                        color: '#5B7CFF',
+                        hint: stats.totalViews > 0 ? `${stats.totalTicketsSold} ventes / ${stats.totalViews} vues` : 'Aucune vue enregistrée',
+                      },
+                      {
+                        label: 'Taux de remplissage',
+                        value: performance.fillRate,
+                        color: '#f97316',
+                        hint: `${stats.totalTicketsSold.toLocaleString()} billets vendus`,
+                      },
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <div className="flex justify-between text-xs font-medium text-gray-600 mb-1">
+                          <span>{item.label}</span>
+                          <span className="font-bold" style={{ color: item.color }}>{item.value}%</span>
+                        </div>
+                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${Math.min(item.value, 100)}%`, backgroundColor: item.color }}
+                          />
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{item.hint}</p>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                    {stats.totalEvents === 0 && (
+                      <p className="text-xs text-gray-400 text-center py-2">Créez votre premier événement pour voir vos statistiques</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

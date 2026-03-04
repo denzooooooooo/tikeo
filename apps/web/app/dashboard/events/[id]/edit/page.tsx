@@ -29,6 +29,84 @@ const XIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" 
 const CurrencyIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>;
 const UsersIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
 
+// ─── Liste de pays prédéfinis ─────────────────────────────────────────────────
+const COUNTRIES = [
+  // Afrique de l'Ouest
+  { value: "Bénin", label: "🇧🇯 Bénin" },
+  { value: "Burkina Faso", label: "🇧🇫 Burkina Faso" },
+  { value: "Cap-Vert", label: "🇨🇻 Cap-Vert" },
+  { value: "Côte d'Ivoire", label: "🇨🇮 Côte d'Ivoire" },
+  { value: "Gambie", label: "🇬🇲 Gambie" },
+  { value: "Ghana", label: "🇬🇭 Ghana" },
+  { value: "Guinée", label: "🇬🇳 Guinée" },
+  { value: "Guinée-Bissau", label: "🇬🇼 Guinée-Bissau" },
+  { value: "Liberia", label: "🇱🇷 Liberia" },
+  { value: "Mali", label: "🇲🇱 Mali" },
+  { value: "Mauritanie", label: "🇲🇷 Mauritanie" },
+  { value: "Niger", label: "🇳🇪 Niger" },
+  { value: "Nigeria", label: "🇳🇬 Nigeria" },
+  { value: "Sénégal", label: "🇸🇳 Sénégal" },
+  { value: "Sierra Leone", label: "🇸🇱 Sierra Leone" },
+  { value: "Togo", label: "🇹🇬 Togo" },
+  // Afrique Centrale
+  { value: "Cameroun", label: "🇨🇲 Cameroun" },
+  { value: "Congo", label: "🇨🇬 Congo" },
+  { value: "RD Congo", label: "🇨🇩 RD Congo" },
+  { value: "Gabon", label: "🇬🇦 Gabon" },
+  { value: "Guinée équatoriale", label: "🇬🇶 Guinée équatoriale" },
+  { value: "République centrafricaine", label: "🇨🇫 République centrafricaine" },
+  { value: "Tchad", label: "🇹🇩 Tchad" },
+  // Afrique de l'Est
+  { value: "Burundi", label: "🇧🇮 Burundi" },
+  { value: "Comores", label: "🇰🇲 Comores" },
+  { value: "Djibouti", label: "🇩🇯 Djibouti" },
+  { value: "Érythrée", label: "🇪🇷 Érythrée" },
+  { value: "Éthiopie", label: "🇪🇹 Éthiopie" },
+  { value: "Kenya", label: "🇰🇪 Kenya" },
+  { value: "Madagascar", label: "🇲🇬 Madagascar" },
+  { value: "Malawi", label: "🇲🇼 Malawi" },
+  { value: "Maurice", label: "🇲🇺 Maurice" },
+  { value: "Mozambique", label: "🇲🇿 Mozambique" },
+  { value: "Ouganda", label: "🇺🇬 Ouganda" },
+  { value: "Rwanda", label: "🇷🇼 Rwanda" },
+  { value: "Seychelles", label: "🇸🇨 Seychelles" },
+  { value: "Somalie", label: "🇸🇴 Somalie" },
+  { value: "Soudan", label: "🇸🇩 Soudan" },
+  { value: "Soudan du Sud", label: "🇸🇸 Soudan du Sud" },
+  { value: "Tanzanie", label: "🇹🇿 Tanzanie" },
+  { value: "Zambie", label: "🇿🇲 Zambie" },
+  { value: "Zimbabwe", label: "🇿🇼 Zimbabwe" },
+  // Afrique du Nord
+  { value: "Algérie", label: "🇩🇿 Algérie" },
+  { value: "Égypte", label: "🇪🇬 Égypte" },
+  { value: "Libye", label: "🇱🇾 Libye" },
+  { value: "Maroc", label: "🇲🇦 Maroc" },
+  { value: "Tunisie", label: "🇹🇳 Tunisie" },
+  // Afrique Australe
+  { value: "Afrique du Sud", label: "🇿🇦 Afrique du Sud" },
+  { value: "Angola", label: "🇦🇴 Angola" },
+  { value: "Botswana", label: "🇧🇼 Botswana" },
+  { value: "Eswatini", label: "🇸🇿 Eswatini" },
+  { value: "Lesotho", label: "🇱🇸 Lesotho" },
+  { value: "Namibie", label: "🇳🇦 Namibie" },
+  // Europe
+  { value: "Allemagne", label: "🇩🇪 Allemagne" },
+  { value: "Belgique", label: "🇧🇪 Belgique" },
+  { value: "Canada", label: "🇨🇦 Canada" },
+  { value: "Espagne", label: "🇪🇸 Espagne" },
+  { value: "France", label: "🇫🇷 France" },
+  { value: "Italie", label: "🇮🇹 Italie" },
+  { value: "Portugal", label: "🇵🇹 Portugal" },
+  { value: "Royaume-Uni", label: "🇬🇧 Royaume-Uni" },
+  { value: "Suisse", label: "🇨🇭 Suisse" },
+  // Autres
+  { value: "États-Unis", label: "🇺🇸 États-Unis" },
+  { value: "Brésil", label: "🇧🇷 Brésil" },
+  { value: "Chine", label: "🇨🇳 Chine" },
+  { value: "Émirats arabes unis", label: "🇦🇪 Émirats arabes unis" },
+  { value: "Inde", label: "🇮🇳 Inde" },
+];
+
 // ─── Category mapping (DB enum → French label) ───────────────────────────────
 const CATEGORIES = [
   { value: 'MUSIC', label: 'Musique' },
@@ -435,7 +513,12 @@ export default function EditEventPage() {
                   </div>
                   <div>
                     <label className={labelCls}>Pays <span className="text-red-500">*</span></label>
-                    <input type="text" value={form.venueCountry} onChange={(e) => handleChange('venueCountry', e.target.value)} className={inputCls} placeholder="Côte d'Ivoire" required={!form.isOnline} />
+                    <select value={form.venueCountry} onChange={(e) => handleChange('venueCountry', e.target.value)} className={inputCls} required={!form.isOnline}>
+                      <option value="">Sélectionner un pays…</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className={labelCls}>Code postal</label>
