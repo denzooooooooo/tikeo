@@ -59,27 +59,39 @@ const quickLinks = [
   { id: 7, title: 'Paramètres', href: '/dashboard/settings', Icon: SettingsIcon, color: 'bg-gray-500', desc: 'Configuration' },
 ];
 
-function StatCard({ title, value, subtitle, Icon, color, trend }: {
+function StatCard({ title, value, subtitle, Icon, color, trend, href }: {
   title: string; value: string | number; subtitle: string;
-  Icon: React.ComponentType; color: string; trend?: string;
+  Icon: React.ComponentType; color: string; trend?: string; href?: string;
 }) {
-  return (
-    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+  const inner = (
+    <div className={`bg-white rounded-2xl p-6 border border-gray-100 shadow-sm transition-all ${href ? 'hover:shadow-lg hover:-translate-y-0.5 cursor-pointer hover:border-[#5B7CFF]/30 group' : 'hover:shadow-md'}`}>
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-2.5 rounded-xl ${color}`}>
+        <div className={`p-2.5 rounded-xl ${color} ${href ? 'group-hover:scale-110 transition-transform' : ''}`}>
           <Icon />
         </div>
-        {trend && (
-          <span className="flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-            <TrendingUpIcon /> {trend}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {trend && (
+            <span className="flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+              <TrendingUpIcon /> {trend}
+            </span>
+          )}
+          {href && (
+            <span className="text-gray-300 group-hover:text-[#5B7CFF] transition-colors">
+              <ArrowRightIcon />
+            </span>
+          )}
+        </div>
       </div>
       <p className="text-3xl font-bold text-gray-900 mb-1">{value}</p>
       <p className="text-sm font-semibold text-gray-700">{title}</p>
       <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
     </div>
   );
+
+  if (href) {
+    return <Link href={href}>{inner}</Link>;
+  }
+  return inner;
 }
 
 function EventStatusBadge({ status }: { status: string }) {
@@ -213,6 +225,7 @@ export default function DashboardPage() {
                 Icon={CalendarIcon}
                 color="bg-[#5B7CFF]/10 text-[#5B7CFF]"
                 trend="+2 ce mois"
+                href="/dashboard/events"
               />
               <StatCard
                 title="Billets vendus"
@@ -221,6 +234,7 @@ export default function DashboardPage() {
                 Icon={TicketIcon}
                 color="bg-green-100 text-green-600"
                 trend="+12%"
+                href="/dashboard/orders"
               />
               <StatCard
                 title="Revenus"
@@ -229,6 +243,7 @@ export default function DashboardPage() {
                 Icon={CurrencyIcon}
                 color="bg-purple-100 text-purple-600"
                 trend="+8%"
+                href="/dashboard/analytics"
               />
               <StatCard
                 title="Vues totales"
@@ -237,6 +252,7 @@ export default function DashboardPage() {
                 Icon={EyeIcon}
                 color="bg-orange-100 text-orange-600"
                 trend="+24%"
+                href="/dashboard/analytics"
               />
             </div>
           )}
