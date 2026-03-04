@@ -53,6 +53,7 @@ interface EventData {
   venueCountry?: string;
   coverImage?: string;
   ticketTypes: TicketType[];
+  status?: string;
 }
 
 // Step 1: Ticket selection
@@ -93,6 +94,7 @@ export default function CheckoutPage() {
         setEvent({
           id: data.id,
           title: data.title,
+          status: data.status,
           date: data.startDate
             ? new Date(data.startDate).toLocaleDateString('fr-FR', {
                 day: 'numeric',
@@ -107,6 +109,7 @@ export default function CheckoutPage() {
               })
             : data.time || '',
           venue: data.venueName || data.venue || data.location || '',
+          venueCountry: data.venueCountry || '',
           coverImage: data.coverImage || 'https://picsum.photos/seed/event/800/400',
           ticketTypes: (data.ticketTypes || data.tickets || []).map((t: any) => ({
             id: t.id,
@@ -285,6 +288,36 @@ export default function CheckoutPage() {
             <p className="text-gray-600 mb-4">Événement introuvable</p>
             <Link href="/events" className="text-[#5B7CFF] hover:underline">
               Retour aux événements
+            </Link>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  // Block checkout for non-published events
+  if (event.status && event.status !== 'PUBLISHED') {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-10 max-w-md w-full text-center shadow-lg border border-gray-100">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Événement non disponible</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              {event.status === 'DRAFT'
+                ? 'Cet événement est encore en brouillon et n\'est pas disponible à la vente.'
+                : 'Cet événement a été annulé ou n\'est plus disponible.'}
+            </p>
+            <Link
+              href="/events"
+              className="inline-block bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold py-3 px-6 rounded-xl"
+            >
+              Voir les événements disponibles
             </Link>
           </div>
         </div>

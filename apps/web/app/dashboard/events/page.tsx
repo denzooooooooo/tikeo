@@ -304,7 +304,7 @@ export default function DashboardEventsPage() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                🎟️
+                                
                               </div>
                             )}
                           </div>

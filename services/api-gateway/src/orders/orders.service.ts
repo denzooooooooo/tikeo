@@ -23,11 +23,18 @@ export class OrdersService {
   async createOrder(userId: string, dto: CreateOrderDto) {
     const { eventId, ticketTypeId, quantity, promoCode } = dto;
 
-    // Verify event exists
+    // Verify event exists and is published
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
     });
     if (!event) throw new NotFoundException('Événement non trouvé');
+    if (event.status !== 'PUBLISHED') {
+      throw new BadRequestException(
+        event.status === 'DRAFT'
+          ? 'Cet événement est en brouillon et n\'est pas disponible à la vente'
+          : 'Cet événement n\'est plus disponible à la vente',
+      );
+    }
 
     // Verify ticket type exists and has availability
     const ticketType = await this.prisma.ticketType.findFirst({

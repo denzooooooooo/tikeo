@@ -70,12 +70,12 @@ export default async function PublicProfilePage({ params }: { params: { userId: 
               )}
               <div className="flex flex-wrap justify-center sm:justify-start gap-4 text-sm text-gray-500 mb-4">
                 {profile?.location && (
-                  <span>📍 {profile.location}</span>
+                  <span> {profile.location}</span>
                 )}
                 {profile?.createdAt && (
-                  <span>📅 Membre depuis {new Date(profile.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</span>
+                  <span> Membre depuis {new Date(profile.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</span>
                 )}
-                <span>🎪 {events.length} événement{events.length !== 1 ? 's' : ''}</span>
+                <span> {events.length} événement{events.length !== 1 ? 's' : ''}</span>
               </div>
 
               {/* Follow button */}
@@ -96,7 +96,7 @@ export default async function PublicProfilePage({ params }: { params: { userId: 
 
           {events.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
-              <div className="text-5xl mb-3">🎪</div>
+              <div className="text-5xl mb-3"></div>
               <p className="text-gray-500">Aucun événement publié pour le moment</p>
             </div>
           ) : (
@@ -135,11 +135,11 @@ export default async function PublicProfilePage({ params }: { params: { userId: 
                         {event.title}
                       </h3>
                       <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                        <span>📅</span>
+                        <span></span>
                         <span>{startDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
-                        <span>📍</span>
+                        <span></span>
                         <span>{event.venueCity}, {event.venueCountry}</span>
                       </div>
                       <div className="flex items-center justify-between">

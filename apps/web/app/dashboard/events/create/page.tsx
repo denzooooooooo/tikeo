@@ -9,12 +9,12 @@ import { TicketSection } from './components/TicketSection';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 const CATEGORIES = [
-  { name: 'Musique', emoji: '🎵' }, { name: 'Sport', emoji: '⚽' },
-  { name: 'Conférence', emoji: '🎤' }, { name: 'Festival', emoji: '🎪' },
-  { name: 'Théâtre', emoji: '🎭' }, { name: 'Exposition', emoji: '🎨' },
-  { name: 'Gastronomie', emoji: '🍽️' }, { name: 'Famille', emoji: '👨‍👩‍👧' },
-  { name: 'Networking', emoji: '🤝' }, { name: 'Formation', emoji: '📚' },
-  { name: 'Religion', emoji: '🙏' }, { name: 'Autre', emoji: '✨' },
+  { name: 'Musique', emoji: '' }, { name: 'Sport', emoji: '' },
+  { name: 'Conférence', emoji: '' }, { name: 'Festival', emoji: '' },
+  { name: 'Théâtre', emoji: '' }, { name: 'Exposition', emoji: '' },
+  { name: 'Gastronomie', emoji: '' }, { name: 'Famille', emoji: '' },
+  { name: 'Networking', emoji: '' }, { name: 'Formation', emoji: '' },
+  { name: 'Religion', emoji: '' }, { name: 'Autre', emoji: '' },
 ];
 
 const COUNTRIES = [
@@ -187,7 +187,7 @@ function CreateEventForm() {
                 className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition-all ${
                   i === step ? 'bg-[#5B7CFF] text-white scale-110' : i < step ? 'bg-green-500 text-white cursor-pointer' : 'bg-gray-200 text-gray-500'
                 }`}>
-                {i < step ? '✓' : i + 1}
+                {i < step ? '' : i + 1}
               </button>
               {i < 2 && <div className={`w-3 h-0.5 ${i < step ? 'bg-green-500' : 'bg-gray-200'}`} />}
             </div>
@@ -202,9 +202,9 @@ function CreateEventForm() {
       <div className="max-w-2xl mx-auto px-4 py-5 pb-36">
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
-            <span className="text-red-500 flex-shrink-0">⚠️</span>
+            <span className="text-red-500 flex-shrink-0"></span>
             <p className="text-sm text-red-700 flex-1">{error}</p>
-            <button onClick={() => setError(null)} className="text-red-400 font-bold">✕</button>
+            <button onClick={() => setError(null)} className="text-red-400 font-bold"></button>
           </div>
         )}
 
@@ -218,11 +218,11 @@ function CreateEventForm() {
               <div className="flex gap-2 mb-3">
                 <button type="button" onClick={() => setImageMode('upload')}
                   className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${imageMode === 'upload' ? 'bg-[#5B7CFF] text-white border-[#5B7CFF]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#5B7CFF]'}`}>
-                  📷 Uploader un fichier
+                   Uploader un fichier
                 </button>
                 <button type="button" onClick={() => setImageMode('url')}
                   className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-all ${imageMode === 'url' ? 'bg-[#5B7CFF] text-white border-[#5B7CFF]' : 'bg-white text-gray-600 border-gray-200 hover:border-[#5B7CFF]'}`}>
-                  🔗 Coller une URL
+                   Coller une URL
                 </button>
               </div>
 
@@ -260,7 +260,7 @@ function CreateEventForm() {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={preview} alt="Aperçu" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity">
-                          <span className="text-white font-semibold text-sm bg-black/30 px-3 py-1.5 rounded-full">📷 Changer</span>
+                          <span className="text-white font-semibold text-sm bg-black/30 px-3 py-1.5 rounded-full"> Changer</span>
                         </div>
                         {uploading && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -273,7 +273,7 @@ function CreateEventForm() {
                       </div>
                     ) : (
                       <div className="aspect-video flex flex-col items-center justify-center gap-3 p-6 bg-gray-50">
-                        <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-3xl">📷</div>
+                        <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-3xl"></div>
                         <div className="text-center">
                           <p className="font-semibold text-gray-700 text-sm">Appuyer pour choisir depuis la galerie</p>
                           <p className="text-xs text-gray-400 mt-1">ou glisser une image · JPG, PNG, WebP · max 5 Mo</p>
@@ -327,7 +327,7 @@ function CreateEventForm() {
             {/* Teaser vidéo */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                🎬 Vidéo teaser <span className="text-xs font-normal text-gray-400 ml-1">(optionnel)</span>
+                 Vidéo teaser <span className="text-xs font-normal text-gray-400 ml-1">(optionnel)</span>
               </label>
               <input
                 type="url"
@@ -339,9 +339,9 @@ function CreateEventForm() {
               <p className="text-xs text-gray-400 mt-1">Lien YouTube, Vimeo ou autre plateforme vidéo</p>
               {f.teaserVideo && (
                 <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                  <span className="text-green-600">✓</span>
+                  <span className="text-green-600"></span>
                   <span className="text-xs text-green-700 font-medium truncate">{f.teaserVideo}</span>
-                  <button type="button" onClick={() => set('teaserVideo', '')} className="ml-auto text-green-500 hover:text-red-500 font-bold text-sm flex-shrink-0">✕</button>
+                  <button type="button" onClick={() => set('teaserVideo', '')} className="ml-auto text-green-500 hover:text-red-500 font-bold text-sm flex-shrink-0"></button>
                 </div>
               )}
             </div>
@@ -360,7 +360,7 @@ function CreateEventForm() {
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-              <h3 className="font-semibold text-gray-800 text-sm">📅 Dates et horaires</h3>
+              <h3 className="font-semibold text-gray-800 text-sm"> Dates et horaires</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Date début <span className="text-red-500">*</span></label>
@@ -386,7 +386,7 @@ function CreateEventForm() {
 
             {!f.isOnline && (
               <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-                <h3 className="font-semibold text-gray-800 text-sm">📍 Lieu</h3>
+                <h3 className="font-semibold text-gray-800 text-sm"> Lieu</h3>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Nom du lieu</label>
                   <input type="text" value={f.venueName} onChange={e => set('venueName', e.target.value)}
@@ -441,7 +441,7 @@ function CreateEventForm() {
           <div className="space-y-4">
             {/* Sélecteur de devise */}
             <div className="p-4 bg-white rounded-xl border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">💱 Devise des billets</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2"> Devise des billets</label>
               <p className="text-xs text-gray-500 mb-3">Choisissez la devise dans laquelle vous vendez vos billets. Elle est automatiquement détectée selon le pays de l&apos;événement.</p>
               <select
                 value={f.currency}
@@ -531,7 +531,7 @@ function CreateEventForm() {
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Création…
                 </>
-              ) : '🚀 Créer l\'événement'}
+              ) : ' Créer l\'événement'}
             </button>
           )}
         </div>

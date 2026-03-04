@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
               </p>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8">
                 <p className="text-sm text-blue-700">
-                  💡 N&apos;oubliez pas de vérifier votre dossier de courriers indésirables.
+                   N&apos;oubliez pas de vérifier votre dossier de courriers indésirables.
                 </p>
               </div>
               <Link
@@ -97,11 +97,11 @@ export default function ForgotPasswordPage() {
               </p>
               <div className="grid grid-cols-2 gap-4 text-white">
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                  <div className="text-4xl font-bold mb-2">🔒</div>
+                  <div className="text-4xl font-bold mb-2"></div>
                   <div className="text-white/80">Sécurisé</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                  <div className="text-4xl font-bold mb-2">⚡</div>
+                  <div className="text-4xl font-bold mb-2"></div>
                   <div className="text-white/80">Rapide</div>
                 </div>
               </div>
@@ -209,19 +209,19 @@ export default function ForgotPasswordPage() {
             </p>
             <div className="grid grid-cols-2 gap-4 text-white">
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                <div className="text-4xl font-bold mb-2">🔒</div>
+                <div className="text-4xl font-bold mb-2"></div>
                 <div className="text-white/80">Sécurisé</div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                <div className="text-4xl font-bold mb-2">⚡</div>
+                <div className="text-4xl font-bold mb-2"></div>
                 <div className="text-white/80">Rapide</div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                <div className="text-4xl font-bold mb-2">📧</div>
+                <div className="text-4xl font-bold mb-2"></div>
                 <div className="text-white/80">Email</div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-                <div className="text-4xl font-bold mb-2">💡</div>
+                <div className="text-4xl font-bold mb-2"></div>
                 <div className="text-white/80">Astuce</div>
               </div>
             </div>

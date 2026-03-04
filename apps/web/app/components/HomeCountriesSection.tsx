@@ -3,16 +3,16 @@ import Image from 'next/image';
 
 // Default countries with visual assets
 const DEFAULT_COUNTRIES = [
-  { code: 'NG', name: 'Nigeria', flag: '🇳🇬', image: 'https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?w=600&q=80', gradient: 'from-green-700/70 to-green-900/80', genre: 'Afrobeats', city: 'Lagos' },
-  { code: 'CI', name: "Côte d'Ivoire", flag: '🇨🇮', image: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=600&q=80', gradient: 'from-orange-600/70 to-green-800/80', genre: 'Coupé-Décalé', city: 'Abidjan' },
-  { code: 'SN', name: 'Sénégal', flag: '🇸🇳', image: 'https://images.unsplash.com/photo-1580746738099-b2d4b5d4b9b7?w=600&q=80', gradient: 'from-yellow-600/70 to-green-800/80', genre: 'Mbalax', city: 'Dakar' },
-  { code: 'GA', name: 'Gabon', flag: '🇬🇦', image: 'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?w=600&q=80', gradient: 'from-green-700/70 to-yellow-700/80', genre: 'Ndombolo', city: 'Libreville' },
-  { code: 'CM', name: 'Cameroun', flag: '🇨🇲', image: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&q=80', gradient: 'from-green-700/70 to-red-800/80', genre: 'Makossa', city: 'Douala' },
-  { code: 'CD', name: 'Congo RDC', flag: '🇨🇩', image: 'https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=600&q=80', gradient: 'from-blue-700/70 to-yellow-700/80', genre: 'Rumba', city: 'Kinshasa' },
-  { code: 'GH', name: 'Ghana', flag: '🇬🇭', image: 'https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?w=600&q=80', gradient: 'from-red-600/70 to-yellow-700/80', genre: 'Highlife', city: 'Accra' },
-  { code: 'ZA', name: 'Afrique du Sud', flag: '🇿🇦', image: 'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=600&q=80', gradient: 'from-green-700/70 to-yellow-700/80', genre: 'Amapiano', city: 'Johannesburg' },
-  { code: 'MA', name: 'Maroc', flag: '🇲🇦', image: 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=600&q=80', gradient: 'from-red-700/70 to-green-800/80', genre: 'Gnawa', city: 'Casablanca' },
-  { code: 'ML', name: 'Mali', flag: '🇲🇱', image: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=600&q=80', gradient: 'from-yellow-600/70 to-red-800/80', genre: 'Blues du désert', city: 'Bamako' },
+  { code: 'NG', name: 'Nigeria', flag: '', image: 'https://images.unsplash.com/photo-1618477461853-cf6ed80faba5?w=600&q=80', gradient: 'from-green-700/70 to-green-900/80', genre: 'Afrobeats', city: 'Lagos' },
+  { code: 'CI', name: "Côte d'Ivoire", flag: '', image: 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=600&q=80', gradient: 'from-orange-600/70 to-green-800/80', genre: 'Coupé-Décalé', city: 'Abidjan' },
+  { code: 'SN', name: 'Sénégal', flag: '', image: 'https://images.unsplash.com/photo-1580746738099-b2d4b5d4b9b7?w=600&q=80', gradient: 'from-yellow-600/70 to-green-800/80', genre: 'Mbalax', city: 'Dakar' },
+  { code: 'GA', name: 'Gabon', flag: '', image: 'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?w=600&q=80', gradient: 'from-green-700/70 to-yellow-700/80', genre: 'Ndombolo', city: 'Libreville' },
+  { code: 'CM', name: 'Cameroun', flag: '', image: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&q=80', gradient: 'from-green-700/70 to-red-800/80', genre: 'Makossa', city: 'Douala' },
+  { code: 'CD', name: 'Congo RDC', flag: '', image: 'https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=600&q=80', gradient: 'from-blue-700/70 to-yellow-700/80', genre: 'Rumba', city: 'Kinshasa' },
+  { code: 'GH', name: 'Ghana', flag: '', image: 'https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?w=600&q=80', gradient: 'from-red-600/70 to-yellow-700/80', genre: 'Highlife', city: 'Accra' },
+  { code: 'ZA', name: 'Afrique du Sud', flag: '', image: 'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=600&q=80', gradient: 'from-green-700/70 to-yellow-700/80', genre: 'Amapiano', city: 'Johannesburg' },
+  { code: 'MA', name: 'Maroc', flag: '', image: 'https://images.unsplash.com/photo-1539020140153-e479b8c22e70?w=600&q=80', gradient: 'from-red-700/70 to-green-800/80', genre: 'Gnawa', city: 'Casablanca' },
+  { code: 'ML', name: 'Mali', flag: '', image: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=600&q=80', gradient: 'from-yellow-600/70 to-red-800/80', genre: 'Blues du désert', city: 'Bamako' },
 ];
 
 // Fallback visual for unknown countries
@@ -29,7 +29,7 @@ function getCountryVisuals(countryName: string) {
     c.name.toLowerCase().includes(countryName.toLowerCase()) ||
     countryName.toLowerCase().includes(c.name.toLowerCase())
   );
-  return found || { ...DEFAULT_VISUALS, flag: '🌍', image: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=600&q=80' };
+  return found || { ...DEFAULT_VISUALS, flag: '', image: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=600&q=80' };
 }
 
 interface HomeCountriesSectionProps {

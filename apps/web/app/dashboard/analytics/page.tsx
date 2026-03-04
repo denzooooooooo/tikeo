@@ -104,14 +104,14 @@ export default function DashboardAnalyticsPage() {
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {[
-                { label: 'Total événements', value: totalEvents, icon: '📅', color: 'bg-blue-50 text-blue-600' },
-                { label: 'Publiés', value: publishedEvents, icon: '✅', color: 'bg-green-50 text-green-600' },
-                { label: 'Brouillons', value: draftEvents, icon: '📝', color: 'bg-gray-50 text-gray-600' },
-                { label: 'Billets vendus', value: totalTicketsSold.toLocaleString(), icon: '🎟️', color: 'bg-purple-50 text-purple-600' },
-                { label: 'Revenus estimés', value: formatCurrency(totalRevenue), icon: '💰', color: 'bg-yellow-50 text-yellow-600' },
-                { label: 'Vues totales', value: totalViews.toLocaleString(), icon: '👁️', color: 'bg-pink-50 text-pink-600' },
-                { label: 'Capacité totale', value: totalCapacity.toLocaleString(), icon: '🏟️', color: 'bg-orange-50 text-orange-600' },
-                { label: 'Taux de remplissage', value: `${fillRate}%`, icon: '📊', color: 'bg-teal-50 text-teal-600' },
+                { label: 'Total événements', value: totalEvents, icon: '', color: 'bg-blue-50 text-blue-600' },
+                { label: 'Publiés', value: publishedEvents, icon: '', color: 'bg-green-50 text-green-600' },
+                { label: 'Brouillons', value: draftEvents, icon: '', color: 'bg-gray-50 text-gray-600' },
+                { label: 'Billets vendus', value: totalTicketsSold.toLocaleString(), icon: '', color: 'bg-purple-50 text-purple-600' },
+                { label: 'Revenus estimés', value: formatCurrency(totalRevenue), icon: '', color: 'bg-yellow-50 text-yellow-600' },
+                { label: 'Vues totales', value: totalViews.toLocaleString(), icon: '', color: 'bg-pink-50 text-pink-600' },
+                { label: 'Capacité totale', value: totalCapacity.toLocaleString(), icon: '', color: 'bg-orange-50 text-orange-600' },
+                { label: 'Taux de remplissage', value: `${fillRate}%`, icon: '', color: 'bg-teal-50 text-teal-600' },
               ].map((kpi) => (
                 <div key={kpi.label} className="bg-white rounded-2xl p-5 border border-gray-200 hover:shadow-md transition-shadow">
                   <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl text-xl mb-3 ${kpi.color}`}>
@@ -126,7 +126,7 @@ export default function DashboardAnalyticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Top Events */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">🏆 Top événements (billets vendus)</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-4"> Top événements (billets vendus)</h2>
                 {topEvents.length === 0 ? (
                   <p className="text-gray-500 text-sm text-center py-8">Aucun événement</p>
                 ) : (
@@ -163,7 +163,7 @@ export default function DashboardAnalyticsPage() {
 
               {/* Categories */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">📂 Répartition par catégorie</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-4"> Répartition par catégorie</h2>
                 {Object.keys(categoryStats).length === 0 ? (
                   <p className="text-gray-500 text-sm text-center py-8">Aucune donnée</p>
                 ) : (
@@ -196,7 +196,7 @@ export default function DashboardAnalyticsPage() {
 
               {/* Events Status Overview */}
               <div className="bg-white rounded-2xl border border-gray-200 p-6 lg:col-span-2">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">📋 Détail par événement</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-4"> Détail par événement</h2>
                 {events.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500 mb-4">Aucun événement créé</p>

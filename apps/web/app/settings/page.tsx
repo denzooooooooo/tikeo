@@ -202,10 +202,10 @@ export default function SettingsPage() {
   }
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'profile', label: 'Profil', icon: '👤' },
-    { id: 'security', label: 'Sécurité', icon: '🔒' },
-    { id: 'notifications', label: 'Notifications', icon: '🔔' },
-    { id: 'preferences', label: 'Préférences', icon: '⚙️' },
+    { id: 'profile', label: 'Profil', icon: '' },
+    { id: 'security', label: 'Sécurité', icon: '' },
+    { id: 'notifications', label: 'Notifications', icon: '' },
+    { id: 'preferences', label: 'Préférences', icon: '' },
   ];
 
   return (
@@ -225,12 +225,12 @@ export default function SettingsPage() {
         {/* Success/Error messages */}
         {saved && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 font-medium flex items-center gap-2">
-            ✅ Modifications enregistrées avec succès
+             Modifications enregistrées avec succès
           </div>
         )}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 font-medium flex items-center gap-2">
-            ❌ {error}
+             {error}
           </div>
         )}
 
@@ -453,9 +453,9 @@ export default function SettingsPage() {
                       onChange={(e) => setLanguage(e.target.value)}
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent outline-none"
                     >
-                      <option value="fr">🇫🇷 Français</option>
-                      <option value="en">🇬🇧 English</option>
-                      <option value="es">🇪🇸 Español</option>
+                      <option value="fr"> Français</option>
+                      <option value="en"> English</option>
+                      <option value="es"> Español</option>
                     </select>
                   </div>
                   <div>

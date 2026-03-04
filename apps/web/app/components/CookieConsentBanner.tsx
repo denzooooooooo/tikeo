@@ -18,28 +18,28 @@ const cookieCategories: CookieCategory[] = [
     name: 'Essentiels',
     description: 'Authentification, sécurité, panier — indispensables au fonctionnement',
     required: true,
-    icon: '🔒',
+    icon: '',
   },
   {
     id: 'analytics',
     name: 'Analytiques',
     description: 'Statistiques anonymes pour améliorer le site',
     required: false,
-    icon: '📊',
+    icon: '',
   },
   {
     id: 'functional',
     name: 'Fonctionnels',
     description: 'Préférences de langue, devise, localisation',
     required: false,
-    icon: '⚙️',
+    icon: '',
   },
   {
     id: 'marketing',
     name: 'Marketing',
     description: 'Publicités personnalisées selon vos intérêts',
     required: false,
-    icon: '🎯',
+    icon: '',
   },
 ];
 
@@ -49,7 +49,7 @@ export function CookieConsentBanner() {
   const [showSettings, setShowSettings] = useState(false);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
 
-  // ── Fix: attendre isLoaded avant de décider d'afficher ──────────────────────
+  //  Fix: attendre isLoaded avant de décider d'afficher 
   useEffect(() => {
     if (!isLoaded) return; // Attendre que localStorage soit lu
     if (!hasInteracted) {
@@ -82,10 +82,10 @@ export function CookieConsentBanner() {
     updatePreferences({ [categoryId]: !preferences[categoryId] });
   };
 
-  // ── Fix: ne rien rendre si pas visible ──────────────────────────────────────
+  //  Fix: ne rien rendre si pas visible 
   if (!isVisible) return null;
 
-  // ── Modal paramètres ────────────────────────────────────────────────────────
+  //  Modal paramètres 
   if (showSettings) {
     return (
       <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -99,7 +99,7 @@ export function CookieConsentBanner() {
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
                 style={{ background: 'linear-gradient(135deg, #5B7CFF20, #7B61FF20)' }}>
-                🍪
+                
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Paramètres des cookies</h2>
@@ -110,7 +110,7 @@ export function CookieConsentBanner() {
               onClick={() => setShowSettings(false)}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
             >
-              ✕
+              
             </button>
           </div>
 
@@ -185,7 +185,7 @@ export function CookieConsentBanner() {
     );
   }
 
-  // ── Banner principal ─────────────────────────────────────────────────────────
+  //  Banner principal 
   return (
     <div
       className={`fixed bottom-0 left-0 right-0 z-[9999] transition-all duration-400 ${
@@ -205,7 +205,7 @@ export function CookieConsentBanner() {
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #5B7CFF15, #7B61FF15)' }}
               >
-                🍪
+                
               </div>
               <div className="min-w-0">
                 <p className="font-semibold text-gray-900 text-sm">
@@ -226,7 +226,7 @@ export function CookieConsentBanner() {
                 onClick={() => setShowSettings(true)}
                 className="px-3 py-2 text-xs text-gray-500 font-medium hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                ⚙️ Personnaliser
+                 Personnaliser
               </button>
               <button
                 onClick={handleReject}
@@ -239,7 +239,7 @@ export function CookieConsentBanner() {
                 className="px-5 py-2 text-xs text-white font-semibold rounded-lg transition-all hover:opacity-90 active:scale-95 shadow-sm"
                 style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}
               >
-                ✓ Tout accepter
+                 Tout accepter
               </button>
             </div>
           </div>

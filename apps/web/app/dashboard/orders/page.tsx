@@ -158,7 +158,7 @@ export default function DashboardOrdersPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             {filtered.length === 0 ? (
               <div className="text-center py-16">
-                <div className="text-5xl mb-4">🎟️</div>
+                <div className="text-5xl mb-4"></div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune commande trouvée</h3>
                 <p className="text-gray-500 mb-6">Vous n'avez pas encore passé de commande</p>
                 <Link href="/events" className="inline-flex items-center gap-2 px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-medium hover:bg-[#7B61FF] transition-colors">

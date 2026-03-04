@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback, FormEvent } from 'react';
 
-// ─── Icônes SVG inline ───────────────────────────────────────────────────────
+//  Icônes SVG inline 
 const SearchIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>;
 const MapPinIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" /><circle cx="12" cy="10" r="3" /></svg>;
 const CalendarIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>;
@@ -16,45 +16,45 @@ const ChevronLeftIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fi
 const ChevronRightIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>;
 const GlobeIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg>;
 
-// ─── Pays disponibles (mondial) ───────────────────────────────────────────────
+//  Pays disponibles (mondial) 
 const AVAILABLE_COUNTRIES = [
   { value: '', label: 'Tous les pays' },
   // Afrique
-  { value: "Côte d'Ivoire", label: "🇨🇮 Côte d'Ivoire" },
-  { value: 'Sénégal', label: '🇸🇳 Sénégal' },
-  { value: 'Nigeria', label: '🇳🇬 Nigeria' },
-  { value: 'Cameroun', label: '🇨🇲 Cameroun' },
-  { value: 'Ghana', label: '🇬🇭 Ghana' },
-  { value: 'Kenya', label: '🇰🇪 Kenya' },
-  { value: 'Mali', label: '🇲🇱 Mali' },
-  { value: 'Burkina Faso', label: '🇧🇫 Burkina Faso' },
-  { value: 'Togo', label: '🇹🇬 Togo' },
-  { value: 'Bénin', label: '🇧🇯 Bénin' },
-  { value: 'Guinée', label: '🇬🇳 Guinée' },
-  { value: 'Afrique du Sud', label: '🇿🇦 Afrique du Sud' },
-  { value: 'Tanzanie', label: '🇹🇿 Tanzanie' },
-  { value: 'Éthiopie', label: '🇪🇹 Éthiopie' },
-  { value: 'Maroc', label: '🇲🇦 Maroc' },
+  { value: "Côte d'Ivoire", label: " Côte d'Ivoire" },
+  { value: 'Sénégal', label: ' Sénégal' },
+  { value: 'Nigeria', label: ' Nigeria' },
+  { value: 'Cameroun', label: ' Cameroun' },
+  { value: 'Ghana', label: ' Ghana' },
+  { value: 'Kenya', label: ' Kenya' },
+  { value: 'Mali', label: ' Mali' },
+  { value: 'Burkina Faso', label: ' Burkina Faso' },
+  { value: 'Togo', label: ' Togo' },
+  { value: 'Bénin', label: ' Bénin' },
+  { value: 'Guinée', label: ' Guinée' },
+  { value: 'Afrique du Sud', label: ' Afrique du Sud' },
+  { value: 'Tanzanie', label: ' Tanzanie' },
+  { value: 'Éthiopie', label: ' Éthiopie' },
+  { value: 'Maroc', label: ' Maroc' },
   // Europe
-  { value: 'France', label: '🇫🇷 France' },
-  { value: 'Belgique', label: '🇧🇪 Belgique' },
-  { value: 'Suisse', label: '🇨🇭 Suisse' },
-  { value: 'Canada', label: '🇨🇦 Canada' },
+  { value: 'France', label: ' France' },
+  { value: 'Belgique', label: ' Belgique' },
+  { value: 'Suisse', label: ' Suisse' },
+  { value: 'Canada', label: ' Canada' },
   // Autres
-  { value: 'États-Unis', label: '🇺🇸 États-Unis' },
-  { value: 'Royaume-Uni', label: '🇬🇧 Royaume-Uni' },
+  { value: 'États-Unis', label: ' États-Unis' },
+  { value: 'Royaume-Uni', label: ' Royaume-Uni' },
 ];
 
 const CATEGORIES = [
-  { name: 'Tous', value: '', emoji: '🌍' },
-  { name: 'Musique', value: 'MUSIC', emoji: '🎵' },
-  { name: 'Sports', value: 'SPORTS', emoji: '⚽' },
-  { name: 'Arts', value: 'ARTS', emoji: '🎨' },
-  { name: 'Tech', value: 'TECHNOLOGY', emoji: '💻' },
-  { name: 'Business', value: 'BUSINESS', emoji: '💼' },
-  { name: 'Gastronomie', value: 'FOOD', emoji: '🍽️' },
-  { name: 'Divertissement', value: 'ENTERTAINMENT', emoji: '🎭' },
-  { name: 'Éducation', value: 'EDUCATION', emoji: '📚' },
+  { name: 'Tous', value: '', emoji: '' },
+  { name: 'Musique', value: 'MUSIC', emoji: '' },
+  { name: 'Sports', value: 'SPORTS', emoji: '' },
+  { name: 'Arts', value: 'ARTS', emoji: '' },
+  { name: 'Tech', value: 'TECHNOLOGY', emoji: '' },
+  { name: 'Business', value: 'BUSINESS', emoji: '' },
+  { name: 'Gastronomie', value: 'FOOD', emoji: '' },
+  { name: 'Divertissement', value: 'ENTERTAINMENT', emoji: '' },
+  { name: 'Éducation', value: 'EDUCATION', emoji: '' },
 ];
 
 const SORT_OPTIONS = [
@@ -64,7 +64,7 @@ const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Prix décroissant' },
 ];
 
-// ─── Fallback data ──────────────────────────────────────────────────
+//  Fallback data 
 const FALLBACK_EVENTS = [
   { id: 'abidjan-music-festival-2025', title: 'Abidjan Music Festival 2025', coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80', startDate: new Date(Date.now() + 15 * 86400000).toISOString(), venueCity: 'Abidjan', venueCountry: "Côte d'Ivoire", category: 'MUSIC', minPrice: 5000, ticketsAvailable: 17550, capacity: 50000, organizer: { companyName: 'Abidjan Productions', verified: true } },
   { id: 'afrobeats-lagos-concert-2025', title: 'Afrobeats Lagos Concert', coverImage: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80', startDate: new Date(Date.now() + 10 * 86400000).toISOString(), venueCity: 'Lagos', venueCountry: 'Nigeria', category: 'MUSIC', minPrice: 5000, ticketsAvailable: 15000, capacity: 80000, organizer: { companyName: 'Lagos Vibes', verified: true } },
@@ -245,7 +245,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ── HEADER ── */}
+      {/*  HEADER  */}
       <div className="relative bg-gradient-to-br from-[#5B7CFF] via-[#7B61FF] to-[#9D4EDD] overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
@@ -269,7 +269,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* ── SEARCH + FILTERS BAR ── */}
+        {/*  SEARCH + FILTERS BAR  */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
@@ -376,7 +376,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
           )}
         </div>
 
-        {/* ── CATEGORY PILLS ── */}
+        {/*  CATEGORY PILLS  */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-6">
           {CATEGORIES.map((cat) => (
             <button
@@ -395,7 +395,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
           ))}
         </div>
 
-        {/* ── RESULTS HEADER ── */}
+        {/*  RESULTS HEADER  */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <p className="text-gray-600">
@@ -420,7 +420,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
           )}
         </div>
 
-        {/* ── EVENTS GRID ── */}
+        {/*  EVENTS GRID  */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -442,12 +442,12 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
                 const isAlmostFull = availPct <= 15;
                 const eventDate = new Date(event.startDate);
 
-                const catEmoji = CATEGORIES.find(c => c.value === event.category)?.emoji ?? '🎉';
+                const catEmoji = CATEGORIES.find(c => c.value === event.category)?.emoji ?? '';
                 const monthLabel = eventDate.toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase();
 
                 return (
                   <Link key={event.id} href={`/events/${event.id}`} className="group cursor-pointer block">
-                    {/* ── IMAGE ── */}
+                    {/*  IMAGE  */}
                     <div className="relative overflow-hidden rounded-2xl bg-gray-100 aspect-[4/3] mb-4">
                       {/* Gradient overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10 pointer-events-none" />
@@ -491,7 +491,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
                       </div>
                     </div>
 
-                    {/* ── INFO ── */}
+                    {/*  INFO  */}
                     <div className="space-y-1.5">
                       <h3 className="text-lg font-bold text-gray-900 group-hover:text-[#5B7CFF] transition-colors line-clamp-1">
                         {event.title}
@@ -516,7 +516,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
                       {/* Organizer + availability */}
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                         <div className="flex items-center gap-1.5">
-                          {event.organizer?.verified && <span className="text-[#5B7CFF] text-xs">✓</span>}
+                          {event.organizer?.verified && <span className="text-[#5B7CFF] text-xs"></span>}
                           <span className="text-xs text-gray-500 font-medium truncate max-w-[130px]">
                             {event.organizer?.companyName || 'Organisateur'}
                           </span>
@@ -536,7 +536,7 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
               })}
             </div>
 
-            {/* ── PAGINATION ── */}
+            {/*  PAGINATION  */}
             {meta.totalPages > 1 && (
               <div className="flex justify-center items-center gap-2 mt-8">
                 <button
@@ -578,9 +578,9 @@ export default function EventsPageClient({ initialEvents, initialMeta, searchPar
             )}
           </>
         ) : (
-          /* ── EMPTY STATE ── */
+          /*  EMPTY STATE  */
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">🔍</div>
+            <div className="text-6xl mb-4"></div>
             <h3 className="text-2xl font-bold text-gray-900 mb-3">Aucun événement trouvé</h3>
             <p className="text-gray-500 mb-8 max-w-md mx-auto">
               Essayez de modifier vos filtres ou explorez d&apos;autres pays disponibles

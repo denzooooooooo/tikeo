@@ -216,7 +216,7 @@ export default function TicketsPage() {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-400">📍</span>
+                            <span className="text-gray-400"></span>
                             <span>{event.venueName}, {event.venueCity}</span>
                           </div>
                         </div>

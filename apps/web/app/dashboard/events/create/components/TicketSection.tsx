@@ -24,7 +24,7 @@ export function TicketSection({ tickets, isFree, onUpdate, onAdd, onRemove }: Pr
       {tickets.map((ticket, i) => (
         <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-800 text-sm">🎟️ Billet {i + 1}</h3>
+            <h3 className="font-semibold text-gray-800 text-sm"> Billet {i + 1}</h3>
             {tickets.length > 1 && (
               <button
                 type="button"
