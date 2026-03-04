@@ -1,192 +1,245 @@
 'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useScannerLogic, exportCSV, fmtMsg, Toast, ScanEntry } from './useScannerLogic';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
-
-function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const stored = localStorage.getItem('auth_tokens');
-    return stored ? JSON.parse(stored).accessToken : null;
-  } catch { return null; }
+function Toasts({ list, rm }: { list: Toast[]; rm: (id: number) => void }) {
+  if (!list.length) return null;
+  return (
+    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-full pointer-events-none">
+      {list.map(t => (
+        <div key={t.id} className={`flex gap-3 p-4 rounded-xl shadow-2xl border text-sm pointer-events-auto ${
+          t.type==='warn' ? 'bg-orange-950 border-orange-500/40 text-orange-200' :
+          t.type==='err'  ? 'bg-red-950 border-red-500/40 text-red-200' :
+          t.type==='ok'   ? 'bg-green-950 border-green-500/40 text-green-200' :
+                            'bg-blue-950 border-blue-500/40 text-blue-200'}`}>
+          <span className="text-xl flex-shrink-0">{t.type==='warn'?'⚠️':t.type==='err'?'🚨':t.type==='ok'?'✅':'ℹ️'}</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold">{t.title}</p>
+            <p className="text-xs opacity-80 mt-0.5">{t.msg}</p>
+          </div>
+          <button onClick={() => rm(t.id)} className="opacity-50 hover:opacity-100 text-lg leading-none flex-shrink-0">×</button>
+        </div>
+      ))}
+    </div>
+  );
 }
 
-interface ScanResult {
-  valid: boolean;
-  message: string;
-  scannedAt?: string;
-  ticket?: {
-    id: string;
-    qrCode: string;
-    status: string;
-    event?: { title: string; startDate: string; venueName: string };
-    user?: { firstName: string; lastName: string; email: string };
-    ticketType?: { name: string };
-  };
+function HistoryRow({ e }: { e: ScanEntry }) {
+  return (
+    <div className={`flex items-center gap-3 px-4 py-3 border-b border-gray-800 last:border-0 ${e.result.valid ? 'hover:bg-green-500/5' : 'hover:bg-red-500/5'}`}>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 font-bold ${e.result.valid ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+        {e.result.valid ? '✓' : '✗'}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-mono text-xs text-gray-400 truncate">{e.qr}</p>
+        {e.result.ticket?.user && (
+          <p className="text-xs text-gray-300 font-medium truncate">
+            {e.result.ticket.user.firstName} {e.result.ticket.user.lastName}
+          </p>
+        )}
+        {e.result.ticket?.event && (
+          <p className="text-xs text-gray-500 truncate">{e.result.ticket.event.title}</p>
+        )}
+        {!e.result.valid && (
+          <p className="text-xs text-red-400 truncate">{fmtMsg(e.result.message, e.result.scannedAt)}</p>
+        )}
+      </div>
+      <span className="text-xs text-gray-600 whitespace-nowrap flex-shrink-0">
+        {e.time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+      </span>
+    </div>
+  );
 }
 
 export default function ScannerPage() {
-  const [qrInput, setQrInput] = useState('');
-  const [result, setResult] = useState<ScanResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [isOrganizer, setIsOrganizer] = useState(false);
-  const [scanHistory, setScanHistory] = useState<Array<{ qr: string; result: ScanResult; time: Date }>>([]);
-
-  useEffect(() => {
-    const token = getAuthToken();
-    if (token) {
-      // Check if user is organizer
-      fetch(`${API_URL}/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.role === 'ORGANIZER' || data.role === 'ADMIN') {
-            setIsOrganizer(true);
-          }
-        })
-        .catch(() => {});
-    }
-  }, []);
-
-  const handleScan = async (qrCode?: string) => {
-    const code = qrCode || qrInput.trim();
-    if (!code) return;
-
-    setLoading(true);
-    setResult(null);
-
-    try {
-      const res = await fetch(`${API_URL}/tickets/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrCode: code }),
-      });
-
-      const data: ScanResult = await res.json();
-      setResult(data);
-      setScanHistory(prev => [{ qr: code, result: data, time: new Date() }, ...prev.slice(0, 9)]);
-      setQrInput('');
-    } catch (err) {
-      setResult({ valid: false, message: 'Erreur de connexion au serveur' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleScan();
-  };
+  const {
+    mode, setMode, qrInput, setQrInput, result, loading,
+    history, setHistory, toasts, rmToast, sseOk,
+    camActive, camErr, videoRef, startCam, stopCam, doScan, stats,
+  } = useScannerLogic();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-950 text-white">
+      <Toasts list={toasts} rm={rmToast} />
+
+      <style>{`@keyframes scanLine{0%,100%{top:8%}50%{top:88%}}`}</style>
+
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] px-4 py-5">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">📷</div>
             <div>
-              <h1 className="text-2xl font-bold text-white"> Scanner de billets</h1>
-              <p className="text-white/80 text-sm mt-1">Validez les billets à l'entrée de l'événement</p>
+              <h1 className="text-lg font-bold text-white">Scanner de billets</h1>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className={`w-2 h-2 rounded-full ${sseOk ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`} />
+                <span className="text-white/70 text-xs">{sseOk ? 'Alertes temps reel actives' : 'Alertes deconnectees'}</span>
+              </div>
             </div>
-            <Link href="/dashboard" className="text-white/80 hover:text-white text-sm underline">
-              ← Dashboard
-            </Link>
           </div>
+          <Link href="/dashboard" className="text-white/70 hover:text-white text-sm underline">← Dashboard</Link>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Stats bar */}
+      {stats.total > 0 && (
+        <div className="bg-gray-900 border-b border-gray-800">
+          <div className="max-w-5xl mx-auto px-4 py-3 grid grid-cols-4 gap-3">
+            {[
+              { label: 'Total', value: String(stats.total), color: 'text-white' },
+              { label: 'Valides', value: String(stats.valid), color: 'text-green-400' },
+              { label: 'Invalides', value: String(stats.invalid), color: 'text-red-400' },
+              { label: 'Taux', value: `${stats.rate}%`, color: stats.rate >= 80 ? 'text-green-400' : 'text-yellow-400' },
+            ].map(s => (
+              <div key={s.label} className="text-center">
+                <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
+                <div className="text-gray-500 text-xs">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-        {/* Scanner Input */}
+      <div className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* ── Left: Scanner ── */}
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Saisir le code QR</h2>
 
-            {/* Manual input */}
-            <div className="space-y-3">
+          {/* Mode toggle */}
+          <div className="flex bg-gray-900 rounded-xl p-1 border border-gray-800">
+            {(['camera','manual'] as const).map(m => (
+              <button key={m} onClick={() => setMode(m)}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode===m ? 'bg-[#5B7CFF] text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                {m === 'camera' ? '📷 Camera' : '⌨️ Manuel / USB'}
+              </button>
+            ))}
+          </div>
+
+          {/* Camera mode */}
+          {mode === 'camera' && (
+            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+              {camErr ? (
+                <div className="p-8 text-center">
+                  <div className="text-5xl mb-4">📵</div>
+                  <p className="text-red-400 text-sm font-semibold mb-2">Camera indisponible</p>
+                  <p className="text-gray-500 text-xs mb-5 leading-relaxed">{camErr}</p>
+                  <button onClick={startCam} className="px-5 py-2.5 bg-[#5B7CFF] text-white rounded-xl text-sm font-semibold hover:bg-[#4B6CFF] transition-colors">
+                    Reessayer
+                  </button>
+                  <p className="text-gray-600 text-xs mt-3">Ou passez en mode <strong className="text-gray-400">Manuel / USB</strong></p>
+                </div>
+              ) : (
+                <div className="relative bg-black">
+                  <video ref={videoRef} className="w-full aspect-square object-cover" playsInline muted autoPlay />
+                  {camActive && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="absolute inset-0 bg-black/30" />
+                      <div className="relative w-56 h-56 z-10">
+                        <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[#5B7CFF] rounded-tl-lg" />
+                        <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[#5B7CFF] rounded-tr-lg" />
+                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-[#5B7CFF] rounded-bl-lg" />
+                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#5B7CFF] rounded-br-lg" />
+                        <div className="absolute left-2 right-2 h-0.5 bg-[#5B7CFF]"
+                          style={{ boxShadow: '0 0 8px #5B7CFF', animation: 'scanLine 2s ease-in-out infinite' }} />
+                      </div>
+                      <div className="absolute bottom-4 left-0 right-0 text-center z-10">
+                        <span className="bg-black/70 text-white text-xs px-4 py-2 rounded-full">
+                          {loading ? '⏳ Validation...' : '🔍 Pointez vers un QR code'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {!camActive && !camErr && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black">
+                      <div className="text-center">
+                        <div className="w-8 h-8 border-2 border-[#5B7CFF] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                        <p className="text-gray-400 text-sm">Demarrage de la camera...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="p-3 flex items-center justify-between border-t border-gray-800">
+                <span className="text-xs text-gray-500">{camActive ? '🟢 Camera active — scan auto' : '⚫ Camera inactive'}</span>
+                <button onClick={camActive ? stopCam : startCam}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${camActive ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-[#5B7CFF]/20 text-[#5B7CFF] hover:bg-[#5B7CFF]/30'}`}>
+                  {camActive ? '⏹ Arreter' : '▶ Demarrer'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Manual mode */}
+          {mode === 'manual' && (
+            <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 space-y-3">
+              <h2 className="text-sm font-bold text-gray-300">Saisir le code QR</h2>
               <input
-                type="text"
-                value={qrInput}
-                onChange={e => setQrInput(e.target.value)}
-                onKeyDown={handleKeyDown}
+                type="text" value={qrInput} onChange={e => setQrInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && doScan()}
                 placeholder="TKT-1234567890-abc123"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:border-[#5B7CFF] transition-colors"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl font-mono text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#5B7CFF] transition-colors"
                 autoFocus
               />
-              <button
-                onClick={() => handleScan()}
-                disabled={loading || !qrInput.trim()}
-                className="w-full py-3 bg-[#5B7CFF] text-white rounded-xl font-semibold hover:bg-[#4B6CFF] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
+              <button onClick={() => doScan()} disabled={loading || !qrInput.trim()}
+                className="w-full py-3 bg-[#5B7CFF] text-white rounded-xl font-semibold hover:bg-[#4B6CFF] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
                     Validation...
                   </span>
-                ) : ' Valider le billet'}
+                ) : '✓ Valider le billet'}
               </button>
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-400">
+                <strong>💡 Scanner USB :</strong> Connectez un scanner QR USB — il saisit automatiquement le code et appuie sur Entree.
+              </div>
             </div>
-
-            <div className="mt-4 p-3 bg-blue-50 rounded-xl text-xs text-blue-700">
-              <strong> Astuce :</strong> Connectez un scanner QR USB — il saisit automatiquement le code et appuie sur Entrée.
-            </div>
-          </div>
+          )}
 
           {/* Result */}
           {result && (
-            <div className={`rounded-2xl p-6 border-2 ${
-              result.valid
-                ? 'bg-green-50 border-green-200'
-                : 'bg-red-50 border-red-200'
-            }`}>
+            <div className={`rounded-2xl p-5 border-2 ${result.valid ? 'bg-green-500/10 border-green-500/40' : 'bg-red-500/10 border-red-500/40'}`}>
               <div className="flex items-center gap-3 mb-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${
-                  result.valid ? 'bg-green-100' : 'bg-red-100'
-                }`}>
-                  {result.valid ? '' : ''}
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl ${result.valid ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                  {result.valid ? '✅' : '❌'}
                 </div>
                 <div>
-                  <p className={`font-bold text-lg ${result.valid ? 'text-green-800' : 'text-red-800'}`}>
+                  <p className={`font-bold text-lg ${result.valid ? 'text-green-400' : 'text-red-400'}`}>
                     {result.valid ? 'BILLET VALIDE' : 'BILLET INVALIDE'}
                   </p>
-                  <p className={`text-sm ${result.valid ? 'text-green-600' : 'text-red-600'}`}>
-                    {result.message === 'Ticket validated successfully' ? 'Billet validé avec succès' :
-                     result.message === 'Ticket already scanned' ? `Déjà scanné le ${result.scannedAt ? new Date(result.scannedAt).toLocaleString('fr-FR') : ''}` :
-                     result.message === 'Ticket not found' ? 'Billet introuvable' :
-                     result.message}
+                  <p className={`text-sm ${result.valid ? 'text-green-300' : 'text-red-300'}`}>
+                    {fmtMsg(result.message, result.scannedAt)}
                   </p>
                 </div>
               </div>
-
-              {result.valid && result.ticket && (
-                <div className="space-y-2 text-sm border-t border-green-200 pt-3 mt-3">
+              {result.ticket && (
+                <div className="space-y-1.5 text-sm border-t border-white/10 pt-3 mt-3">
                   {result.ticket.user && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Titulaire</span>
-                      <span className="font-semibold text-gray-900">
-                        {result.ticket.user.firstName} {result.ticket.user.lastName}
-                      </span>
+                      <span className="font-semibold">{result.ticket.user.firstName} {result.ticket.user.lastName}</span>
                     </div>
                   )}
                   {result.ticket.event && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Événement</span>
-                      <span className="font-semibold text-gray-900 text-right max-w-[60%]">
-                        {result.ticket.event.title}
-                      </span>
+                      <span className="text-gray-500">Evenement</span>
+                      <span className="font-semibold text-right max-w-[60%]">{result.ticket.event.title}</span>
                     </div>
                   )}
                   {result.ticket.ticketType && (
                     <div className="flex justify-between">
                       <span className="text-gray-500">Type</span>
-                      <span className="font-semibold text-gray-900">{result.ticket.ticketType.name}</span>
+                      <span className="font-semibold">{result.ticket.ticketType.name}</span>
+                    </div>
+                  )}
+                  {result.ticket.event && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Lieu</span>
+                      <span className="font-semibold text-right max-w-[60%]">{result.ticket.event.venueName}, {result.ticket.event.venueCity}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span className="text-gray-500">Code</span>
-                    <span className="font-mono text-xs text-gray-700">{result.ticket.qrCode}</span>
+                    <span className="font-mono text-xs text-gray-400">{result.ticket.qrCode}</span>
                   </div>
                 </div>
               )}
@@ -194,85 +247,74 @@ export default function ScannerPage() {
           )}
         </div>
 
-        {/* Scan History */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">
-            Historique des scans
-            {scanHistory.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-gray-500">({scanHistory.length})</span>
+        {/* ── Right: History ── */}
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 flex flex-col min-h-[400px]">
+          <div className="p-4 border-b border-gray-800 flex items-center justify-between flex-shrink-0">
+            <h2 className="font-bold text-gray-200">
+              Historique
+              {history.length > 0 && <span className="ml-2 text-sm font-normal text-gray-500">({history.length})</span>}
+            </h2>
+            {history.length > 0 && (
+              <div className="flex gap-2">
+                <button onClick={() => exportCSV(history)}
+                  className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-semibold transition-colors">
+                  ⬇ CSV
+                </button>
+                <button onClick={() => setHistory([])}
+                  className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-semibold transition-colors">
+                  🗑 Vider
+                </button>
+              </div>
             )}
-          </h2>
+          </div>
 
-          {scanHistory.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <div className="text-4xl mb-3"></div>
-              <p className="text-sm">Aucun scan effectué</p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {scanHistory.map((entry, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-3 p-3 rounded-xl border ${
-                    entry.result.valid
-                      ? 'bg-green-50 border-green-100'
-                      : 'bg-red-50 border-red-100'
-                  }`}
-                >
-                  <span className="text-lg">{entry.result.valid ? '' : ''}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-mono text-xs text-gray-700 truncate">{entry.qr}</p>
-                    {entry.result.ticket?.user && (
-                      <p className="text-xs text-gray-500">
-                        {entry.result.ticket.user.firstName} {entry.result.ticket.user.lastName}
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap">
-                    {entry.time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="flex-1 overflow-y-auto">
+            {history.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full py-16 text-gray-600">
+                <div className="text-4xl mb-3">📋</div>
+                <p className="text-sm">Aucun scan effectue</p>
+                <p className="text-xs mt-1 text-gray-700">Les scans apparaitront ici en temps reel</p>
+              </div>
+            ) : (
+              <div>
+                {history.map((e, i) => <HistoryRow key={i} e={e} />)}
+              </div>
+            )}
+          </div>
 
-          {scanHistory.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm">
-              <span className="text-gray-500">
-                 {scanHistory.filter(s => s.result.valid).length} valides
-              </span>
-              <span className="text-gray-500">
-                 {scanHistory.filter(s => !s.result.valid).length} invalides
-              </span>
+          {history.length > 0 && (
+            <div className="p-3 border-t border-gray-800 flex justify-between text-xs text-gray-500 flex-shrink-0">
+              <span className="text-green-400">✓ {stats.valid} valides</span>
+              <span className="text-red-400">✗ {stats.invalid} invalides</span>
             </div>
           )}
         </div>
       </div>
 
       {/* How it works */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <h3 className="font-bold text-gray-900 mb-4"> Comment ça fonctionne</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-600">
+      <div className="max-w-5xl mx-auto px-4 pb-8">
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5">
+          <h3 className="font-bold text-gray-300 mb-4">Comment ca fonctionne</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-500">
             <div className="flex gap-3">
-              <span className="text-2xl">1⃣</span>
+              <span className="text-2xl">1️⃣</span>
               <div>
-                <p className="font-semibold text-gray-800">Achat du billet</p>
-                <p>L'acheteur reçoit un code unique <code className="bg-gray-100 px-1 rounded text-xs">TKT-xxx</code> dans son compte et par email.</p>
+                <p className="font-semibold text-gray-300">Achat du billet</p>
+                <p>L&apos;acheteur recoit un code unique <code className="bg-gray-800 px-1 rounded text-xs text-gray-300">TKT-xxx</code> dans son compte et par email.</p>
               </div>
             </div>
             <div className="flex gap-3">
-              <span className="text-2xl">2⃣</span>
+              <span className="text-2xl">2️⃣</span>
               <div>
-                <p className="font-semibold text-gray-800">À l'entrée</p>
-                <p>L'organisateur scanne le QR code affiché sur le téléphone du participant.</p>
+                <p className="font-semibold text-gray-300">A l&apos;entree</p>
+                <p>Scannez le QR code via la camera ou saisissez le code manuellement / via scanner USB.</p>
               </div>
             </div>
             <div className="flex gap-3">
-              <span className="text-2xl">3⃣</span>
+              <span className="text-2xl">3️⃣</span>
               <div>
-                <p className="font-semibold text-gray-800">Validation</p>
-                <p> Vert = billet valide, entrée accordée.  Rouge = déjà utilisé ou invalide.</p>
+                <p className="font-semibold text-gray-300">Validation instantanee</p>
+                <p>✅ Vert = valide, entree accordee. ❌ Rouge = deja utilise ou invalide. Alertes fraude en temps reel.</p>
               </div>
             </div>
           </div>
