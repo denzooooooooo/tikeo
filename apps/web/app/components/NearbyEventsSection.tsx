@@ -13,6 +13,8 @@ interface NearbyEvent {
   date?: string;
   startDate?: string;
   city: string;
+  venueCountry?: string;
+  currency?: string;
   price: number;
   category: string;
   organizer?: string;
@@ -20,6 +22,30 @@ interface NearbyEvent {
   organizerUserId?: string | null;
   ticketsLeft?: number;
   totalTickets?: number;
+}
+
+// ── Utilitaire devise ─────────────────────────────────────────────────────────
+function formatNearbyPrice(price: number, venueCountry?: string, currency?: string): string {
+  if (price === 0) return 'Gratuit';
+  if (currency && currency !== 'EUR') {
+    const large = ['XOF','XAF','NGN','GNF','CDF','UGX','TZS','MGA','RWF','ETB'];
+    if (large.includes(currency)) return `${price.toLocaleString('fr-FR')} ${currency}`;
+    const sym: Record<string,string> = { GBP:'£', USD:'$', CHF:'CHF ', CAD:'CA$', ZAR:'R ', KES:'KSh ', GHS:'GH₵', MAD:' MAD', TND:' TND', DZD:' DZD' };
+    const s = sym[currency];
+    return s ? (s.endsWith(' ') ? `${s}${price.toLocaleString()}` : `${price.toLocaleString()}${s}`) : `${price.toLocaleString()} ${currency}`;
+  }
+  if (currency === 'EUR') return new Intl.NumberFormat('fr-FR', { style:'currency', currency:'EUR', minimumFractionDigits:0 }).format(price);
+  const c = (venueCountry || '').toLowerCase();
+  if (c.includes('nigeria')) return `₦${price.toLocaleString()}`;
+  if (c.includes('ghana')) return `GH₵${price.toLocaleString()}`;
+  if (c.includes('kenya')) return `KSh ${price.toLocaleString()}`;
+  if (c.includes('afrique du sud')) return `R${price.toLocaleString()}`;
+  if (c.includes('france') || c.includes('belgique') || c.includes('suisse')) return new Intl.NumberFormat('fr-FR', { style:'currency', currency:'EUR', minimumFractionDigits:0 }).format(price);
+  if (c.includes('états-unis')) return `$${price.toLocaleString()}`;
+  if (c.includes('royaume-uni')) return `£${price.toLocaleString()}`;
+  if (c.includes('canada')) return `CA$${price.toLocaleString()}`;
+  if (c.includes('maroc')) return `${price.toLocaleString()} MAD`;
+  return `${price.toLocaleString()} FCFA`;
 }
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────────
@@ -203,7 +229,7 @@ function EventCard({ event }: { event: NearbyEvent }) {
             ) : (
               <span className="text-[#5B7CFF]">
                 <span className="text-xs text-gray-400 font-normal">dès </span>
-                {event.price}€
+                {formatNearbyPrice(event.price, event.venueCountry, event.currency)}
               </span>
             )}
           </div>

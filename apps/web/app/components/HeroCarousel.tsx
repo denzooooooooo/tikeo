@@ -29,6 +29,36 @@ const TicketIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /></svg>
 );
 
+// ─── Utilitaire devise selon pays ────────────────────────────────────────────
+function formatEventPrice(price: number, venueCountry?: string, currency?: string): string {
+  if (price === 0) return 'Gratuit';
+  // Priorité : devise explicite de l'organisateur
+  if (currency && currency !== 'EUR') {
+    const largeCurrencies = ['XOF', 'XAF', 'NGN', 'GNF', 'CDF', 'UGX', 'TZS', 'MGA', 'RWF', 'ETB'];
+    if (largeCurrencies.includes(currency)) return `${price.toLocaleString('fr-FR')} ${currency}`;
+    const symbols: Record<string, string> = { EUR: '€', GBP: '£', USD: '$', CHF: 'CHF ', CAD: 'CA$', AED: 'AED ', MAD: ' MAD', TND: ' TND', DZD: ' DZD', EGP: ' EGP', ZAR: 'R ', KES: 'KSh ', GHS: 'GH₵', JPY: '¥', INR: '₹', BRL: 'R$' };
+    const sym = symbols[currency];
+    if (sym) return sym.endsWith(' ') ? `${sym}${price.toLocaleString()}` : `${price.toLocaleString()} ${currency}`;
+    return `${price.toLocaleString()} ${currency}`;
+  }
+  if (currency === 'EUR') return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(price);
+  // Fallback : détection par pays
+  const c = (venueCountry || '').toLowerCase();
+  if (c.includes('nigeria')) return `₦${price.toLocaleString()}`;
+  if (c.includes('ghana')) return `GH₵${price.toLocaleString()}`;
+  if (c.includes('kenya')) return `KSh ${price.toLocaleString()}`;
+  if (c.includes('afrique du sud')) return `R${price.toLocaleString()}`;
+  if (c.includes('france') || c.includes('belgique') || c.includes('suisse')) return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(price);
+  if (c.includes('états-unis')) return `$${price.toLocaleString()}`;
+  if (c.includes('royaume-uni')) return `£${price.toLocaleString()}`;
+  if (c.includes('canada')) return `CA$${price.toLocaleString()}`;
+  if (c.includes('maroc')) return `${price.toLocaleString()} MAD`;
+  if (c.includes('tunisie')) return `${price.toLocaleString()} TND`;
+  if (c.includes('algérie')) return `${price.toLocaleString()} DZD`;
+  if (c.includes('cameroun')) return `${price.toLocaleString()} XAF`;
+  return `${price.toLocaleString()} FCFA`;
+}
+
 interface FeaturedEvent {
   id: string;
   title: string;
@@ -37,6 +67,7 @@ interface FeaturedEvent {
   startDate: string;
   venueCity: string;
   venueCountry: string;
+  currency?: string;
   category: string;
   price: number;
   description?: string;
@@ -287,7 +318,7 @@ export default function HeroCarousel({ events }: HeroCarouselProps) {
                 <span className="text-2xl font-bold text-green-400">Gratuit</span>
               ) : (
                 <>
-                  <span className="text-2xl font-bold text-white">{currentEvent.price.toLocaleString()} FCFA</span>
+                  <span className="text-2xl font-bold text-white">{formatEventPrice(currentEvent.price, currentEvent.venueCountry, currentEvent.currency)}</span>
                   <span className="text-white/60 text-xs ml-1">à partir de</span>
                 </>
               )}

@@ -3,12 +3,12 @@ import { Suspense } from 'react';
 import EventsPageClient from './EventsPageClient';
 
 export const metadata: Metadata = {
-  title: 'Événements Africains | Tikeo',
-  description: 'Découvrez les meilleurs événements à travers toute l\'Afrique. Concerts, festivals, conférences tech, gastronomie et plus encore.',
+  title: 'Événements | Tikeo',
+  description: 'Découvrez les meilleurs événements partout dans le monde. Concerts, festivals, conférences tech, gastronomie et plus encore.',
   keywords: 'événements monde, concerts, festivals, conférences, tikeo',
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
 async function getEvents(searchParams: Record<string, string | undefined>) {
   try {
