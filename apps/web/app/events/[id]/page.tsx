@@ -42,6 +42,33 @@ export default async function EventDetailPage({ params }: { params: { id: string
     ? Math.min(...event.ticketTypes.map((t: any) => t.price ?? 0))
     : event.minPrice ?? 0;
 
+  // Format price based on venue country
+  const formatEventPrice = (amount: number): string => {
+    if (amount === 0) return 'Gratuit';
+    const c = (event.venueCountry || '').toLowerCase();
+    if (c.includes('nigeria')) return `₦${amount.toLocaleString()}`;
+    if (c.includes('ghana')) return `GH₵${amount.toLocaleString()}`;
+    if (c.includes('kenya')) return `KSh ${amount.toLocaleString()}`;
+    if (c.includes('afrique du sud') || c.includes('south africa')) return `R ${amount.toLocaleString()}`;
+    if (c.includes('maroc') || c.includes('morocco')) return `${amount.toLocaleString()} MAD`;
+    if (c.includes('tunisie') || c.includes('tunisia')) return `${amount.toLocaleString()} TND`;
+    if (c.includes('algérie') || c.includes('algeria')) return `${amount.toLocaleString()} DZD`;
+    if (c.includes('égypte') || c.includes('egypt')) return `${amount.toLocaleString()} EGP`;
+    if (c.includes('france') || c.includes('belgique') || c.includes('allemagne') ||
+        c.includes('espagne') || c.includes('italie') || c.includes('portugal')) {
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(amount);
+    }
+    if (c.includes('suisse') || c.includes('switzerland')) return `CHF ${amount.toLocaleString()}`;
+    if (c.includes('royaume-uni') || c.includes('united kingdom')) return `£${amount.toLocaleString()}`;
+    if (c.includes('états-unis') || c.includes('united states')) return `$${amount.toLocaleString()}`;
+    if (c.includes('canada')) return `CA$${amount.toLocaleString()}`;
+    if (c.includes('cameroun') || c.includes('cameroon') || c.includes('gabon') || c.includes('congo')) {
+      return `${amount.toLocaleString('fr-FR')} XAF`;
+    }
+    // Default: XOF (West Africa FCFA)
+    return `${amount.toLocaleString('fr-FR')} FCFA`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ── Hero ─────────────────────────────────────────────────────── */}
@@ -99,7 +126,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
         <div>
           <p className="text-xs text-gray-500">À partir de</p>
           <p className="text-lg font-bold text-[#5B7CFF]">
-            {minPrice === 0 ? 'Gratuit' : `${minPrice.toLocaleString('fr-FR')} ${event.currency || 'FCFA'}`}
+            {formatEventPrice(minPrice)}
           </p>
         </div>
         <Link
@@ -274,8 +301,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
                             <span className="text-green-600 font-bold text-sm">Gratuit</span>
                           ) : (
                             <div>
-                              <span className="text-lg font-bold text-[#5B7CFF]">{ticket.price.toLocaleString('fr-FR')}</span>
-                              <span className="text-xs text-gray-400 ml-1">{event.currency || 'FCFA'}</span>
+                              <span className="text-lg font-bold text-[#5B7CFF]">{formatEventPrice(ticket.price)}</span>
                             </div>
                           )}
                         </div>

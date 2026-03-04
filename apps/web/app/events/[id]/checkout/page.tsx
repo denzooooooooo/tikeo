@@ -50,6 +50,7 @@ interface EventData {
   date: string;
   time?: string;
   venue?: string;
+  venueCountry?: string;
   coverImage?: string;
   ticketTypes: TicketType[];
 }
@@ -413,7 +414,19 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="text-right">
                                   <p className={`font-bold text-lg ${isSoldOut ? 'text-gray-400' : 'text-[#5B7CFF]'}`}>
-                                    {ticket.price === 0 ? 'Gratuit' : `${ticket.price.toFixed(2)}€`}
+                                    {ticket.price === 0 ? 'Gratuit' : (() => {
+                                      const c = (event?.venueCountry || '').toLowerCase();
+                                      if (c.includes('nigeria')) return `₦${ticket.price.toLocaleString()}`;
+                                      if (c.includes('ghana')) return `GH₵${ticket.price.toLocaleString()}`;
+                                      if (c.includes('kenya')) return `KSh ${ticket.price.toLocaleString()}`;
+                                      if (c.includes('france') || c.includes('belgique') || c.includes('allemagne') || c.includes('espagne') || c.includes('italie')) {
+                                        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(ticket.price);
+                                      }
+                                      if (c.includes('royaume-uni') || c.includes('united kingdom')) return `£${ticket.price.toLocaleString()}`;
+                                      if (c.includes('états-unis') || c.includes('united states')) return `$${ticket.price.toLocaleString()}`;
+                                      if (c.includes('cameroun') || c.includes('gabon') || c.includes('congo')) return `${ticket.price.toLocaleString('fr-FR')} XAF`;
+                                      return `${ticket.price.toLocaleString('fr-FR')} FCFA`;
+                                    })()}
                                   </p>
                                   {isSoldOut && (
                                     <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-semibold">
