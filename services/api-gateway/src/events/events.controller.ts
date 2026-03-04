@@ -200,6 +200,46 @@ export class EventsController {
     return this.eventsService.unpublish(id, req.user?.id);
   }
 
+  // ─── POST /events/:id/ticket-types ────────────────────────────────────────────
+  @Post(':id/ticket-types')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Créer un type de billet pour un événement' })
+  async createTicketType(
+    @Param('id') id: string,
+    @Body() dto: any,
+    @Request() req: any,
+  ) {
+    return this.eventsService.createTicketType(id, dto, req.user?.id);
+  }
+
+  // ─── PUT /events/:id/ticket-types/:ttId ───────────────────────────────────────
+  @Put(':id/ticket-types/:ttId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Modifier un type de billet' })
+  async updateTicketType(
+    @Param('id') id: string,
+    @Param('ttId') ttId: string,
+    @Body() dto: any,
+    @Request() req: any,
+  ) {
+    return this.eventsService.updateTicketType(id, ttId, dto, req.user?.id);
+  }
+
+  // ─── DELETE /events/:id/ticket-types/:ttId ────────────────────────────────────
+  @Delete(':id/ticket-types/:ttId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Supprimer un type de billet' })
+  async deleteTicketType(
+    @Param('id') id: string,
+    @Param('ttId') ttId: string,
+    @Request() req: any,
+  ) {
+    return this.eventsService.deleteTicketType(id, ttId, req.user?.id);
+  }
+
   // ─── DELETE /events/admin/cleanup ─────────────────────────────────────────────
   @Delete('admin/cleanup')
   @UseGuards(JwtAuthGuard)

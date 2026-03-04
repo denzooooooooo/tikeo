@@ -533,6 +533,89 @@ export class EventsService {
     return { message: 'Événement annulé avec succès' };
   }
 
+  // ─── TICKET TYPE CRUD ────────────────────────────────────────────────────────
+
+  async createTicketType(eventId: string, dto: any, userId: string) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      include: { organizer: true },
+    });
+    if (!event) throw new Error('Événement non trouvé');
+    if (event.organizer.userId !== userId) throw new Error('Non autorisé');
+
+    const now = new Date();
+    const ticketType = await this.prisma.ticketType.create({
+      data: {
+        eventId,
+        name: dto.name,
+        description: dto.description || null,
+        price: Number(dto.price) || 0,
+        quantity: Number(dto.quantity) || 0,
+        available: Number(dto.quantity) || 0,
+        sold: 0,
+        maxPerOrder: Number(dto.maxPerOrder) || 10,
+        salesStart: dto.salesStart ? new Date(dto.salesStart) : now,
+        salesEnd: dto.salesEnd ? new Date(dto.salesEnd) : new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    await this.redis.del(`event:${eventId}`);
+    return ticketType;
+  }
+
+  async updateTicketType(eventId: string, ttId: string, dto: any, userId: string) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      include: { organizer: true },
+    });
+    if (!event) throw new Error('Événement non trouvé');
+    if (event.organizer.userId !== userId) throw new Error('Non autorisé');
+
+    const existing = await this.prisma.ticketType.findUnique({ where: { id: ttId } });
+    if (!existing || existing.eventId !== eventId) throw new Error('Type de billet non trouvé');
+
+    const updated = await this.prisma.ticketType.update({
+      where: { id: ttId },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.price !== undefined && { price: Number(dto.price) }),
+        ...(dto.quantity !== undefined && {
+          quantity: Number(dto.quantity),
+          // Adjust available: new quantity - already sold
+          available: Math.max(0, Number(dto.quantity) - existing.sold),
+        }),
+        ...(dto.maxPerOrder !== undefined && { maxPerOrder: Number(dto.maxPerOrder) }),
+        ...(dto.salesStart !== undefined && { salesStart: new Date(dto.salesStart) }),
+        ...(dto.salesEnd !== undefined && { salesEnd: new Date(dto.salesEnd) }),
+      },
+    });
+
+    await this.redis.del(`event:${eventId}`);
+    return updated;
+  }
+
+  async deleteTicketType(eventId: string, ttId: string, userId: string) {
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      include: { organizer: true },
+    });
+    if (!event) throw new Error('Événement non trouvé');
+    if (event.organizer.userId !== userId) throw new Error('Non autorisé');
+
+    const existing = await this.prisma.ticketType.findUnique({ where: { id: ttId } });
+    if (!existing || existing.eventId !== eventId) throw new Error('Type de billet non trouvé');
+
+    // Only allow deletion if no tickets sold yet
+    if (existing.sold > 0) {
+      throw new Error('Impossible de supprimer un type de billet avec des ventes actives');
+    }
+
+    await this.prisma.ticketType.delete({ where: { id: ttId } });
+    await this.redis.del(`event:${eventId}`);
+    return { message: 'Type de billet supprimé' };
+  }
+
   // ── Helper: notify all confirmed ticket buyers of an event ──────────────────
   private async notifyEventAttendees(
     eventId: string,
