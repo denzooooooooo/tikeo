@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class EventsService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async findAll(page: number = 1, limit: number = 20, filters?: any) {
@@ -497,6 +499,12 @@ export class EventsService {
     await this.redis.del(`event:${id}`);
     await this.redis.del('events:featured');
 
+    // 🔔 Notify all ticket buyers of the update (fire and forget)
+    this.notifyEventAttendees(id, updated.title, 'EVENT_UPDATED',
+      `📢 Mise à jour : "${updated.title}"`,
+      `L'événement "${updated.title}" a été mis à jour par l'organisateur.`
+    ).catch(() => {});
+
     return updated;
   }
 
@@ -516,7 +524,41 @@ export class EventsService {
     await this.redis.del(`event:${id}`);
     await this.redis.del('events:featured');
 
+    // 🔔 Notify all ticket buyers of cancellation (fire and forget)
+    this.notifyEventAttendees(id, event.title, 'EVENT_CANCELLED',
+      `❌ Événement annulé : "${event.title}"`,
+      `L'événement "${event.title}" a été annulé. Vous serez remboursé si applicable.`
+    ).catch(() => {});
+
     return { message: 'Événement annulé avec succès' };
+  }
+
+  // ── Helper: notify all confirmed ticket buyers of an event ──────────────────
+  private async notifyEventAttendees(
+    eventId: string,
+    eventTitle: string,
+    type: 'EVENT_UPDATED' | 'EVENT_CANCELLED',
+    title: string,
+    message: string,
+  ) {
+    // Get all users who have confirmed orders for this event
+    const orders = await this.prisma.order.findMany({
+      where: { eventId, status: 'CONFIRMED' },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+
+    if (orders.length === 0) return;
+
+    const notifications = orders.map(o => ({
+      userId: o.userId,
+      type: type as any,
+      title,
+      message,
+      data: { eventId },
+    }));
+
+    await this.notificationsService.createBulkNotifications(notifications);
   }
 
   async unpublish(id: string, userId: string) {

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export interface CreateOrderDto {
   eventId: string;
@@ -16,6 +17,7 @@ export class OrdersService {
     private prisma: PrismaService,
     private emailService: EmailService,
     private redis: RedisService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
@@ -157,6 +159,24 @@ export class OrdersService {
           orderId: order.id,
         }).catch(() => {});
       }
+
+      // 🔔 Create real notification for ticket purchase (fire and forget)
+      this.notificationsService.createNotification({
+        userId,
+        type: 'TICKET_PURCHASED',
+        title: '🎫 Billet confirmé !',
+        message: `Votre billet pour "${order.event?.title || 'l\'événement'}" est prêt. Bonne fête !`,
+        data: { orderId: order.id, eventId },
+      }).catch(() => {});
+    } else {
+      // Paid event: pending payment — notify user that order is pending
+      this.notificationsService.createNotification({
+        userId,
+        type: 'TICKET_PURCHASED',
+        title: '🛒 Commande en attente',
+        message: `Votre commande pour "${event.title}" est en attente de paiement.`,
+        data: { orderId: order.id, eventId },
+      }).catch(() => {});
     }
 
     return order;

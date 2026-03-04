@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import Stripe from 'stripe';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class PaymentsService implements OnModuleInit {
     private prisma: PrismaService,
     private emailService: EmailService,
     private redis: RedisService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async onModuleInit() {
@@ -169,6 +171,15 @@ export class PaymentsService implements OnModuleInit {
             }).catch(() => {});
           }
         }
+
+        // 🔔 Real notification: payment confirmed
+        this.notificationsService.createNotification({
+          userId: order.userId,
+          type: 'TICKET_PURCHASED',
+          title: '🎫 Paiement confirmé !',
+          message: `Votre paiement pour "${event?.title || 'l\'événement'}" a été accepté. Vos billets sont prêts !`,
+          data: { orderId: order.id, eventId: order.eventId },
+        }).catch(() => {});
       }
 
       return { success: true, payment };
@@ -222,6 +233,21 @@ export class PaymentsService implements OnModuleInit {
           data: { available: { increment: item.quantity } },
         });
       }
+    }
+
+    // 🔔 Real notification: refund processed
+    const refundedOrderData = await this.prisma.order.findUnique({
+      where: { id: payment.orderId },
+      select: { userId: true, eventId: true, event: { select: { title: true } } },
+    });
+    if (refundedOrderData) {
+      this.notificationsService.createNotification({
+        userId: refundedOrderData.userId,
+        type: 'REFUND_PROCESSED',
+        title: '💰 Remboursement effectué',
+        message: `Votre remboursement pour "${refundedOrderData.event?.title || 'l\'événement'}" a été traité.`,
+        data: { orderId: payment.orderId, eventId: refundedOrderData.eventId },
+      }).catch(() => {});
     }
 
     return { success: true, refund };
