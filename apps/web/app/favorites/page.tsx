@@ -1,5 +1,14 @@
 'use client';
 
+
+import type { Metadata } from 'next';
+export const metadata: Metadata = {
+  title: 'Mes favoris | Tikeo',
+  description: 'Retrouvez tous vos evenements favoris sur Tikeo. Suivez les organisateurs et evenements qui vous interessent.',
+  openGraph: { title: 'Mes favoris - Tikeo', description: 'Vos evenements et organisateurs favoris.', url: 'https://tikeo.com/favorites' },
+  alternates: { canonical: 'https://tikeo.com/favorites' },
+};
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

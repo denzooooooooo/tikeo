@@ -1,5 +1,14 @@
 'use client';
 
+
+import type { Metadata } from 'next';
+export const metadata: Metadata = {
+  title: 'Mon profil | Tikeo',
+  description: 'Gerez votre profil Tikeo : informations personnelles, preferences, historique d'evenements et parametres de compte.',
+  openGraph: { title: 'Mon profil - Tikeo', description: 'Gerez votre compte Tikeo.', url: 'https://tikeo.com/profile' },
+  alternates: { canonical: 'https://tikeo.com/profile' },
+};
+
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';

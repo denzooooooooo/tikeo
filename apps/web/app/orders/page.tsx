@@ -1,5 +1,14 @@
 'use client';
 
+
+import type { Metadata } from 'next';
+export const metadata: Metadata = {
+  title: 'Mes commandes | Tikeo',
+  description: 'Consultez l'historique de vos commandes de billets sur Tikeo. Telechargez vos recus et gerez vos achats.',
+  openGraph: { title: 'Mes commandes - Tikeo', description: 'Historique de vos achats de billets.', url: 'https://tikeo.com/orders' },
+  alternates: { canonical: 'https://tikeo.com/orders' },
+};
+
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';

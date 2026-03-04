@@ -1,5 +1,14 @@
 'use client';
 
+
+import type { Metadata } from 'next';
+export const metadata: Metadata = {
+  title: 'Notifications | Tikeo',
+  description: 'Consultez toutes vos notifications Tikeo : confirmations de billets, mises a jour d'evenements, rappels et messages importants.',
+  openGraph: { title: 'Notifications - Tikeo', description: 'Vos notifications et alertes Tikeo.', url: 'https://tikeo.com/notifications' },
+  alternates: { canonical: 'https://tikeo.com/notifications' },
+};
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

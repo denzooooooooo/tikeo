@@ -1,3 +1,12 @@
+import type { Metadata } from 'next';
+export const metadata: Metadata = {
+  title: 'A propos de Tikeo | Plateforme mondiale de billetterie',
+  description: 'Decouvrez Tikeo, la plateforme de billetterie evenementielle nouvelle generation. Notre mission : connecter les organisateurs et les participants partout dans le monde.',
+  keywords: ['tikeo', 'a propos', 'billetterie', 'evenements', 'plateforme mondiale'],
+  openGraph: { title: 'A propos de Tikeo', description: 'La plateforme de billetterie evenementielle nouvelle generation.', url: 'https://tikeo.com/about' },
+  alternates: { canonical: 'https://tikeo.com/about' },
+};
+
 import Link from 'next/link';
 import { TeamIcon, RocketIcon, BriefcaseIcon } from '@tikeo/ui';
 

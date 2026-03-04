@@ -1,5 +1,14 @@
 'use client';
 
+
+import type { Metadata } from 'next';
+export const metadata: Metadata = {
+  title: 'Mes billets | Tikeo',
+  description: 'Retrouvez tous vos billets electroniques sur Tikeo. Acces aux codes QR, details des evenements et options de partage.',
+  openGraph: { title: 'Mes billets - Tikeo', description: 'Vos billets electroniques et codes QR.', url: 'https://tikeo.com/tickets' },
+  alternates: { canonical: 'https://tikeo.com/tickets' },
+};
+
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
