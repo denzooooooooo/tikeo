@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 
 export interface CookiePreferences {
@@ -10,6 +12,7 @@ export interface CookiePreferences {
 interface CookieContextType {
   preferences: CookiePreferences;
   hasInteracted: boolean;
+  isLoaded: boolean;
   updatePreferences: (prefs: Partial<CookiePreferences>) => void;
   acceptAll: () => void;
   rejectAll: () => void;
@@ -118,6 +121,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
       value={{
         preferences,
         hasInteracted,
+        isLoaded,
         updatePreferences,
         acceptAll,
         rejectAll,
