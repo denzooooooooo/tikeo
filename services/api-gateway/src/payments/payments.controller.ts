@@ -1,6 +1,7 @@
 import { Controller, Post, Body, UseGuards, Request, HttpException, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { PaymentsService } from './payments.service';
 
 @ApiTags('payments')
@@ -9,9 +10,8 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('create-payment-intent')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Créer une intention de paiement Stripe' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({ summary: 'Créer une intention de paiement Stripe (connecté ou invité)' })
   @ApiBody({
     description: 'Données pour créer l\'intention de paiement',
     schema: {
@@ -25,7 +25,6 @@ export class PaymentsController {
   })
   @ApiResponse({ status: 201, description: 'Intention de paiement créée' })
   @ApiResponse({ status: 400, description: 'Données invalides' })
-  @ApiResponse({ status: 401, description: 'Non autorisé' })
   async createPaymentIntent(@Body() body: { orderId: string; amount: number }, @Request() req: any) {
     try {
       return await this.paymentsService.createPaymentIntent(body.orderId, body.amount);
@@ -36,8 +35,7 @@ export class PaymentsController {
   }
 
   @Post('confirm-payment')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Confirmer un paiement Stripe' })
   @ApiBody({
     description: 'Données de confirmation de paiement',

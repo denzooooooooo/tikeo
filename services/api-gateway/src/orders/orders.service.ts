@@ -4,11 +4,20 @@ import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
+export interface GuestInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+}
+
 export interface CreateOrderDto {
   eventId: string;
   ticketTypeId: string;
   quantity: number;
   promoCode?: string;
+  /** Informations invité — obligatoires si l'utilisateur n'est pas connecté */
+  guestInfo?: GuestInfo;
 }
 
 @Injectable()
@@ -20,8 +29,22 @@ export class OrdersService {
     private notificationsService: NotificationsService,
   ) {}
 
-  async createOrder(userId: string, dto: CreateOrderDto) {
-    const { eventId, ticketTypeId, quantity, promoCode } = dto;
+  async createOrder(userId: string | null, dto: CreateOrderDto) {
+    const { eventId, ticketTypeId, quantity, promoCode, guestInfo } = dto;
+
+    // Validation : si pas d'utilisateur connecté, les infos invité sont obligatoires
+    if (!userId) {
+      if (!guestInfo || !guestInfo.firstName || !guestInfo.lastName || !guestInfo.email) {
+        throw new BadRequestException(
+          'Les informations personnelles (prénom, nom, email) sont obligatoires pour continuer sans compte.',
+        );
+      }
+      // Validation basique de l'email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(guestInfo.email)) {
+        throw new BadRequestException('Adresse email invalide.');
+      }
+    }
 
     // Verify event exists and is published
     const event = await this.prisma.event.findUnique({
@@ -77,10 +100,21 @@ export class OrdersService {
     // Free events are automatically confirmed (no payment needed)
     const isFree = total === 0;
 
+    // Nom complet pour la facturation
+    const billingName = userId
+      ? undefined // sera rempli depuis le profil utilisateur si besoin
+      : `${guestInfo!.firstName} ${guestInfo!.lastName}`;
+
     // Create order with items
     const order = await this.prisma.order.create({
       data: {
-        userId,
+        ...(userId ? { userId } : {}),
+        // Champs invité — castés en any car le client Prisma sera régénéré après migration
+        ...((!userId && guestInfo) ? {
+          guestEmail: guestInfo.email,
+          guestPhone: guestInfo.phone ?? null,
+        } : {}),
+        billingName: billingName ?? null,
         eventId,
         subtotal,
         fees,
@@ -98,12 +132,9 @@ export class OrdersService {
             price: ticketType.price,
           },
         },
-      },
+      } as any,
       include: {
         OrderItem: true,
-        event: {
-          select: { id: true, title: true },
-        },
       },
     });
 
@@ -130,7 +161,7 @@ export class OrdersService {
           data: {
             orderId: order.id,
             eventId,
-            userId,
+            ...(userId ? { userId } : {}),
             ticketTypeId,
             qrCode: `TKT-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
             status: 'VALID',
@@ -142,24 +173,36 @@ export class OrdersService {
         });
       }
 
-      // Get user email for confirmation
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { email: true, firstName: true },
-      });
+      // Déterminer l'email de confirmation (utilisateur connecté ou invité)
+      let confirmEmail: string | null = null;
+      let confirmFirstName: string | null = null;
 
-      if (user) {
+      if (userId) {
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true, firstName: true },
+        });
+        if (user) {
+          confirmEmail = user.email;
+          confirmFirstName = user.firstName;
+        }
+      } else if (guestInfo) {
+        confirmEmail = guestInfo.email;
+        confirmFirstName = guestInfo.firstName;
+      }
+
+      if (confirmEmail) {
         // Send order confirmation email (fire and forget)
-        this.emailService.sendOrderConfirmationEmail(user.email, {
+        this.emailService.sendOrderConfirmationEmail(confirmEmail, {
           orderId: order.id,
           total: 0,
-          eventTitle: order.event?.title || 'Événement',
+          eventTitle: event.title || 'Événement',
           ticketCount: quantity,
         }).catch(() => {});
 
         // Send ticket email
-        this.emailService.sendTicketEmail(user.email, {
-          eventTitle: order.event?.title || 'Événement',
+        this.emailService.sendTicketEmail(confirmEmail, {
+          eventTitle: event.title || 'Événement',
           eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
           venue: event.venueName || '',
           ticketType: ticketType.name,
@@ -167,23 +210,27 @@ export class OrdersService {
         }).catch(() => {});
       }
 
-      // 🔔 Create real notification for ticket purchase (fire and forget)
-      this.notificationsService.createNotification({
-        userId,
-        type: 'TICKET_PURCHASED',
-        title: '🎫 Billet confirmé !',
-        message: `Votre billet pour "${order.event?.title || 'l\'événement'}" est prêt. Bonne fête !`,
-        data: { orderId: order.id, eventId },
-      }).catch(() => {});
+      // 🔔 Notification en app uniquement pour les utilisateurs connectés
+      if (userId) {
+        this.notificationsService.createNotification({
+          userId,
+          type: 'TICKET_PURCHASED',
+          title: '🎫 Billet confirmé !',
+          message: `Votre billet pour "${event.title || 'l\'événement'}" est prêt. Bonne fête !`,
+          data: { orderId: order.id, eventId },
+        }).catch(() => {});
+      }
     } else {
-      // Paid event: pending payment — notify user that order is pending
-      this.notificationsService.createNotification({
-        userId,
-        type: 'TICKET_PURCHASED',
-        title: '🛒 Commande en attente',
-        message: `Votre commande pour "${event.title}" est en attente de paiement.`,
-        data: { orderId: order.id, eventId },
-      }).catch(() => {});
+      // Paid event: pending payment — notify user that order is pending (connecté seulement)
+      if (userId) {
+        this.notificationsService.createNotification({
+          userId,
+          type: 'TICKET_PURCHASED',
+          title: '🛒 Commande en attente',
+          message: `Votre commande pour "${event.title}" est en attente de paiement.`,
+          data: { orderId: order.id, eventId },
+        }).catch(() => {});
+      }
     }
 
     return order;

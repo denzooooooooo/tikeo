@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService, CreateOrderDto } from './orders.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 @ApiTags('orders')
 @Controller('orders')
@@ -9,14 +10,14 @@ export class OrdersController {
   constructor(private ordersService: OrdersService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Créer une commande' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({ summary: 'Créer une commande (connecté ou invité)' })
   @ApiResponse({ status: 201, description: 'Commande créée avec succès' })
-  @ApiResponse({ status: 400, description: 'Données invalides' })
-  @ApiResponse({ status: 401, description: 'Non autorisé' })
+  @ApiResponse({ status: 400, description: 'Données invalides ou infos invité manquantes' })
   async createOrder(@Body() dto: CreateOrderDto, @Request() req: any) {
-    return this.ordersService.createOrder(req.user.id, dto);
+    // req.user est null si l'utilisateur n'est pas connecté (invité)
+    const userId: string | null = req.user?.id ?? null;
+    return this.ordersService.createOrder(userId, dto);
   }
 
   @Get('my')

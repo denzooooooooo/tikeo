@@ -427,7 +427,12 @@ export class EventsService {
 
     // Extract fields not in Prisma schema (isFree) and optional fields with defaults
     const { ticketTypes, isFree: _isFree, capacity: capacityFromDto, ...eventData } = dto;
-    const capacity = capacityFromDto || 100;
+
+    // Capacity = explicit value OR sum of all ticket quantities OR default 100
+    const totalTicketQty = ticketTypes?.reduce(
+      (sum: number, tt: any) => sum + (Number(tt.quantity) || 0), 0
+    ) || 0;
+    const capacity = capacityFromDto || totalTicketQty || 100;
 
     const event = await this.prisma.event.create({
       data: {
@@ -486,6 +491,11 @@ export class EventsService {
 
     const { ticketTypes, ...eventData } = dto;
 
+    // Si la capacité est modifiée, synchroniser ticketsAvailable
+    if (eventData.capacity !== undefined) {
+      eventData.ticketsAvailable = Number(eventData.capacity);
+    }
+
     const updated = await this.prisma.event.update({
       where: { id },
       data: eventData,
@@ -494,6 +504,40 @@ export class EventsService {
         ticketTypes: true,
       },
     });
+
+    // Si la capacité est modifiée, mettre à jour les types de billets
+    if (eventData.capacity !== undefined) {
+      const newCapacity = Number(eventData.capacity);
+      const existingTicketTypes = await this.prisma.ticketType.findMany({
+        where: { eventId: id, isActive: true },
+      });
+
+      if (existingTicketTypes.length === 1) {
+        // Un seul type de billet : on met à jour directement
+        const tt = existingTicketTypes[0];
+        await this.prisma.ticketType.update({
+          where: { id: tt.id },
+          data: {
+            quantity: newCapacity,
+            available: Math.max(0, newCapacity - tt.sold),
+          },
+        });
+      } else if (existingTicketTypes.length > 1) {
+        // Plusieurs types : on met à jour chacun proportionnellement
+        const totalQty = existingTicketTypes.reduce((s, tt) => s + tt.quantity, 0);
+        for (const tt of existingTicketTypes) {
+          const ratio = totalQty > 0 ? tt.quantity / totalQty : 1 / existingTicketTypes.length;
+          const newQty = Math.round(newCapacity * ratio);
+          await this.prisma.ticketType.update({
+            where: { id: tt.id },
+            data: {
+              quantity: newQty,
+              available: Math.max(0, newQty - tt.sold),
+            },
+          });
+        }
+      }
+    }
 
     // Invalidate cache
     await this.redis.del(`event:${id}`);
@@ -624,23 +668,27 @@ export class EventsService {
     title: string,
     message: string,
   ) {
-    // Get all users who have confirmed orders for this event
+    // Get all users who have confirmed orders for this event (exclude guest orders)
     const orders = await this.prisma.order.findMany({
-      where: { eventId, status: 'CONFIRMED' },
+      where: { eventId, status: 'CONFIRMED', userId: { not: null } },
       select: { userId: true },
       distinct: ['userId'],
     });
 
     if (orders.length === 0) return;
 
-    const notifications = orders.map(o => ({
-      userId: o.userId,
-      type: type as any,
-      title,
-      message,
-      data: { eventId },
-    }));
+    // Filter out null userIds (guest orders)
+    const notifications = orders
+      .filter(o => o.userId != null)
+      .map(o => ({
+        userId: o.userId as string,
+        type: type as any,
+        title,
+        message,
+        data: { eventId },
+      }));
 
+    if (notifications.length === 0) return;
     await this.notificationsService.createBulkNotifications(notifications);
   }
 
