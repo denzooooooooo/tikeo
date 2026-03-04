@@ -462,6 +462,17 @@ export class EventsService {
         ticketsAvailable: capacity,
         minPrice: ticketTypes?.[0]?.price ?? 0,
         maxPrice: ticketTypes?.[ticketTypes?.length - 1]?.price ?? 0,
+        // Ticket design customization
+        ticketDesignTemplate: eventData.ticketDesignTemplate || 'CLASSIC',
+        ticketDesignBackgroundUrl: eventData.ticketDesignBackgroundUrl || null,
+        ticketDesignPrimaryColor: eventData.ticketDesignPrimaryColor || '#5B7CFF',
+        ticketDesignSecondaryColor: eventData.ticketDesignSecondaryColor || '#7B61FF',
+        ticketDesignTextColor: eventData.ticketDesignTextColor || '#111827',
+        ticketDesignShowQr: eventData.ticketDesignShowQr ?? true,
+        ticketDesignShowSeat: eventData.ticketDesignShowSeat ?? true,
+        ticketDesignShowTerms: eventData.ticketDesignShowTerms ?? true,
+        ticketDesignCustomTitle: eventData.ticketDesignCustomTitle || null,
+        ticketDesignFooterNote: eventData.ticketDesignFooterNote || null,
         ticketTypes: ticketTypes?.length
           ? {
               create: ticketTypes.map((tt: any) => ({
@@ -509,6 +520,12 @@ export class EventsService {
     if (eventData.capacity !== undefined) {
       eventData.ticketsAvailable = Number(eventData.capacity);
     }
+
+    // Ticket design defaults/cleanup
+    if (eventData.ticketDesignTemplate === '') eventData.ticketDesignTemplate = 'CLASSIC';
+    if (eventData.ticketDesignPrimaryColor === '') eventData.ticketDesignPrimaryColor = '#5B7CFF';
+    if (eventData.ticketDesignSecondaryColor === '') eventData.ticketDesignSecondaryColor = '#7B61FF';
+    if (eventData.ticketDesignTextColor === '') eventData.ticketDesignTextColor = '#111827';
 
     const updated = await this.prisma.event.update({
       where: { id },
@@ -717,7 +734,7 @@ export class EventsService {
       select: { userId: true },
       distinct: ['userId'],
     });
-
+ 
     if (orders.length === 0) return;
 
     // Filter out null userIds (guest orders)

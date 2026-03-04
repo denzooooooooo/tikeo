@@ -21,3 +21,20 @@ Permettre à un client d'acheter un billet sans être connecté, tout en collect
 - [x] 3. Modifier `orders.controller.ts` — remplacer `JwtAuthGuard` par `OptionalJwtAuthGuard` sur `POST /orders`
 - [x] 4. Modifier `payments.controller.ts` — remplacer `JwtAuthGuard` par `OptionalJwtAuthGuard` sur `create-payment-intent` et `confirm-payment`
 - [x] 5. Modifier `checkout/page.tsx` — supprimer `<ProtectedRoute>`, ajouter formulaire infos invité, adapter l'appel API
+
+---
+
+# IONOS + Ticket Design TODO
+
+## Objectif
+Configurer envoi email via IONOS (expéditeur affiché Tikeoh) + permettre la personnalisation design billet par organisateur.
+
+## Étapes
+
+- [ ] 1. Remplacer SendGrid par SMTP IONOS dans `email.service.ts`
+- [ ] 2. Ajouter variables SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`) et fallback robuste
+- [ ] 3. Étendre `Event` dans `schema.prisma` avec config design billet (template, image, couleurs, textes)
+- [ ] 4. Exposer/mettre à jour la config design billet dans create/update event backend
+- [ ] 5. Ajouter UI de personnalisation design billet dans création événement
+- [ ] 6. Ajouter UI de personnalisation design billet dans édition événement
+- [ ] 7. Adapter génération/rendu email billet pour inclure le design choisi

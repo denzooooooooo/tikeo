@@ -166,6 +166,18 @@ model Event {
   updatedAt   DateTime  @updatedAt
   publishedAt DateTime?
 
+  // Ticket design customization
+  ticketDesignTemplate      String  @default("CLASSIC")
+  ticketDesignBackgroundUrl String?
+  ticketDesignPrimaryColor  String? @default("#5B7CFF")
+  ticketDesignSecondaryColor String? @default("#7B61FF")
+  ticketDesignTextColor     String? @default("#111827")
+  ticketDesignShowQr        Boolean @default(true)
+  ticketDesignShowSeat      Boolean @default(true)
+  ticketDesignShowTerms     Boolean @default(true)
+  ticketDesignCustomTitle   String?
+  ticketDesignFooterNote    String?
+
   // Relations
   images         EventImage[]
   ticketTypes    TicketType[]

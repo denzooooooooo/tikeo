@@ -126,6 +126,16 @@ const CATEGORIES = [
 // Deduplicated
 const UNIQUE_CATEGORIES = CATEGORIES.filter((c, i, arr) => arr.findIndex(x => x.value === c.value) === i);
 
+const TICKET_DESIGN_TEMPLATES = [
+  { value: 'CLASSIC', label: 'Classic' },
+  { value: 'NEON', label: 'Neon' },
+  { value: 'GOLD', label: 'Gold' },
+  { value: 'MINIMAL', label: 'Minimal' },
+  { value: 'LUXURY', label: 'Luxury' },
+  { value: 'FESTIVE', label: 'Festive' },
+  { value: 'CORPORATE', label: 'Corporate' },
+];
+
 interface TicketType {
   id: string;
   name: string;
@@ -181,6 +191,17 @@ export default function EditEventPage() {
     coverImage: '',
     capacity: '',
     visibility: 'PUBLIC',
+    // Ticket design customization
+    ticketDesignTemplate: 'CLASSIC',
+    ticketDesignBackgroundUrl: '',
+    ticketDesignPrimaryColor: '#5B7CFF',
+    ticketDesignSecondaryColor: '#7B61FF',
+    ticketDesignTextColor: '#111827',
+    ticketDesignCustomTitle: '',
+    ticketDesignFooterNote: '',
+    ticketDesignShowQr: true,
+    ticketDesignShowSeat: true,
+    ticketDesignShowTerms: true,
   });
 
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
@@ -224,6 +245,16 @@ export default function EditEventPage() {
         coverImage: event.coverImage || '',
         capacity: String(event.capacity || ''),
         visibility: event.visibility || 'PUBLIC',
+        ticketDesignTemplate: event.ticketDesignTemplate || 'CLASSIC',
+        ticketDesignBackgroundUrl: event.ticketDesignBackgroundUrl || '',
+        ticketDesignPrimaryColor: event.ticketDesignPrimaryColor || '#5B7CFF',
+        ticketDesignSecondaryColor: event.ticketDesignSecondaryColor || '#7B61FF',
+        ticketDesignTextColor: event.ticketDesignTextColor || '#111827',
+        ticketDesignCustomTitle: event.ticketDesignCustomTitle || '',
+        ticketDesignFooterNote: event.ticketDesignFooterNote || '',
+        ticketDesignShowQr: event.ticketDesignShowQr ?? true,
+        ticketDesignShowSeat: event.ticketDesignShowSeat ?? true,
+        ticketDesignShowTerms: event.ticketDesignShowTerms ?? true,
       });
 
       setTicketTypes(event.ticketTypes || []);
@@ -253,6 +284,9 @@ export default function EditEventPage() {
         capacity: form.capacity ? parseInt(form.capacity) : undefined,
         startDate: form.startDate ? new Date(form.startDate).toISOString() : undefined,
         endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
+        ticketDesignBackgroundUrl: form.ticketDesignBackgroundUrl || undefined,
+        ticketDesignCustomTitle: form.ticketDesignCustomTitle || undefined,
+        ticketDesignFooterNote: form.ticketDesignFooterNote || undefined,
       };
 
       const res = await fetch(`${API_URL}/events/${eventId}`, {
@@ -558,6 +592,57 @@ export default function EditEventPage() {
             <div>
               <label className={labelCls}>Nombre de places</label>
               <input type="number" value={form.capacity} onChange={(e) => handleChange('capacity', e.target.value)} className={inputCls} min="1" placeholder="100" />
+            </div>
+          </div>
+
+          {/* Ticket design */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-5">🎨 Design du billet</h2>
+            <div className="space-y-4">
+              <div>
+                <label className={labelCls}>Template</label>
+                <select
+                  value={form.ticketDesignTemplate}
+                  onChange={(e) => handleChange('ticketDesignTemplate', e.target.value)}
+                  className={inputCls}
+                >
+                  {TICKET_DESIGN_TEMPLATES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Image de fond (URL)</label>
+                <input
+                  type="url"
+                  value={form.ticketDesignBackgroundUrl}
+                  onChange={(e) => handleChange('ticketDesignBackgroundUrl', e.target.value)}
+                  className={inputCls}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className={labelCls}>Couleur primaire</label>
+                  <input type="color" value={form.ticketDesignPrimaryColor} onChange={(e) => handleChange('ticketDesignPrimaryColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200" />
+                </div>
+                <div>
+                  <label className={labelCls}>Couleur secondaire</label>
+                  <input type="color" value={form.ticketDesignSecondaryColor} onChange={(e) => handleChange('ticketDesignSecondaryColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200" />
+                </div>
+                <div>
+                  <label className={labelCls}>Couleur texte</label>
+                  <input type="color" value={form.ticketDesignTextColor} onChange={(e) => handleChange('ticketDesignTextColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200" />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Titre personnalisé</label>
+                <input type="text" value={form.ticketDesignCustomTitle} onChange={(e) => handleChange('ticketDesignCustomTitle', e.target.value)} className={inputCls} placeholder="Ex: Billet VIP Officiel" />
+              </div>
+              <div>
+                <label className={labelCls}>Note en bas de billet</label>
+                <input type="text" value={form.ticketDesignFooterNote} onChange={(e) => handleChange('ticketDesignFooterNote', e.target.value)} className={inputCls} placeholder="Ex: Non remboursable" />
+              </div>
             </div>
           </div>
 

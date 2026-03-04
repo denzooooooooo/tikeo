@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as sgMail from '@sendgrid/mail';
+import * as nodemailer from 'nodemailer';
 
 interface TicketData {
   eventTitle: string;
@@ -35,32 +35,43 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private isConfigured = false;
   private readonly fromEmail: string;
+  private transporter: nodemailer.Transporter | null = null;
 
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get('SENDGRID_API_KEY');
-    this.fromEmail = this.configService.get('EMAIL_FROM', 'noreply@tikeo.com');
-    
-    if (apiKey) {
-      sgMail.setApiKey(apiKey);
+    const smtpHost = this.configService.get('SMTP_HOST') || 'smtp.ionos.fr';
+    const smtpPort = Number(this.configService.get('SMTP_PORT') || 587);
+    const smtpUser = this.configService.get('SMTP_USER') || 'alan@carrepremium.com';
+    const smtpPass = this.configService.get('SMTP_PASS') || 'Alanremium';
+    this.fromEmail = this.configService.get('SMTP_FROM') || 'Tikeoh <alan@carrepremium.com>';
+
+    if (smtpHost && smtpPort && smtpUser && smtpPass) {
+      this.transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+
       this.isConfigured = true;
-      this.logger.log('SendGrid email service initialized');
+      this.logger.log(`SMTP email service initialized (${smtpHost}:${smtpPort})`);
     } else {
-      this.logger.warn('SENDGRID_API_KEY not configured - emails will be logged only');
+      this.logger.warn('SMTP config incomplete - emails will be logged only');
     }
   }
 
   private async sendEmail(to: string, subject: string, html: string, text: string) {
-    const msg = {
-      to,
-      from: this.fromEmail,
-      subject,
-      html,
-      text,
-    };
-
-    if (this.isConfigured) {
+    if (this.isConfigured && this.transporter) {
       try {
-        await sgMail.send(msg);
+        await this.transporter.sendMail({
+          to,
+          from: this.fromEmail,
+          subject,
+          html,
+          text,
+        });
         this.logger.log('Email sent successfully to ' + to);
         return { success: true };
       } catch (error) {
@@ -68,13 +79,13 @@ export class EmailService {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return { success: false, error: errorMessage };
       }
-    } else {
-      this.logger.log('=== EMAIL (Not Sent - No API Key) ===');
-      this.logger.log('To: ' + to);
-      this.logger.log('From: ' + this.fromEmail);
-      this.logger.log('Subject: ' + subject);
-      return { success: true, dev: true };
     }
+
+    this.logger.log('=== EMAIL (Not Sent - SMTP Not Configured) ===');
+    this.logger.log('To: ' + to);
+    this.logger.log('From: ' + this.fromEmail);
+    this.logger.log('Subject: ' + subject);
+    return { success: true, dev: true };
   }
 
   private getEmailHeader(title: string): string {
