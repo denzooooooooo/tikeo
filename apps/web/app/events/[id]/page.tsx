@@ -42,9 +42,27 @@ export default async function EventDetailPage({ params }: { params: { id: string
     ? Math.min(...event.ticketTypes.map((t: any) => t.price ?? 0))
     : event.minPrice ?? 0;
 
-  // Format price based on venue country
+  // Format price using event.currency (set by organizer) or fallback to venue country detection
   const formatEventPrice = (amount: number): string => {
     if (amount === 0) return 'Gratuit';
+    // Use explicit currency set by organizer if available
+    if (event.currency && event.currency !== 'EUR') {
+      const largeCurrencies = ['XOF', 'XAF', 'NGN', 'GNF', 'CDF', 'UGX', 'TZS', 'MGA', 'RWF', 'ETB'];
+      if (largeCurrencies.includes(event.currency)) {
+        return `${amount.toLocaleString('fr-FR')} ${event.currency}`;
+      }
+      const symbols: Record<string, string> = {
+        EUR: '€', GBP: '£', USD: '$', CHF: 'CHF ', CAD: 'CA$', AED: 'AED ',
+        MAD: ' MAD', TND: ' TND', DZD: ' DZD', EGP: ' EGP', ZAR: 'R ', KES: 'KSh ',
+        GHS: 'GH₵', JPY: '¥', INR: '₹', BRL: 'R$', CAD2: 'CA$',
+      };
+      if (event.currency === 'EUR') {
+        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(amount);
+      }
+      const sym = symbols[event.currency];
+      if (sym) return sym.endsWith(' ') ? `${sym}${amount.toLocaleString()}` : `${amount.toLocaleString()} ${event.currency}`;
+      return `${amount.toLocaleString()} ${event.currency}`;
+    }
     const c = (event.venueCountry || '').toLowerCase();
     if (c.includes('nigeria')) return `₦${amount.toLocaleString()}`;
     if (c.includes('ghana')) return `GH₵${amount.toLocaleString()}`;

@@ -57,6 +57,7 @@ function CreateEventForm() {
     title: '', description: '', category: '', coverImage: '', teaserVideo: '',
     startDate: '', startTime: '18:00', endDate: '', endTime: '22:00',
     venueName: '', venueAddress: '', venueCity: '', venueCountry: "Côte d'Ivoire",
+    currency: 'XOF',
     isOnline: false, isFree: false,
     tickets: [{ name: 'Standard', description: '', price: '0', quantity: '100' }] as TicketType[],
   });
@@ -404,7 +405,28 @@ function CreateEventForm() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Pays</label>
-                    <select value={f.venueCountry} onChange={e => set('venueCountry', e.target.value)} className={inp_sm}>
+                    <select value={f.venueCountry} onChange={e => {
+                      const country = e.target.value;
+                      set('venueCountry', country);
+                      // Auto-detect currency from country
+                      const c = country.toLowerCase();
+                      let currency = 'XOF';
+                      if (c.includes('nigeria')) currency = 'NGN';
+                      else if (c.includes('ghana')) currency = 'GHS';
+                      else if (c.includes('kenya')) currency = 'KES';
+                      else if (c.includes('afrique du sud') || c.includes('south africa')) currency = 'ZAR';
+                      else if (c.includes('maroc') || c.includes('morocco')) currency = 'MAD';
+                      else if (c.includes('tunisie') || c.includes('tunisia')) currency = 'TND';
+                      else if (c.includes('algérie') || c.includes('algeria')) currency = 'DZD';
+                      else if (c.includes('égypte') || c.includes('egypt')) currency = 'EGP';
+                      else if (c.includes('cameroun') || c.includes('cameroon') || c.includes('gabon') || c.includes('congo')) currency = 'XAF';
+                      else if (c.includes('france') || c.includes('belgique') || c.includes('allemagne') || c.includes('espagne') || c.includes('italie') || c.includes('portugal')) currency = 'EUR';
+                      else if (c.includes('suisse') || c.includes('switzerland')) currency = 'CHF';
+                      else if (c.includes('royaume-uni') || c.includes('united kingdom')) currency = 'GBP';
+                      else if (c.includes('états-unis') || c.includes('united states')) currency = 'USD';
+                      else if (c.includes('canada')) currency = 'CAD';
+                      set('currency', currency);
+                    }} className={inp_sm}>
                       {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
@@ -417,6 +439,54 @@ function CreateEventForm() {
         {/* ÉTAPE 2 */}
         {step === 2 && (
           <div className="space-y-4">
+            {/* Sélecteur de devise */}
+            <div className="p-4 bg-white rounded-xl border border-gray-200">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">💱 Devise des billets</label>
+              <p className="text-xs text-gray-500 mb-3">Choisissez la devise dans laquelle vous vendez vos billets. Elle est automatiquement détectée selon le pays de l&apos;événement.</p>
+              <select
+                value={f.currency}
+                onChange={e => set('currency', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-800 focus:border-[#5B7CFF] outline-none bg-white"
+              >
+                <optgroup label="Afrique de l'Ouest (FCFA)">
+                  <option value="XOF">XOF — Franc CFA (FCFA) — CI, SN, ML, BF, TG, BJ...</option>
+                </optgroup>
+                <optgroup label="Afrique Centrale (FCFA)">
+                  <option value="XAF">XAF — Franc CFA — CM, GA, CG, TD...</option>
+                </optgroup>
+                <optgroup label="Autres devises africaines">
+                  <option value="NGN">NGN — Naira nigérian (₦)</option>
+                  <option value="GHS">GHS — Cedi ghanéen (GH₵)</option>
+                  <option value="KES">KES — Shilling kényan (KSh)</option>
+                  <option value="ZAR">ZAR — Rand sud-africain (R)</option>
+                  <option value="MAD">MAD — Dirham marocain</option>
+                  <option value="TND">TND — Dinar tunisien</option>
+                  <option value="DZD">DZD — Dinar algérien</option>
+                  <option value="EGP">EGP — Livre égyptienne</option>
+                  <option value="ETB">ETB — Birr éthiopien</option>
+                  <option value="GNF">GNF — Franc guinéen</option>
+                </optgroup>
+                <optgroup label="Europe">
+                  <option value="EUR">EUR — Euro (€)</option>
+                  <option value="CHF">CHF — Franc suisse</option>
+                  <option value="GBP">GBP — Livre sterling (£)</option>
+                </optgroup>
+                <optgroup label="Amériques">
+                  <option value="USD">USD — Dollar américain ($)</option>
+                  <option value="CAD">CAD — Dollar canadien (CA$)</option>
+                  <option value="BRL">BRL — Réal brésilien (R$)</option>
+                </optgroup>
+                <optgroup label="Autres">
+                  <option value="AED">AED — Dirham des EAU</option>
+                  <option value="JPY">JPY — Yen japonais (¥)</option>
+                  <option value="INR">INR — Roupie indienne (₹)</option>
+                </optgroup>
+              </select>
+              <p className="text-xs text-[#5B7CFF] mt-2 font-medium">
+                Devise sélectionnée : <strong>{f.currency}</strong> — Pays : {f.venueCountry}
+              </p>
+            </div>
+
             <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-200">
               <div>
                 <p className="font-semibold text-gray-800 text-sm">Événement gratuit</p>

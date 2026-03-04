@@ -40,6 +40,7 @@ export default function EditEventPage() {
     venueAddress: '',
     venueCity: '',
     venueCountry: '',
+    currency: 'XOF',
     venuePostalCode: '',
     isOnline: false,
     streamingUrl: '',
@@ -79,6 +80,7 @@ export default function EditEventPage() {
         venueAddress: event.venueAddress || '',
         venueCity: event.venueCity || '',
         venueCountry: event.venueCountry || '',
+        currency: event.currency || 'XOF',
         venuePostalCode: event.venuePostalCode || '',
         isOnline: event.isOnline || false,
         streamingUrl: event.streamingUrl || '',
@@ -312,6 +314,26 @@ export default function EditEventPage() {
                   <div>
                     <label className={labelCls}>Pays <span className="text-red-500">*</span></label>
                     <input type="text" value={form.venueCountry} onChange={(e) => handleChange('venueCountry', e.target.value)} className={inputCls} placeholder="Côte d'Ivoire" required={!form.isOnline} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">💱 Devise</label>
+                    <select value={form.currency} onChange={(e) => handleChange('currency', e.target.value)} className={inputCls}>
+                      <option value="XOF">XOF — Franc CFA (FCFA) — Afrique de l&apos;Ouest</option>
+                      <option value="XAF">XAF — Franc CFA — Afrique Centrale</option>
+                      <option value="NGN">NGN — Naira nigérian (₦)</option>
+                      <option value="GHS">GHS — Cedi ghanéen (GH₵)</option>
+                      <option value="KES">KES — Shilling kényan (KSh)</option>
+                      <option value="ZAR">ZAR — Rand sud-africain (R)</option>
+                      <option value="MAD">MAD — Dirham marocain</option>
+                      <option value="TND">TND — Dinar tunisien</option>
+                      <option value="DZD">DZD — Dinar algérien</option>
+                      <option value="EGP">EGP — Livre égyptienne</option>
+                      <option value="EUR">EUR — Euro (€)</option>
+                      <option value="CHF">CHF — Franc suisse</option>
+                      <option value="GBP">GBP — Livre sterling (£)</option>
+                      <option value="USD">USD — Dollar américain ($)</option>
+                      <option value="CAD">CAD — Dollar canadien (CA$)</option>
+                    </select>
                   </div>
                   <div>
                     <label className={labelCls}>Code postal</label>
