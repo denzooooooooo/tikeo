@@ -131,7 +131,7 @@ export default function LoginPage() {
   };
 
   const handleOAuthLogin = (provider: string) => {
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
     window.location.href = `${apiUrl}/auth/${provider}`;
   };
 
@@ -326,10 +326,10 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
             </svg>
           </div>
           <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
-            La billetterie<br />de l&apos;Afrique
+            La billetterie<br />mondiale
           </h2>
           <p className="text-lg text-white/80 mb-10 max-w-sm">
-            Découvrez et réservez les meilleurs événements à travers tout le monde entier
+            Découvrez et réservez les meilleurs événements partout dans le monde
           </p>
 
           {/* Stats */}
@@ -355,7 +355,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
           {/* Features */}
           <div className="space-y-3 w-full max-w-sm">
             {[
-              'Paiement en FCFA, NGN, GHS, KES',
+            'Paiement en FCFA, EUR, USD, GBP et plus',
               'Billets QR Code sécurisés',
               'Support multilingue',
             ].map((feature) => (

@@ -2,8 +2,7 @@
  * API Configuration
  */
 export const API_CONFIG = {
-  // Use relative URL to go through Next.js proxy in production
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || '/api/v1',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
