@@ -60,6 +60,9 @@ export class EmailService {
     this.fromEmail = this.configService.get('SMTP_FROM') || 'Tikeo <no-reply@tikeo.co>';
 
     if (smtpHost && smtpPort && smtpUser && smtpPass) {
+      // Force IPv4 to avoid IPv6 issues on Railway/VPS
+      const ipVersion = process.env.SMTP_FORCE_IPV4 === 'true' ? 4 : undefined;
+      
       this.transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,
@@ -68,6 +71,11 @@ export class EmailService {
           user: smtpUser,
           pass: smtpPass,
         },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000,
+        // Force IPv4 only
+        ...(ipVersion && { family: ipVersion }),
       });
 
       this.isConfigured = true;

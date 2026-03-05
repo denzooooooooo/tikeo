@@ -179,9 +179,13 @@ export default function DebugEmailPage() {
             </div>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-              <p className="font-semibold text-yellow-800">⚠️ Pour Gmail:</p>
-              <p className="text-sm">Utilisez un "Mot de passe d'application" (App Password) au lieu de votre mot de passe normal.</p>
-              <p className="text-xs text-yellow-600 mt-1">Configurez-le dans: Google Account → Security → 2-Step Verification → App Passwords</p>
+              <p className="font-semibold text-yellow-800">⚠️ Problème avec Gmail sur Railway:</p>
+              <p className="text-sm">Gmail bloque souvent les connexions depuis des serveurs cloud. Solutions:</p>
+              <ul className="list-disc list-inside text-sm mt-2 space-y-1">
+                <li>1. Utilise un mot de passe d'application (déjà fait)</li>
+                <li>2. Ou utilise <strong>Resend.com</strong> (gratuit, plus fiable)</li>
+                <li>3. Ajoute aussi: <code>SMTP_FORCE_IPV4=true</code></li>
+              </ul>
             </div>
 
             <p className="text-sm">Autres fournisseurs SMTP populaires:</p>
