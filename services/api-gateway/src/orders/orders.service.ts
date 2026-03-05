@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
@@ -22,6 +22,8 @@ export interface CreateOrderDto {
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+  
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
@@ -195,13 +197,21 @@ export class OrdersService {
       }
 
       if (confirmEmail) {
-        // Send order confirmation email (fire and forget)
+        // Send order confirmation email with detailed logging
         this.emailService.sendOrderConfirmationEmail(confirmEmail, {
           orderId: order.id,
           total: 0,
           eventTitle: event.title || 'Événement',
           ticketCount: quantity,
-        }).catch(() => {});
+        }).then(result => {
+          if (result.success) {
+            this.logger.log(`Order confirmation email sent successfully to ${confirmEmail} for order ${order.id} (messageId: ${result.messageId})`);
+          } else {
+            this.logger.error(`Failed to send order confirmation email to ${confirmEmail} for order ${order.id}: ${result.error}`);
+          }
+        }).catch(err => {
+          this.logger.error(`Exception sending order confirmation email to ${confirmEmail} for order ${order.id}: ${err}`);
+        });
 
         const ticketDesign = {
           template: event.ticketDesignTemplate,
@@ -216,6 +226,7 @@ export class OrdersService {
           footerNote: event.ticketDesignFooterNote,
         };
 
+        // Send individual ticket emails with detailed logging
         for (const t of createdTickets) {
           this.emailService.sendTicketEmail(confirmEmail, {
             eventTitle: event.title || 'Événement',
@@ -226,7 +237,15 @@ export class OrdersService {
             ticketId: t.id,
             qrCode: t.qrCode,
             ticketDesign,
-          }).catch(() => {});
+          }).then(result => {
+            if (result.success) {
+              this.logger.log(`Ticket email sent successfully to ${confirmEmail} for ticket ${t.id} (messageId: ${result.messageId})`);
+            } else {
+              this.logger.error(`Failed to send ticket email to ${confirmEmail} for ticket ${t.id}: ${result.error}`);
+            }
+          }).catch(err => {
+            this.logger.error(`Exception sending ticket email to ${confirmEmail} for ticket ${t.id}: ${err}`);
+          });
         }
       }
 

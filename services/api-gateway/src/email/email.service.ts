@@ -80,15 +80,15 @@ export class EmailService {
   private async sendEmail(to: string, subject: string, html: string, text: string) {
     if (this.isConfigured && this.transporter) {
       try {
-        await this.transporter.sendMail({
+        const result = await this.transporter.sendMail({
           to,
           from: this.fromEmail,
           subject,
           html,
           text,
         });
-        this.logger.log('Email sent successfully to ' + to);
-        return { success: true };
+        this.logger.log('Email sent successfully to ' + to + ' (messageId: ' + result.messageId + ')');
+        return { success: true, messageId: result.messageId };
       } catch (error) {
         this.logger.error('Failed to send email to ' + to + ': ' + error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
