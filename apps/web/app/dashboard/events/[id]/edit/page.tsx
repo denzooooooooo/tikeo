@@ -453,6 +453,15 @@ export default function EditEventPage() {
           </div>
         )}
 
+        <div className="mb-6">
+          <Link
+            href={`/dashboard/events/${eventId}/ticket-design`}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-semibold hover:shadow-lg transition-all"
+          >
+            🎨 Ouvrir le studio de design billet
+          </Link>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Informations générales */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
