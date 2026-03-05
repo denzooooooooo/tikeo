@@ -1,16 +1,20 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
-  async register(email: string, password: string, firstName: string, lastName: string) {
+async register(email: string, password: string, firstName: string, lastName: string) {
     const normalizedEmail = email.toLowerCase().trim();
 
     const existingUser = await this.prisma.user.findUnique({
@@ -33,6 +37,14 @@ export class AuthService {
     });
 
     const tokens = await this.generateTokens(user.id, user.email);
+
+    // Send welcome email
+    try {
+      const result = await this.emailService.sendWelcomeEmail(user.email, user.firstName);
+      this.logger.log(`Welcome email sent to ${user.email}: ${result}`);
+    } catch (error) {
+      this.logger.error(`Failed to send welcome email to ${user.email}:`, error);
+    }
 
     return {
       user: {

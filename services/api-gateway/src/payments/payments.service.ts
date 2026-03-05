@@ -167,12 +167,22 @@ export class PaymentsService implements OnModuleInit {
         });
 
         if (user && event) {
-          this.emailService.sendOrderConfirmationEmail(user.email, {
-            orderId: order.id,
-            total: order.total,
-            eventTitle: event.title,
-            ticketCount: order.OrderItem.reduce((sum, i) => sum + i.quantity, 0),
-          }).catch(() => {});
+          try {
+            const result = await this.emailService.sendOrderConfirmationEmail(user.email, {
+              orderId: order.id,
+              total: order.total,
+              eventTitle: event.title,
+              ticketCount: order.OrderItem.reduce((sum, i) => sum + i.quantity, 0),
+            });
+            
+            if (result.success) {
+              this.logger.log(`Order confirmation email sent successfully to ${user.email} for order ${order.id} (messageId: ${result.messageId})`);
+            } else {
+              this.logger.error(`Failed to send order confirmation email to ${user.email} for order ${order.id}: ${result.error}`);
+            }
+          } catch (err) {
+            this.logger.error(`Exception sending order confirmation email to ${user.email} for order ${order.id}: ${err}`);
+          }
 
           const ticketDesign = {
             template: (event as any).ticketDesignTemplate,
@@ -195,16 +205,26 @@ export class PaymentsService implements OnModuleInit {
             const itemTickets = createdTicketsByType.get(item.ticketTypeId) || [];
 
             for (const t of itemTickets) {
-              this.emailService.sendTicketEmail(user.email, {
-                eventTitle: event.title,
-                eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
-                venue: event.venueName || '',
-                ticketType: itemTicketType?.name || 'Billet',
-                orderId: order.id,
-                ticketId: t.id,
-                qrCode: t.qrCode,
-                ticketDesign,
-              }).catch(() => {});
+              try {
+                const result = await this.emailService.sendTicketEmail(user.email, {
+                  eventTitle: event.title,
+                  eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
+                  venue: event.venueName || '',
+                  ticketType: itemTicketType?.name || 'Billet',
+                  orderId: order.id,
+                  ticketId: t.id,
+                  qrCode: t.qrCode,
+                  ticketDesign,
+                });
+                
+                if (result.success) {
+                  this.logger.log(`Ticket email sent successfully to ${user.email} for ticket ${t.id} (messageId: ${result.messageId})`);
+                } else {
+                  this.logger.error(`Failed to send ticket email to ${user.email} for ticket ${t.id}: ${result.error}`);
+                }
+              } catch (err) {
+                this.logger.error(`Exception sending ticket email to ${user.email} for ticket ${t.id}: ${err}`);
+              }
             }
           }
         }

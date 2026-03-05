@@ -198,20 +198,22 @@ export class OrdersService {
 
       if (confirmEmail) {
         // Send order confirmation email with detailed logging
-        this.emailService.sendOrderConfirmationEmail(confirmEmail, {
-          orderId: order.id,
-          total: 0,
-          eventTitle: event.title || 'Événement',
-          ticketCount: quantity,
-        }).then(result => {
+        try {
+          const result = await this.emailService.sendOrderConfirmationEmail(confirmEmail, {
+            orderId: order.id,
+            total: 0,
+            eventTitle: event.title || 'Événement',
+            ticketCount: quantity,
+          });
+          
           if (result.success) {
             this.logger.log(`Order confirmation email sent successfully to ${confirmEmail} for order ${order.id} (messageId: ${result.messageId})`);
           } else {
             this.logger.error(`Failed to send order confirmation email to ${confirmEmail} for order ${order.id}: ${result.error}`);
           }
-        }).catch(err => {
+        } catch (err) {
           this.logger.error(`Exception sending order confirmation email to ${confirmEmail} for order ${order.id}: ${err}`);
-        });
+        }
 
         const ticketDesign = {
           template: event.ticketDesignTemplate,
@@ -228,24 +230,26 @@ export class OrdersService {
 
         // Send individual ticket emails with detailed logging
         for (const t of createdTickets) {
-          this.emailService.sendTicketEmail(confirmEmail, {
-            eventTitle: event.title || 'Événement',
-            eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
-            venue: event.venueName || '',
-            ticketType: ticketType.name,
-            orderId: order.id,
-            ticketId: t.id,
-            qrCode: t.qrCode,
-            ticketDesign,
-          }).then(result => {
+          try {
+            const result = await this.emailService.sendTicketEmail(confirmEmail, {
+              eventTitle: event.title || 'Événement',
+              eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
+              venue: event.venueName || '',
+              ticketType: ticketType.name,
+              orderId: order.id,
+              ticketId: t.id,
+              qrCode: t.qrCode,
+              ticketDesign,
+            });
+            
             if (result.success) {
               this.logger.log(`Ticket email sent successfully to ${confirmEmail} for ticket ${t.id} (messageId: ${result.messageId})`);
             } else {
               this.logger.error(`Failed to send ticket email to ${confirmEmail} for ticket ${t.id}: ${result.error}`);
             }
-          }).catch(err => {
+          } catch (err) {
             this.logger.error(`Exception sending ticket email to ${confirmEmail} for ticket ${t.id}: ${err}`);
-          });
+          }
         }
       }
 
