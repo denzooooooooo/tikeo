@@ -181,8 +181,8 @@ export default function DebugEmailPage() {
             
             <div className="bg-white rounded-xl p-4 overflow-x-auto">
               <code className="text-sm text-gray-700">
-                RESEND_API_KEY=re_xxxxxxxxxxxxx<br/>
-                SMTP_FROM=Tikeo <onboarding@resend.dev>
+                RESEND_API_KEY=re_xxxxxxxxxxxxx<br />
+                SMTP_FROM={"Tikeo <onboarding@resend.dev>"}
               </code>
             </div>
 
