@@ -45,6 +45,16 @@ interface Ticket {
       venueCity: string;
       venueCountry?: string;
       coverImage?: string;
+      ticketDesignTemplate?: string | null;
+      ticketDesignBackgroundUrl?: string | null;
+      ticketDesignPrimaryColor?: string | null;
+      ticketDesignSecondaryColor?: string | null;
+      ticketDesignTextColor?: string | null;
+      ticketDesignCustomTitle?: string | null;
+      ticketDesignFooterNote?: string | null;
+      ticketDesignShowQr?: boolean | null;
+      ticketDesignShowSeat?: boolean | null;
+      ticketDesignShowTerms?: boolean | null;
     };
   };
   ticketType?: { name: string; price: number; };
@@ -132,10 +142,24 @@ function TicketModal({ ticket, onClose }: { ticket: Ticket; onClose: () => void 
 
         {/* QR Code */}
         <div className="p-5">
-          <div className="flex justify-center mb-4">
-            <div className="w-48 h-48 bg-white border-2 border-gray-200 rounded-xl p-2 flex items-center justify-center shadow-sm">
-              <img src={qrUrl} alt="QR Code billet" className="w-full h-full object-contain" />
-            </div>
+          <div
+            className="rounded-2xl p-4 mb-4"
+            style={{
+              background: `linear-gradient(135deg, ${event?.ticketDesignPrimaryColor || '#5B7CFF'} 0%, ${event?.ticketDesignSecondaryColor || '#7B61FF'} 100%)`,
+              color: event?.ticketDesignTextColor || '#FFFFFF',
+            }}
+          >
+            <p className="text-xs opacity-80 mb-1">{event?.ticketDesignTemplate || 'CLASSIC'}</p>
+            <p className="font-bold text-base">{event?.ticketDesignCustomTitle || 'Billet officiel'}</p>
+            <p className="text-sm opacity-90">{event?.title || 'Billet'}</p>
+
+            {(event?.ticketDesignShowQr ?? true) && (
+              <div className="flex justify-center mt-4">
+                <div className="w-44 h-44 bg-white border-2 border-gray-200 rounded-xl p-2 flex items-center justify-center shadow-sm">
+                  <img src={qrUrl} alt="QR Code billet" className="w-full h-full object-contain" />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="text-center mb-4">
@@ -164,6 +188,12 @@ function TicketModal({ ticket, onClose }: { ticket: Ticket; onClose: () => void 
                 </div>
               )}
             </div>
+          )}
+
+          {(event?.ticketDesignShowTerms ?? true) && (
+            <p className="text-xs text-gray-500 mb-3">
+              {event?.ticketDesignFooterNote || 'Merci de présenter ce billet à l’entrée.'}
+            </p>
           )}
 
           {/* Actions */}

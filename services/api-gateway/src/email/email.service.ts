@@ -96,11 +96,11 @@ export class EmailService {
       }
     }
 
-    this.logger.log('=== EMAIL (Not Sent - SMTP Not Configured) ===');
-    this.logger.log('To: ' + to);
-    this.logger.log('From: ' + this.fromEmail);
-    this.logger.log('Subject: ' + subject);
-    return { success: true, dev: true };
+    this.logger.error('=== EMAIL NOT SENT (SMTP NOT CONFIGURED) ===');
+    this.logger.error('To: ' + to);
+    this.logger.error('From: ' + this.fromEmail);
+    this.logger.error('Subject: ' + subject);
+    return { success: false, error: 'SMTP_NOT_CONFIGURED' };
   }
 
   private getEmailHeader(title: string): string {
