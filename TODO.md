@@ -1,40 +1,30 @@
-# Scanner Improvements TODO
+# Ticketing reliability & design persistence TODO
 
-## Steps
+## 1) SMTP / email reliability
+- [x] Remove insecure hardcoded SMTP fallbacks in `services/api-gateway/src/email/email.service.ts`
+- [ ] Require explicit SMTP config and improve error logging
+- [ ] Add contextual logs for ticket/order email sends
 
-- [x] 1. Update `tickets.service.ts` — SSE Subject, ownership check, scannedBy, auth
-- [x] 2. Update `tickets.controller.ts` — JWT guard on validate, SSE endpoint
-- [x] 3. Redesign `scanner/page.tsx` — Camera scan, SSE, JWT, improved UI
-- [x] 4. Extract `useScannerLogic.ts` — hook with all logic
+## 2) Ensure email tickets use real created tickets
+- [ ] Update order/payment flows to fetch created tickets and pass full ticket payload to email service
+- [ ] Include ticket ids and exact qrCode values in email payload
 
----
+## 3) QR consistency across purchase/email/scanner
+- [ ] Generate and embed QR image in ticket email from the same `qrCode` stored in DB
+- [ ] Ensure scanner keeps validating the same exact value (no format drift)
 
-# Guest Checkout TODO
+## 4) Apply event ticket design customizations in email
+- [ ] Use event ticket design fields when rendering ticket email HTML
+- [ ] Respect show/hide flags (QR/seat/terms) in email rendering
+- [ ] Keep robust fallback if no custom design is set
 
-## Objectif
-Permettre à un client d'acheter un billet sans être connecté, tout en collectant ses informations personnelles (prénom, nom, email, téléphone).
+## 5) Persist advanced design fields for reuse tomorrow
+- [ ] Verify schema supports advanced design fields
+- [ ] Update backend update/read mapping for advanced fields if needed
+- [ ] Update frontend save/load in `apps/web/app/dashboard/events/[id]/ticket-design/page.tsx`
 
-## Étapes
-
-- [x] 1. Modifier `schema.prisma` — rendre `Order.userId` et `Ticket.userId` optionnels, ajouter `guestEmail` et `guestPhone` sur `Order`
-- [x] 2. Modifier `orders.service.ts` — accepter `userId: null` pour les invités, valider `guestInfo`, stocker les infos invité
-- [x] 3. Modifier `orders.controller.ts` — remplacer `JwtAuthGuard` par `OptionalJwtAuthGuard` sur `POST /orders`
-- [x] 4. Modifier `payments.controller.ts` — remplacer `JwtAuthGuard` par `OptionalJwtAuthGuard` sur `create-payment-intent` et `confirm-payment`
-- [x] 5. Modifier `checkout/page.tsx` — supprimer `<ProtectedRoute>`, ajouter formulaire infos invité, adapter l'appel API
-
----
-
-# IONOS + Ticket Design TODO
-
-## Objectif
-Configurer envoi email via IONOS (expéditeur affiché Tikeoh) + permettre la personnalisation design billet par organisateur.
-
-## Étapes
-
-- [ ] 1. Remplacer SendGrid par SMTP IONOS dans `email.service.ts`
-- [ ] 2. Ajouter variables SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`) et fallback robuste
-- [ ] 3. Étendre `Event` dans `schema.prisma` avec config design billet (template, image, couleurs, textes)
-- [ ] 4. Exposer/mettre à jour la config design billet dans create/update event backend
-- [ ] 5. Ajouter UI de personnalisation design billet dans création événement
-- [ ] 6. Ajouter UI de personnalisation design billet dans édition événement
-- [ ] 7. Adapter génération/rendu email billet pour inclure le design choisi
+## 6) Validation
+- [ ] Run targeted checks for free and paid order flows
+- [ ] Confirm ticket visible in `/tickets`
+- [ ] Confirm received email contains expected customized content and matching QR
+- [ ] Confirm previously saved design reloads correctly

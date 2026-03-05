@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import * as QRCode from 'qrcode';
 
 interface TicketData {
   eventTitle: string;
@@ -8,6 +9,20 @@ interface TicketData {
   venue: string;
   ticketType: string;
   orderId: string;
+  qrCode?: string;
+  ticketId?: string;
+  ticketDesign?: {
+    template?: string | null;
+    backgroundUrl?: string | null;
+    primaryColor?: string | null;
+    secondaryColor?: string | null;
+    textColor?: string | null;
+    showQr?: boolean | null;
+    showSeat?: boolean | null;
+    showTerms?: boolean | null;
+    customTitle?: string | null;
+    footerNote?: string | null;
+  };
 }
 
 interface EventData {
@@ -38,11 +53,11 @@ export class EmailService {
   private transporter: nodemailer.Transporter | null = null;
 
   constructor(private configService: ConfigService) {
-    const smtpHost = this.configService.get('SMTP_HOST') || 'smtp.ionos.fr';
+    const smtpHost = this.configService.get('SMTP_HOST');
     const smtpPort = Number(this.configService.get('SMTP_PORT') || 587);
-    const smtpUser = this.configService.get('SMTP_USER') || 'alan@carrepremium.com';
-    const smtpPass = this.configService.get('SMTP_PASS') || 'Alanremium';
-    this.fromEmail = this.configService.get('SMTP_FROM') || 'Tikeoh <alan@carrepremium.com>';
+    const smtpUser = this.configService.get('SMTP_USER');
+    const smtpPass = this.configService.get('SMTP_PASS');
+    this.fromEmail = this.configService.get('SMTP_FROM') || 'Tikeo <no-reply@tikeo.co>';
 
     if (smtpHost && smtpPort && smtpUser && smtpPass) {
       this.transporter = nodemailer.createTransport({
@@ -58,7 +73,7 @@ export class EmailService {
       this.isConfigured = true;
       this.logger.log(`SMTP email service initialized (${smtpHost}:${smtpPort})`);
     } else {
-      this.logger.warn('SMTP config incomplete - emails will be logged only');
+      this.logger.error('SMTP config incomplete - emails disabled (set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS).');
     }
   }
 
@@ -173,20 +188,39 @@ export class EmailService {
 
   async sendTicketEmail(email: string, ticketData: TicketData) {
     const baseUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
-    
+
+    const qrData = ticketData.qrCode || '';
+    const qrImage = qrData ? await QRCode.toDataURL(qrData) : '';
+    const design = ticketData.ticketDesign || {};
+    const primary = design.primaryColor || '#5B7CFF';
+    const secondary = design.secondaryColor || '#7B61FF';
+    const customTitle = design.customTitle || 'Billet officiel';
+    const footerNote = design.footerNote || 'Merci de présenter ce billet à l’entrée.';
+    const showQr = design.showQr !== false;
+    const showTerms = design.showTerms !== false;
+
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#f5f5f5;">' +
       '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
-      this.getEmailHeader('Vos billets pour ' + ticketData.eventTitle) +
+      '<div style="background: linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%); padding: 30px; text-align: center; color: white;">' +
+      '<h1 style="margin:0;font-size:28px;">Tikeo</h1>' +
+      '<p style="margin:8px 0 0 0;opacity:.95;">' + customTitle + '</p></div>' +
       '<td style="padding:40px 30px;">' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Vos billets</h2>' +
       '<div style="background:#f5f5f5;border-radius:8px;padding:20px;margin:20px 0;">' +
       '<p style="margin:5px 0;"><strong>Date:</strong> ' + ticketData.eventDate + '</p>' +
       '<p style="margin:5px 0;"><strong>Lieu:</strong> ' + ticketData.venue + '</p>' +
       '<p style="margin:5px 0;"><strong>Type:</strong> ' + ticketData.ticketType + '</p>' +
-      '<p style="margin:5px 0;"><strong>Commande:</strong> ' + ticketData.orderId + '</p></div>' +
+      '<p style="margin:5px 0;"><strong>Commande:</strong> ' + ticketData.orderId + '</p>' +
+      (ticketData.ticketId ? '<p style="margin:5px 0;"><strong>Billet ID:</strong> ' + ticketData.ticketId + '</p>' : '') +
+      (showQr && ticketData.qrCode ? '<p style="margin:5px 0;word-break:break-all;"><strong>QR data:</strong> ' + ticketData.qrCode + '</p>' : '') +
+      '</div>' +
       '<p style="color:#666;font-size:16px;">Vous pouvez accéder à vos billets dans la section "Mes billets" de votre compte.</p>' +
       '<p style="color:#666;font-size:16px;">Pensez à arriver au moins 30 minutes avant le début!</p>' +
+      (showQr && qrImage
+        ? '<div style="text-align:center;margin:20px 0;"><img src="' + qrImage + '" alt="QR Code billet" style="width:180px;height:180px;border:1px solid #eee;padding:8px;border-radius:8px;background:#fff;" /></div>'
+        : '') +
+      (showTerms ? '<p style="color:#777;font-size:12px;">' + footerNote + '</p>' : '') +
       this.getButton(baseUrl + '/tickets', 'Voir mes billets') +
       '</td>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';

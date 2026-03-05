@@ -112,6 +112,7 @@ export class PaymentsService implements OnModuleInit {
           await this.redis.del(`event:slug:${eventData.slug}`);
         }
 
+        const createdTicketsByType = new Map<string, Array<{ id: string; qrCode: string }>>();
         for (const item of order.OrderItem) {
           // ✅ Decrement available count for paid tickets
           await this.prisma.ticketType.update({
@@ -119,8 +120,9 @@ export class PaymentsService implements OnModuleInit {
             data: { available: { decrement: item.quantity }, sold: { increment: item.quantity } },
           });
 
+          const createdTickets: Array<{ id: string; qrCode: string }> = [];
           for (let i = 0; i < item.quantity; i++) {
-            await this.prisma.ticket.create({
+            const createdTicket = await this.prisma.ticket.create({
               data: {
                 orderId: order.id,
                 eventId: order.eventId,
@@ -133,8 +135,11 @@ export class PaymentsService implements OnModuleInit {
                 fees: 0,
                 total: item.price,
               } as any,
+              select: { id: true, qrCode: true },
             });
+            createdTickets.push(createdTicket);
           }
+          createdTicketsByType.set(item.ticketTypeId, createdTickets);
         }
 
         // Send confirmation email (fire and forget)
@@ -144,14 +149,22 @@ export class PaymentsService implements OnModuleInit {
         });
         const event = eventData ?? await this.prisma.event.findUnique({
           where: { id: order.eventId },
-          select: { title: true, startDate: true, venueName: true },
+          select: {
+            title: true,
+            startDate: true,
+            venueName: true,
+            ticketDesignTemplate: true,
+            ticketDesignBackgroundUrl: true,
+            ticketDesignPrimaryColor: true,
+            ticketDesignSecondaryColor: true,
+            ticketDesignTextColor: true,
+            ticketDesignShowQr: true,
+            ticketDesignShowSeat: true,
+            ticketDesignShowTerms: true,
+            ticketDesignCustomTitle: true,
+            ticketDesignFooterNote: true,
+          },
         });
-        const ticketType = order.OrderItem[0]
-          ? await this.prisma.ticketType.findUnique({
-              where: { id: order.OrderItem[0].ticketTypeId },
-              select: { name: true },
-            })
-          : null;
 
         if (user && event) {
           this.emailService.sendOrderConfirmationEmail(user.email, {
@@ -161,14 +174,38 @@ export class PaymentsService implements OnModuleInit {
             ticketCount: order.OrderItem.reduce((sum, i) => sum + i.quantity, 0),
           }).catch(() => {});
 
-          if (ticketType) {
-            this.emailService.sendTicketEmail(user.email, {
-              eventTitle: event.title,
-              eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
-              venue: event.venueName || '',
-              ticketType: ticketType.name,
-              orderId: order.id,
-            }).catch(() => {});
+          const ticketDesign = {
+            template: (event as any).ticketDesignTemplate,
+            backgroundUrl: (event as any).ticketDesignBackgroundUrl,
+            primaryColor: (event as any).ticketDesignPrimaryColor,
+            secondaryColor: (event as any).ticketDesignSecondaryColor,
+            textColor: (event as any).ticketDesignTextColor,
+            showQr: (event as any).ticketDesignShowQr,
+            showSeat: (event as any).ticketDesignShowSeat,
+            showTerms: (event as any).ticketDesignShowTerms,
+            customTitle: (event as any).ticketDesignCustomTitle,
+            footerNote: (event as any).ticketDesignFooterNote,
+          };
+
+          for (const item of order.OrderItem) {
+            const itemTicketType = await this.prisma.ticketType.findUnique({
+              where: { id: item.ticketTypeId },
+              select: { name: true },
+            });
+            const itemTickets = createdTicketsByType.get(item.ticketTypeId) || [];
+
+            for (const t of itemTickets) {
+              this.emailService.sendTicketEmail(user.email, {
+                eventTitle: event.title,
+                eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
+                venue: event.venueName || '',
+                ticketType: itemTicketType?.name || 'Billet',
+                orderId: order.id,
+                ticketId: t.id,
+                qrCode: t.qrCode,
+                ticketDesign,
+              }).catch(() => {});
+            }
           }
         }
 

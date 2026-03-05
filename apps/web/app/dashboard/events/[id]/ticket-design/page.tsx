@@ -185,6 +185,14 @@ export default function TicketDesignStudioPage() {
           ticketDesignShowQr: event.ticketDesignShowQr ?? true,
           ticketDesignShowSeat: event.ticketDesignShowSeat ?? true,
           ticketDesignShowTerms: event.ticketDesignShowTerms ?? true,
+          fontFamily: event.ticketDesignFontFamily || INITIAL_FORM.fontFamily,
+          titleSize: event.ticketDesignTitleSize ?? INITIAL_FORM.titleSize,
+          contentSize: event.ticketDesignContentSize ?? INITIAL_FORM.contentSize,
+          titleWeight: event.ticketDesignTitleWeight ?? INITIAL_FORM.titleWeight,
+          letterSpacing: event.ticketDesignLetterSpacing ?? INITIAL_FORM.letterSpacing,
+          overlayOpacity: event.ticketDesignOverlayOpacity ?? INITIAL_FORM.overlayOpacity,
+          borderRadius: event.ticketDesignBorderRadius ?? INITIAL_FORM.borderRadius,
+          shadowIntensity: event.ticketDesignShadowIntensity ?? INITIAL_FORM.shadowIntensity,
         };
 
         setForm(loaded);
@@ -240,6 +248,14 @@ export default function TicketDesignStudioPage() {
           ticketDesignShowQr: form.ticketDesignShowQr,
           ticketDesignShowSeat: form.ticketDesignShowSeat,
           ticketDesignShowTerms: form.ticketDesignShowTerms,
+          ticketDesignFontFamily: form.fontFamily,
+          ticketDesignTitleSize: form.titleSize,
+          ticketDesignContentSize: form.contentSize,
+          ticketDesignTitleWeight: form.titleWeight,
+          ticketDesignLetterSpacing: form.letterSpacing,
+          ticketDesignOverlayOpacity: form.overlayOpacity,
+          ticketDesignBorderRadius: form.borderRadius,
+          ticketDesignShadowIntensity: form.shadowIntensity,
         }),
       });
 

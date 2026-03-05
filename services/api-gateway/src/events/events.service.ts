@@ -473,6 +473,14 @@ export class EventsService {
         ticketDesignShowTerms: eventData.ticketDesignShowTerms ?? true,
         ticketDesignCustomTitle: eventData.ticketDesignCustomTitle || null,
         ticketDesignFooterNote: eventData.ticketDesignFooterNote || null,
+        ticketDesignFontFamily: eventData.ticketDesignFontFamily || null,
+        ticketDesignTitleSize: eventData.ticketDesignTitleSize ?? null,
+        ticketDesignContentSize: eventData.ticketDesignContentSize ?? null,
+        ticketDesignTitleWeight: eventData.ticketDesignTitleWeight ?? null,
+        ticketDesignLetterSpacing: eventData.ticketDesignLetterSpacing ?? null,
+        ticketDesignOverlayOpacity: eventData.ticketDesignOverlayOpacity ?? null,
+        ticketDesignBorderRadius: eventData.ticketDesignBorderRadius ?? null,
+        ticketDesignShadowIntensity: eventData.ticketDesignShadowIntensity || null,
         ticketTypes: ticketTypes?.length
           ? {
               create: ticketTypes.map((tt: any) => ({
@@ -526,6 +534,8 @@ export class EventsService {
     if (eventData.ticketDesignPrimaryColor === '') eventData.ticketDesignPrimaryColor = '#5B7CFF';
     if (eventData.ticketDesignSecondaryColor === '') eventData.ticketDesignSecondaryColor = '#7B61FF';
     if (eventData.ticketDesignTextColor === '') eventData.ticketDesignTextColor = '#111827';
+    if (eventData.ticketDesignFontFamily === '') eventData.ticketDesignFontFamily = null;
+    if (eventData.ticketDesignShadowIntensity === '') eventData.ticketDesignShadowIntensity = null;
 
     const updated = await this.prisma.event.update({
       where: { id },

@@ -177,6 +177,14 @@ model Event {
   ticketDesignShowTerms     Boolean @default(true)
   ticketDesignCustomTitle   String?
   ticketDesignFooterNote    String?
+  ticketDesignFontFamily    String?
+  ticketDesignTitleSize     Int?
+  ticketDesignContentSize   Int?
+  ticketDesignTitleWeight   Int?
+  ticketDesignLetterSpacing Float?
+  ticketDesignOverlayOpacity Float?
+  ticketDesignBorderRadius  Int?
+  ticketDesignShadowIntensity String?
 
   // Relations
   images         EventImage[]

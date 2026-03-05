@@ -156,8 +156,9 @@ export class OrdersService {
       await this.redis.del(`event:${eventId}`);
       await this.redis.del(`event:slug:${event.slug}`);
 
+      const createdTickets: Array<{ id: string; qrCode: string }> = [];
       for (let i = 0; i < quantity; i++) {
-        await this.prisma.ticket.create({
+        const createdTicket = await this.prisma.ticket.create({
           data: {
             orderId: order.id,
             eventId,
@@ -170,7 +171,9 @@ export class OrdersService {
             fees: 0,
             total: 0,
           } as any,
+          select: { id: true, qrCode: true },
         });
+        createdTickets.push(createdTicket);
       }
 
       // Déterminer l'email de confirmation (utilisateur connecté ou invité)
@@ -200,14 +203,31 @@ export class OrdersService {
           ticketCount: quantity,
         }).catch(() => {});
 
-        // Send ticket email
-        this.emailService.sendTicketEmail(confirmEmail, {
-          eventTitle: event.title || 'Événement',
-          eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
-          venue: event.venueName || '',
-          ticketType: ticketType.name,
-          orderId: order.id,
-        }).catch(() => {});
+        const ticketDesign = {
+          template: event.ticketDesignTemplate,
+          backgroundUrl: event.ticketDesignBackgroundUrl,
+          primaryColor: event.ticketDesignPrimaryColor,
+          secondaryColor: event.ticketDesignSecondaryColor,
+          textColor: event.ticketDesignTextColor,
+          showQr: event.ticketDesignShowQr,
+          showSeat: event.ticketDesignShowSeat,
+          showTerms: event.ticketDesignShowTerms,
+          customTitle: event.ticketDesignCustomTitle,
+          footerNote: event.ticketDesignFooterNote,
+        };
+
+        for (const t of createdTickets) {
+          this.emailService.sendTicketEmail(confirmEmail, {
+            eventTitle: event.title || 'Événement',
+            eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
+            venue: event.venueName || '',
+            ticketType: ticketType.name,
+            orderId: order.id,
+            ticketId: t.id,
+            qrCode: t.qrCode,
+            ticketDesign,
+          }).catch(() => {});
+        }
       }
 
       // 🔔 Notification en app uniquement pour les utilisateurs connectés
