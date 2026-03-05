@@ -245,14 +245,16 @@ export class PaymentsService implements OnModuleInit {
         }
       }
 
-      // 🔔 Real notification: payment confirmed
-      this.notificationsService.createNotification({
-        userId: order.userId,
-        type: 'TICKET_PURCHASED',
-        title: '🎫 Paiement confirmé !',
-        message: `Votre paiement pour "${event?.title || 'l\'événement'}" a été accepté. Vos billets sont prêts !`,
-        data: { orderId: order.id, eventId: order.eventId },
-      }).catch(() => {});
+      // 🔔 Real notification: payment confirmed (connected users only)
+      if (order.userId) {
+        this.notificationsService.createNotification({
+          userId: order.userId,
+          type: 'TICKET_PURCHASED',
+          title: '🎫 Paiement confirmé !',
+          message: `Votre paiement pour "${event?.title || 'l\'événement'}" a été accepté. Vos billets sont prêts !`,
+          data: { orderId: order.id, eventId: order.eventId },
+        }).catch(() => {});
+      }
 
       return { success: true, payment };
     }
@@ -313,7 +315,7 @@ export class PaymentsService implements OnModuleInit {
       where: { id: payment.orderId },
       select: { userId: true, eventId: true, event: { select: { title: true } } },
     });
-    if (refundedOrderData) {
+    if (refundedOrderData?.userId) {
       this.notificationsService.createNotification({
         userId: refundedOrderData.userId,
         type: 'REFUND_PROCESSED',
