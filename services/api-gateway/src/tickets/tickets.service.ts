@@ -75,9 +75,31 @@ export class TicketsService {
    * - ORGANIZER can only validate tickets belonging to their own events
    */
   async validateTicket(qrCode: string, userId: string, userRole: string) {
+    const normalizedQr = (qrCode || '').trim();
+
+    if (!normalizedQr) {
+      this.scanEventSubject.next({
+        type: 'INVALID',
+        qrCode: normalizedQr,
+        scannedByUserId: userId,
+        timestamp: new Date(),
+      });
+      return { valid: false, message: 'QR code is required' };
+    }
+
+    if (!normalizedQr.startsWith('TKT-')) {
+      this.scanEventSubject.next({
+        type: 'INVALID',
+        qrCode: normalizedQr,
+        scannedByUserId: userId,
+        timestamp: new Date(),
+      });
+      return { valid: false, message: 'Invalid QR code format' };
+    }
+
     // 1. Find ticket with full event + organizer info
     const ticket = await this.prisma.ticket.findUnique({
-      where: { qrCode },
+      where: { qrCode: normalizedQr },
       include: {
         event: {
           include: {
@@ -102,7 +124,7 @@ export class TicketsService {
     if (!ticket) {
       this.scanEventSubject.next({
         type: 'INVALID',
-        qrCode,
+        qrCode: normalizedQr,
         scannedByUserId: userId,
         timestamp: new Date(),
       });
@@ -114,7 +136,7 @@ export class TicketsService {
       if (userRole !== 'ORGANIZER') {
         this.scanEventSubject.next({
           type: 'UNAUTHORIZED',
-          qrCode,
+          qrCode: normalizedQr,
           scannedByUserId: userId,
           timestamp: new Date(),
         });
@@ -123,7 +145,7 @@ export class TicketsService {
       if (ticket.event.organizer.userId !== userId) {
         this.scanEventSubject.next({
           type: 'UNAUTHORIZED',
-          qrCode,
+          qrCode: normalizedQr,
           ticketId: ticket.id,
           eventTitle: ticket.event.title,
           scannedByUserId: userId,
@@ -140,7 +162,7 @@ export class TicketsService {
     if (ticket.status !== 'VALID') {
       this.scanEventSubject.next({
         type: 'INVALID',
-        qrCode,
+        qrCode: normalizedQr,
         ticketId: ticket.id,
         userName: `${ticket.user.firstName} ${ticket.user.lastName}`,
         eventTitle: ticket.event.title,
@@ -154,7 +176,7 @@ export class TicketsService {
     if (ticket.scannedAt) {
       this.scanEventSubject.next({
         type: 'ALREADY_SCANNED',
-        qrCode,
+        qrCode: normalizedQr,
         ticketId: ticket.id,
         userName: `${ticket.user.firstName} ${ticket.user.lastName}`,
         eventTitle: ticket.event.title,
@@ -189,7 +211,7 @@ export class TicketsService {
 
     this.scanEventSubject.next({
       type: 'VALID',
-      qrCode,
+      qrCode: normalizedQr,
       ticketId: ticket.id,
       userName: `${ticket.user.firstName} ${ticket.user.lastName}`,
       eventTitle: ticket.event.title,

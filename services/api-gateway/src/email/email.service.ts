@@ -97,15 +97,20 @@ export class EmailService {
       return { success: false, error: 'EMAIL_SERVICE_NOT_CONFIGURED' };
     }
 
-    // 使用 Resend API
+    const replyTo = this.configService.get('SMTP_REPLY_TO');
+
     if (this.resend) {
       try {
         const result = await this.resend.emails.send({
           from: this.fromEmail,
           to: [to],
-          subject: subject,
-          html: html,
-          text: text,
+          subject,
+          html,
+          text,
+          ...(replyTo ? { replyTo } : {}),
+          headers: {
+            'X-Entity-Ref-ID': `tikeo-${Date.now()}`,
+          },
         });
 
         if (result.error) {
@@ -122,7 +127,6 @@ export class EmailService {
       }
     }
 
-    // SMTP 回退 (如果 Resend 不可用)
     this.logger.error('=== SMTP NOT IMPLEMENTED IN NEW VERSION ===');
     return { success: false, error: 'SMTP_FALLBACK_NOT_IMPLEMENTED' };
   }
@@ -223,28 +227,38 @@ export class EmailService {
     const showQr = design.showQr !== false;
     const showTerms = design.showTerms !== false;
 
-    const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#f5f5f5;">' +
-      '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
-      '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
-      '<tr><td style="background: linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%); padding: 30px; text-align: center; color: white;">' +
-      '<h1 style="margin:0;font-size:28px;">Tikeo</h1>' +
-      '<p style="margin:8px 0 0 0;opacity:.95;">' + customTitle + '</p></td></tr>' +
-      '<tr><td style="padding:40px 30px;">' +
-      '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Vos billets</h2>' +
-      '<div style="background:#f5f5f5;border-radius:8px;padding:20px;margin:20px 0;">' +
-      '<p style="margin:5px 0;"><strong>Date:</strong> ' + ticketData.eventDate + '</p>' +
-      '<p style="margin:5px 0;"><strong>Lieu:</strong> ' + ticketData.venue + '</p>' +
-      '<p style="margin:5px 0;"><strong>Type:</strong> ' + ticketData.ticketType + '</p>' +
-      '<p style="margin:5px 0;"><strong>Commande:</strong> ' + ticketData.orderId + '</p>' +
-      (ticketData.ticketId ? '<p style="margin:5px 0;"><strong>Billet ID:</strong> ' + ticketData.ticketId + '</p>' : '') +
-      (showQr && ticketData.qrCode ? '<p style="margin:5px 0;word-break:break-all;"><strong>QR data:</strong> ' + ticketData.qrCode + '</p>' : '') +
-      '</div>' +
-      '<p style="color:#666;font-size:16px;">Vous pouvez accéder à vos billets dans la section "Mes billets" de votre compte.</p>' +
-      '<p style="color:#666;font-size:16px;">Pensez à arriver au moins 30 minutes avant le début!</p>' +
+    const backgroundImage = design.backgroundUrl
+      ? 'background-image:url(\'' + design.backgroundUrl + '\');background-size:cover;background-position:center;'
+      : '';
+    const textColor = design.textColor || '#FFFFFF';
+
+    const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#0f1220;">' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1220;padding:24px 12px;"><tr><td align="center">' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#13172b;border:1px solid #202642;border-radius:16px;overflow:hidden;">' +
+      '<tr><td style="background: linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%); padding: 26px 28px; text-align: left; color: white;">' +
+      '<h1 style="margin:0;font-size:26px;line-height:1.2;">🎫 ' + customTitle + '</h1>' +
+      '<p style="margin:8px 0 0 0;opacity:.95;font-size:13px;">Billet officiel Tikeo • Présentez ce QR code à l’entrée</p></td></tr>' +
+      '<tr><td style="padding:22px;">' +
+      '<div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08);' + backgroundImage + '">' +
+      '<div style="background:rgba(8,10,16,.72);padding:20px;color:' + textColor + ';">' +
+      '<h2 style="margin:0 0 12px 0;font-size:22px;color:#fff;">' + ticketData.eventTitle + '</h2>' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.7;color:#d9e1ff;">' +
+      '<tr><td style="padding:3px 0;"><strong>Date</strong></td><td style="padding:3px 0;text-align:right;">' + ticketData.eventDate + '</td></tr>' +
+      '<tr><td style="padding:3px 0;"><strong>Lieu</strong></td><td style="padding:3px 0;text-align:right;">' + ticketData.venue + '</td></tr>' +
+      '<tr><td style="padding:3px 0;"><strong>Type</strong></td><td style="padding:3px 0;text-align:right;">' + ticketData.ticketType + '</td></tr>' +
+      '<tr><td style="padding:3px 0;"><strong>Commande</strong></td><td style="padding:3px 0;text-align:right;">' + ticketData.orderId + '</td></tr>' +
+      (ticketData.ticketId ? '<tr><td style="padding:3px 0;"><strong>Billet ID</strong></td><td style="padding:3px 0;text-align:right;">' + ticketData.ticketId + '</td></tr>' : '') +
+      '</table>' +
+      '</div></div>' +
       (showQr && qrImage
-        ? '<div style="text-align:center;margin:20px 0;"><img src="' + qrImage + '" alt="QR Code billet" style="width:180px;height:180px;border:1px solid #eee;padding:8px;border-radius:8px;background:#fff;" /></div>'
+        ? '<div style="text-align:center;margin:18px 0 10px 0;">' +
+          '<div style="display:inline-block;background:#fff;padding:12px;border-radius:12px;border:1px solid #eceff9;">' +
+          '<img src="' + qrImage + '" alt="QR Code billet" style="width:180px;height:180px;display:block;" />' +
+          '</div></div>'
         : '') +
-      (showTerms ? '<p style="color:#777;font-size:12px;">' + footerNote + '</p>' : '') +
+      (showQr && ticketData.qrCode ? '<p style="color:#96a1c6;font-size:11px;text-align:center;word-break:break-all;margin:8px 0 0 0;">' + ticketData.qrCode + '</p>' : '') +
+      '<p style="color:#cfd6f6;font-size:14px;line-height:1.6;margin:18px 0 0 0;">Arrivez 30 minutes avant le début de l’événement pour faciliter le contrôle.</p>' +
+      (showTerms ? '<p style="color:#8d98be;font-size:12px;line-height:1.5;margin:12px 0 0 0;">' + footerNote + '</p>' : '') +
       this.getButton(baseUrl + '/tickets', 'Voir mes billets') +
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';

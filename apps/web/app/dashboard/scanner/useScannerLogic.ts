@@ -64,8 +64,10 @@ export function useScannerLogic() {
   const [camActive, setCamActive] = useState(false);
   const [camErr, setCamErr] = useState<string|null>(null);
   const [hasDetector, setHasDetector] = useState(false);
-  const [lastCode, setLastCode] = useState<string|null>(null);
+  const [lastCode, setLastCode] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(false);
+  const [cameraStarting, setCameraStarting] = useState(false);
+  const [camLastDetected, setCamLastDetected] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream|null>(null);
@@ -132,17 +134,29 @@ export function useScannerLogic() {
 
   const startCam = useCallback(async () => {
     setCamErr(null);
-    if (!hasDetector) { setCamErr('BarcodeDetector non supporte. Utilisez Chrome 83+, Edge 83+ ou Safari 17+.'); return; }
+    setCameraStarting(true);
+    if (!hasDetector) {
+      setCamErr('BarcodeDetector non supporte. Utilisez Chrome 83+, Edge 83+ ou Safari 17+.');
+      setCameraStarting(false);
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
       streamRef.current = stream;
-      if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
       detRef.current = new BarcodeDetector({ formats: ['qr_code'] });
       setCamActive(true);
     } catch (e: any) {
       if (e?.name === 'NotAllowedError') setCamErr("Permission camera refusee. Autorisez l'acces dans les parametres.");
       else if (e?.name === 'NotFoundError') setCamErr('Aucune camera detectee.');
       else setCamErr('Impossible d\'acceder a la camera: ' + (e?.message || 'erreur inconnue'));
+    } finally {
+      setCameraStarting(false);
     }
   }, [hasDetector]);
 
@@ -178,8 +192,14 @@ export function useScannerLogic() {
         try {
           const codes = await detRef.current.detect(videoRef.current);
           if (codes.length > 0) {
-            const c = codes[0].rawValue;
-            if (c !== lastCode) { setLastCode(c); setCooldown(true); doScan(c); setTimeout(() => setCooldown(false), 2500); }
+            const c = (codes[0].rawValue || '').trim();
+            if (c) setCamLastDetected(c);
+            if (c && c !== lastCode) {
+              setLastCode(c);
+              setCooldown(true);
+              doScan(c);
+              setTimeout(() => setCooldown(false), 1800);
+            }
           }
         } catch {}
       }
@@ -203,5 +223,10 @@ export function useScannerLogic() {
     rate: history.length > 0 ? Math.round(history.filter(s => s.result.valid).length / history.length * 100) : 0,
   };
 
-  return { mode, setMode, qrInput, setQrInput, result, loading, history, setHistory, toasts, rmToast, sseOk, camActive, camErr, videoRef, startCam, stopCam, doScan, stats };
+  return {
+    mode, setMode, qrInput, setQrInput, result, loading,
+    history, setHistory, toasts, rmToast, sseOk,
+    camActive, camErr, cameraStarting, camLastDetected,
+    videoRef, startCam, stopCam, doScan, stats,
+  };
 }

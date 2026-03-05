@@ -55,11 +55,11 @@ export default function ScannerPage() {
   const {
     mode, setMode, qrInput, setQrInput, result, loading,
     history, setHistory, toasts, rmToast, sseOk,
-    camActive, camErr, videoRef, startCam, stopCam, doScan, stats,
+    camActive, camErr, cameraStarting, camLastDetected, videoRef, startCam, stopCam, doScan, stats,
   } = useScannerLogic();
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       <Toasts list={toasts} rm={rmToast} />
 
       <style>{`@keyframes scanLine{0%,100%{top:8%}50%{top:88%}}`}</style>
@@ -83,7 +83,7 @@ export default function ScannerPage() {
 
       {/* Stats bar */}
       {stats.total > 0 && (
-        <div className="bg-gray-900 border-b border-gray-800">
+        <div className="bg-white border-b border-gray-200">
           <div className="max-w-5xl mx-auto px-4 py-3 grid grid-cols-4 gap-3">
             {[
               { label: 'Total', value: String(stats.total), color: 'text-white' },
@@ -106,10 +106,10 @@ export default function ScannerPage() {
         <div className="space-y-4">
 
           {/* Mode toggle */}
-          <div className="flex bg-gray-900 rounded-xl p-1 border border-gray-800">
+          <div className="flex bg-white rounded-xl p-1 border border-gray-200 shadow-sm">
             {(['camera','manual'] as const).map(m => (
               <button key={m} onClick={() => setMode(m)}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode===m ? 'bg-[#5B7CFF] text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>
+                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode===m ? 'bg-[#5B7CFF] text-white shadow-lg' : 'text-gray-500 hover:text-gray-900'}`}>
                 {m === 'camera' ? '📷 Camera' : '⌨️ Manuel / USB'}
               </button>
             ))}
@@ -117,7 +117,7 @@ export default function ScannerPage() {
 
           {/* Camera mode */}
           {mode === 'camera' && (
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
               {camErr ? (
                 <div className="p-8 text-center">
                   <div className="text-5xl mb-4">📵</div>
@@ -153,17 +153,22 @@ export default function ScannerPage() {
                     <div className="absolute inset-0 flex items-center justify-center bg-black">
                       <div className="text-center">
                         <div className="w-8 h-8 border-2 border-[#5B7CFF] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                        <p className="text-gray-400 text-sm">Demarrage de la camera...</p>
+                        <p className="text-gray-400 text-sm">{cameraStarting ? 'Demarrage de la camera...' : 'Camera inactive'}</p>
                       </div>
                     </div>
                   )}
                 </div>
               )}
-              <div className="p-3 flex items-center justify-between border-t border-gray-800">
-                <span className="text-xs text-gray-500">{camActive ? '🟢 Camera active — scan auto' : '⚫ Camera inactive'}</span>
+              <div className="p-3 flex items-center justify-between border-t border-gray-200">
+                <div className="space-y-0.5">
+                  <span className="text-xs text-gray-500 block">{camActive ? '🟢 Camera active — scan auto' : '⚫ Camera inactive'}</span>
+                  {camLastDetected && (
+                    <span className="text-[10px] text-gray-600 block truncate max-w-[180px]">Dernier QR: {camLastDetected}</span>
+                  )}
+                </div>
                 <button onClick={camActive ? stopCam : startCam}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${camActive ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'bg-[#5B7CFF]/20 text-[#5B7CFF] hover:bg-[#5B7CFF]/30'}`}>
-                  {camActive ? '⏹ Arreter' : '▶ Demarrer'}
+                  {camActive ? '⏹ Arreter' : cameraStarting ? '⏳ Demarrage' : '▶ Demarrer'}
                 </button>
               </div>
             </div>
@@ -171,13 +176,13 @@ export default function ScannerPage() {
 
           {/* Manual mode */}
           {mode === 'manual' && (
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 space-y-3">
-              <h2 className="text-sm font-bold text-gray-300">Saisir le code QR</h2>
+            <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-3 shadow-sm">
+              <h2 className="text-sm font-bold text-gray-700">Saisir le code QR</h2>
               <input
                 type="text" value={qrInput} onChange={e => setQrInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && doScan()}
                 placeholder="TKT-1234567890-abc123"
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl font-mono text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#5B7CFF] transition-colors"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl font-mono text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#5B7CFF] transition-colors"
                 autoFocus
               />
               <button onClick={() => doScan()} disabled={loading || !qrInput.trim()}
@@ -248,9 +253,9 @@ export default function ScannerPage() {
         </div>
 
         {/* ── Right: History ── */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 flex flex-col min-h-[400px]">
-          <div className="p-4 border-b border-gray-800 flex items-center justify-between flex-shrink-0">
-            <h2 className="font-bold text-gray-200">
+        <div className="bg-white rounded-2xl border border-gray-200 flex flex-col min-h-[400px] shadow-sm">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+            <h2 className="font-bold text-gray-800">
               Historique
               {history.length > 0 && <span className="ml-2 text-sm font-normal text-gray-500">({history.length})</span>}
             </h2>
@@ -270,7 +275,7 @@ export default function ScannerPage() {
 
           <div className="flex-1 overflow-y-auto">
             {history.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full py-16 text-gray-600">
+                <div className="flex flex-col items-center justify-center h-full py-16 text-gray-500">
                 <div className="text-4xl mb-3">📋</div>
                 <p className="text-sm">Aucun scan effectue</p>
                 <p className="text-xs mt-1 text-gray-700">Les scans apparaitront ici en temps reel</p>
@@ -283,7 +288,7 @@ export default function ScannerPage() {
           </div>
 
           {history.length > 0 && (
-            <div className="p-3 border-t border-gray-800 flex justify-between text-xs text-gray-500 flex-shrink-0">
+            <div className="p-3 border-t border-gray-200 flex justify-between text-xs text-gray-500 flex-shrink-0">
               <span className="text-green-400">✓ {stats.valid} valides</span>
               <span className="text-red-400">✗ {stats.invalid} invalides</span>
             </div>
@@ -293,27 +298,27 @@ export default function ScannerPage() {
 
       {/* How it works */}
       <div className="max-w-5xl mx-auto px-4 pb-8">
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5">
-          <h3 className="font-bold text-gray-300 mb-4">Comment ca fonctionne</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-500">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+          <h3 className="font-bold text-gray-800 mb-4">Comment ca fonctionne</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-600">
             <div className="flex gap-3">
               <span className="text-2xl">1️⃣</span>
               <div>
-                <p className="font-semibold text-gray-300">Achat du billet</p>
-                <p>L&apos;acheteur recoit un code unique <code className="bg-gray-800 px-1 rounded text-xs text-gray-300">TKT-xxx</code> dans son compte et par email.</p>
+                <p className="font-semibold text-gray-800">Achat du billet</p>
+                <p>L&apos;acheteur recoit un code unique <code className="bg-gray-100 px-1 rounded text-xs text-gray-700">TKT-xxx</code> dans son compte et par email.</p>
               </div>
             </div>
             <div className="flex gap-3">
               <span className="text-2xl">2️⃣</span>
               <div>
-                <p className="font-semibold text-gray-300">A l&apos;entree</p>
+                <p className="font-semibold text-gray-800">A l&apos;entree</p>
                 <p>Scannez le QR code via la camera ou saisissez le code manuellement / via scanner USB.</p>
               </div>
             </div>
             <div className="flex gap-3">
               <span className="text-2xl">3️⃣</span>
               <div>
-                <p className="font-semibold text-gray-300">Validation instantanee</p>
+                <p className="font-semibold text-gray-800">Validation instantanee</p>
                 <p>✅ Vert = valide, entree accordee. ❌ Rouge = deja utilise ou invalide. Alertes fraude en temps reel.</p>
               </div>
             </div>

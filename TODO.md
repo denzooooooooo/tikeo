@@ -1,13 +1,21 @@
-# TODO - Audit et corrections email/notifications (Resend)
+# TODO - Refonte emails + scanner billets
 
-- [ ] Lire et auditer les services restants liés aux notifications/emails
-  - [x] services/api-gateway/src/events/events.service.ts
-  - [x] services/api-gateway/src/promo-codes/promo-codes.service.ts
-  - [x] services/api-gateway/src/help/help.service.ts (introuvable côté FS malgré présence dans l’index VSCode)
+- [x] Lire les fichiers clés
+  - [x] services/api-gateway/src/email/email.service.ts
   - [x] services/api-gateway/src/tickets/tickets.service.ts
-- [ ] Identifier les actions métier qui doivent envoyer email + notification
-- [ ] Corriger les gardes `userId` null avant création de notifications
-- [ ] Ajouter les envois email manquants pour les notifications importantes
-- [ ] Harmoniser logs de succès/erreur d’envoi email
-- [ ] Vérifier build TypeScript api-gateway
-- [ ] Résumer précisément les pages/features couvertes par les emails
+  - [x] services/api-gateway/src/tickets/tickets.controller.ts
+  - [x] apps/web/app/dashboard/scanner/page.tsx
+  - [x] apps/web/app/dashboard/scanner/useScannerLogic.ts
+
+- [ ] Implémentation
+  - [ ] Refonte visuelle des templates email
+  - [ ] Améliorer le rendu du billet dans email avec design organisateur
+  - [ ] Ajouter reply-to/headers utiles dans l’envoi email
+  - [ ] Renforcer validation QR backend (garde-fous/messages)
+  - [ ] Améliorer scanner UI dark + fiabilité scan
+
+- [ ] Vérifications après implémentation
+  - [ ] Build API gateway
+  - [ ] Tests API scanner/validate (curl)
+  - [ ] Vérification fonctionnelle page scanner
+  - [ ] Test envoi email template (endpoint test-email)
