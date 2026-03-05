@@ -61,7 +61,7 @@ export class EmailService {
 
     if (smtpHost && smtpPort && smtpUser && smtpPass) {
       // Force IPv4 to avoid IPv6 issues on Railway/VPS
-      const ipVersion = process.env.SMTP_FORCE_IPV4 === 'true' ? 4 : undefined;
+      // Using direct IP for Gmail SMTP
       
       this.transporter = nodemailer.createTransport({
         host: smtpHost,
@@ -71,11 +71,13 @@ export class EmailService {
           user: smtpUser,
           pass: smtpPass,
         },
-        connectionTimeout: 15000,
-        greetingTimeout: 15000,
-        socketTimeout: 15000,
-        // Force IPv4 only
-        ...(ipVersion && { family: ipVersion }),
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 30000,
+        tls: {
+          // Do not fail on invalid certificates
+          rejectUnauthorized: false,
+        },
       });
 
       this.isConfigured = true;

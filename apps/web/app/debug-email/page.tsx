@@ -188,13 +188,30 @@ export default function DebugEmailPage() {
               </ul>
             </div>
 
-            <p className="text-sm">Autres fournisseurs SMTP populaires:</p>
+            <p className="text-sm">Autres fournisseurs SMTP (plus fiables sur Railway):</p>
             <ul className="list-disc list-inside text-sm space-y-1">
-              <li><strong>SendGrid:</strong> smtp.sendgrid.net (port 587)</li>
-              <li><strong>Mailgun:</strong> smtp.mailgun.org (port 587)</li>
-              <li><strong>Resend:</strong> smtp.resend.com (port 587)</li>
-              <li><strong>Brevo:</strong> smtp-relay.brevo.com (port 587)</li>
+              <li><strong>Resend.com</strong>: smtp.resend.com (port 587) - ❤️ Recommandé!</li>
+              <li><strong>Brevo</strong>: smtp-relay.brevo.com (port 587)</li>
+              <li><strong>Mailgun</strong>: smtp.mailgun.org (port 587)</li>
+              <li><strong>SendGrid</strong>: smtp.sendgrid.net (port 587)</li>
             </ul>
+          </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mt-6">
+            <h2 className="text-xl font-bold text-green-900 mb-4">🚀 Solution recommandée: Resend</h2>
+            <div className="space-y-3 text-green-800">
+              <p>Resend est gratuit (3,000 emails/mois) et fonctionne parfaitement sur Railway.</p>
+              <div className="bg-white rounded-xl p-4 overflow-x-auto">
+                <code className="text-sm text-gray-700">
+                  SMTP_HOST=smtp.resend.com<br/>
+                  SMTP_PORT=587<br/>
+                  SMTP_USER=resend<br/>
+                  SMTP_PASS=re_EUM89iwC_EAUhHmvN7jgGEfhU6pafeetQ<br/>
+                  SMTP_FROM=Tikeo {"<"}onboarding@resend.dev{">"}
+                </code>
+              </div>
+              <p className="text-sm">Va sur Railway et configure ces variables, puis redéploie!</p>
+            </div>
           </div>
         </div>
 
