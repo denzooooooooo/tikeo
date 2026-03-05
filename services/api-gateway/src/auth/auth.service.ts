@@ -40,10 +40,18 @@ async register(email: string, password: string, firstName: string, lastName: str
 
     // Send welcome email
     try {
-      const result = await this.emailService.sendWelcomeEmail(user.email, user.firstName);
-      this.logger.log(`Welcome email sent to ${user.email}: ${result}`);
+      const firstName = user.firstName || 'cher utilisateur';
+      this.logger.log(`Attempting to send welcome email to ${user.email} with name: ${firstName}`);
+      
+      const result = await this.emailService.sendWelcomeEmail(user.email, firstName);
+      
+      if (result.success) {
+        this.logger.log(`✅ Welcome email sent successfully to ${user.email} (messageId: ${result.messageId})`);
+      } else {
+        this.logger.error(`❌ Failed to send welcome email to ${user.email}: ${result.error}`);
+      }
     } catch (error) {
-      this.logger.error(`Failed to send welcome email to ${user.email}:`, error);
+      this.logger.error(`❌ Exception sending welcome email to ${user.email}:`, error);
     }
 
     return {
