@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import * as QRCode from 'qrcode';
 
 interface TicketData {
@@ -48,69 +48,83 @@ interface PromoData {
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
+  private resend: Resend | null = null;
   private isConfigured = false;
   private readonly fromEmail: string;
-  private transporter: nodemailer.Transporter | null = null;
 
   constructor(private configService: ConfigService) {
-    const smtpHost = this.configService.get('SMTP_HOST');
-    const smtpPort = Number(this.configService.get('SMTP_PORT') || 587);
-    const smtpUser = this.configService.get('SMTP_USER');
-    const smtpPass = this.configService.get('SMTP_PASS');
-    this.fromEmail = this.configService.get('SMTP_FROM') || 'Tikeo <no-reply@tikeo.co>';
+    //优先使用 RESEND_API_KEY (推荐方式)
+    const resendApiKey = this.configService.get('RESEND_API_KEY');
+    this.fromEmail = this.configService.get('SMTP_FROM') || 'Tikeo <onboarding@resend.dev>';
 
-    if (smtpHost && smtpPort && smtpUser && smtpPass) {
-      // Force IPv4 to avoid IPv6 issues on Railway/VPS
-      // Using direct IP for Gmail SMTP
-      
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-        connectionTimeout: 30000,
-        greetingTimeout: 30000,
-        socketTimeout: 30000,
-        tls: {
-          // Do not fail on invalid certificates
-          rejectUnauthorized: false,
-        },
-      });
-
+    if (resendApiKey) {
+      this.resend = new Resend(resendApiKey);
       this.isConfigured = true;
-      this.logger.log(`SMTP email service initialized (${smtpHost}:${smtpPort})`);
+      this.logger.log('✅ Resend email service initialized with RESEND_API_KEY');
     } else {
-      this.logger.error('SMTP config incomplete - emails disabled (set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS).');
+      // 回退: 尝试使用 SMTP (为了向后兼容)
+      const smtpHost = this.configService.get('SMTP_HOST');
+      const smtpPort = Number(this.configService.get('SMTP_PORT') || 587);
+      const smtpUser = this.configService.get('SMTP_USER');
+      const smtpPass = this.configService.get('SMTP_PASS');
+      
+      if (smtpHost && smtpPort && smtpUser && smtpPass) {
+        this.isConfigured = true;
+        this.logger.warn(`⚠️ Using SMTP fallback (${smtpHost}:${smtpPort}) - Consider using RESEND_API_KEY instead`);
+      } else {
+        this.logger.error('❌ No email service configured. Set RESEND_API_KEY or SMTP_* variables.');
+      }
     }
   }
 
+  // 获取配置状态 (供 health 检查使用)
+  getConfigStatus() {
+    const resendApiKey = this.configService.get('RESEND_API_KEY');
+    const smtpHost = this.configService.get('SMTP_HOST');
+    
+    return {
+      isConfigured: this.isConfigured,
+      provider: resendApiKey ? 'resend' : (smtpHost ? 'smtp' : 'none'),
+      fromEmail: this.fromEmail,
+      hasResendKey: !!resendApiKey,
+      hasSmtp: !!smtpHost,
+    };
+  }
+
   private async sendEmail(to: string, subject: string, html: string, text: string) {
-    if (this.isConfigured && this.transporter) {
+    if (!this.isConfigured) {
+      this.logger.error('=== EMAIL NOT SENT (NO EMAIL SERVICE CONFIGURED) ===');
+      return { success: false, error: 'EMAIL_SERVICE_NOT_CONFIGURED' };
+    }
+
+    // 使用 Resend API
+    if (this.resend) {
       try {
-        const result = await this.transporter.sendMail({
-          to,
+        const result = await this.resend.emails.send({
           from: this.fromEmail,
-          subject,
-          html,
-          text,
+          to: [to],
+          subject: subject,
+          html: html,
+          text: text,
         });
-        this.logger.log('Email sent successfully to ' + to + ' (messageId: ' + result.messageId + ')');
-        return { success: true, messageId: result.messageId };
+
+        if (result.error) {
+          this.logger.error(`Failed to send email to ${to}: ${result.error.message}`);
+          return { success: false, error: result.error.message };
+        }
+
+        this.logger.log(`✅ Email sent successfully to ${to} (id: ${result.data?.id})`);
+        return { success: true, messageId: result.data?.id };
       } catch (error) {
-        this.logger.error('Failed to send email to ' + to + ': ' + error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(`Failed to send email to ${to}: ${errorMessage}`);
         return { success: false, error: errorMessage };
       }
     }
 
-    this.logger.error('=== EMAIL NOT SENT (SMTP NOT CONFIGURED) ===');
-    this.logger.error('To: ' + to);
-    this.logger.error('From: ' + this.fromEmail);
-    this.logger.error('Subject: ' + subject);
-    return { success: false, error: 'SMTP_NOT_CONFIGURED' };
+    // SMTP 回退 (如果 Resend 不可用)
+    this.logger.error('=== SMTP NOT IMPLEMENTED IN NEW VERSION ===');
+    return { success: false, error: 'SMTP_FALLBACK_NOT_IMPLEMENTED' };
   }
 
   private getEmailHeader(title: string): string {
@@ -143,12 +157,12 @@ export class EmailService {
       '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
       this.getEmailHeader('Vérifiez votre adresse email') +
-      '<td style="padding:40px 30px;">' +
+      '<tr><td style="padding:40px 30px;">' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Vérifiez votre adresse email</h2>' +
       '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">Merci de vous être inscrit sur Tikeo! ' +
       'Cliquez sur le bouton ci-dessous pour vérifier votre adresse email et activer votre compte.</p>' +
       this.getButton(verifyUrl, 'Vérifier mon email') +
-      '</td>' + this.getEmailFooter() +
+      '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
     return this.sendEmail(email, 'Vérifiez votre adresse email - Tikeo', html, 'Verify email: ' + verifyUrl);
@@ -162,12 +176,12 @@ export class EmailService {
       '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
       this.getEmailHeader('Réinitialisation de mot de passe') +
-      '<td style="padding:40px 30px;">' +
+      '<tr><td style="padding:40px 30px;">' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Réinitialisation de mot de passe</h2>' +
       '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">Vous avez demandé la réinitialisation de votre mot de passe. ' +
       'Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe. Ce lien expire dans 1 heure.</p>' +
       this.getButton(resetUrl, 'Réinitialiser mon mot de passe') +
-      '</td>' + this.getEmailFooter() +
+      '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
     return this.sendEmail(email, 'Réinitialisation de votre mot de passe - Tikeo', html, 'Reset password: ' + resetUrl);
@@ -180,7 +194,7 @@ export class EmailService {
       '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
       this.getEmailHeader('Bienvenue sur Tikeo!') +
-      '<td style="padding:40px 30px;">' +
+      '<tr><td style="padding:40px 30px;">' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Bienvenue ' + firstName + '!</h2>' +
       '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">Nous sommes ravis de vous avoir parmi nous!</p>' +
       '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 10px 0;">Avec Tikeo, vous pouvez:</p>' +
@@ -190,7 +204,7 @@ export class EmailService {
       '<li>Créer et gérer vos propres événements</li>' +
       '<li>Participer à des concours passionnants</li></ul>' +
       this.getButton(baseUrl + '/events', 'Découvrir les événements') +
-      '</td>' + this.getEmailFooter() +
+      '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
     return this.sendEmail(email, 'Bienvenue ' + firstName + '! - Tikeo', html, 'Welcome to Tikeo, ' + firstName + '!');
@@ -205,17 +219,17 @@ export class EmailService {
     const primary = design.primaryColor || '#5B7CFF';
     const secondary = design.secondaryColor || '#7B61FF';
     const customTitle = design.customTitle || 'Billet officiel';
-    const footerNote = design.footerNote || 'Merci de présenter ce billet à l’entrée.';
+    const footerNote = design.footerNote || 'Merci de présenter ce billet à l\'entrée.';
     const showQr = design.showQr !== false;
     const showTerms = design.showTerms !== false;
 
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#f5f5f5;">' +
       '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
-      '<div style="background: linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%); padding: 30px; text-align: center; color: white;">' +
+      '<tr><td style="background: linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%); padding: 30px; text-align: center; color: white;">' +
       '<h1 style="margin:0;font-size:28px;">Tikeo</h1>' +
-      '<p style="margin:8px 0 0 0;opacity:.95;">' + customTitle + '</p></div>' +
-      '<td style="padding:40px 30px;">' +
+      '<p style="margin:8px 0 0 0;opacity:.95;">' + customTitle + '</p></td></tr>' +
+      '<tr><td style="padding:40px 30px;">' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Vos billets</h2>' +
       '<div style="background:#f5f5f5;border-radius:8px;padding:20px;margin:20px 0;">' +
       '<p style="margin:5px 0;"><strong>Date:</strong> ' + ticketData.eventDate + '</p>' +
@@ -232,7 +246,7 @@ export class EmailService {
         : '') +
       (showTerms ? '<p style="color:#777;font-size:12px;">' + footerNote + '</p>' : '') +
       this.getButton(baseUrl + '/tickets', 'Voir mes billets') +
-      '</td>' + this.getEmailFooter() +
+      '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
     return this.sendEmail(email, 'Vos billets - ' + ticketData.eventTitle + ' - Tikeo', html, 'Your ticket for ' + ticketData.eventTitle);
@@ -245,17 +259,17 @@ export class EmailService {
       '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
       this.getEmailHeader(eventData.eventTitle + ' commence dans ' + eventData.daysUntil + ' jour(s)!') +
-      '<td style="padding:40px 30px;">' +
+      '<tr><td style="padding:40px 30px;">' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Rappel: ' + eventData.eventTitle + '</h2>' +
       '<div style="background:#f5f5f5;border-radius:8px;padding:20px;margin:20px 0;">' +
       '<p style="margin:5px 0;"><strong>Date:</strong> ' + eventData.eventDate + '</p>' +
       '<p style="margin:5px 0;"><strong>Lieu:</strong> ' + eventData.venue + '</p></div>' +
       '<p style="color:#666;font-size:16px;">N\'oubliez pas vos billets!</p>' +
       this.getButton(baseUrl + '/tickets', 'Voir mes billets') +
-      '</td>' + this.getEmailFooter() +
+      '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
-    return this.sendEmail(email, 'Rappel: ' + eventData.eventTitle + ' bientôt! - Tikeo', html, 'Reminder: ' + eventData.eventTitle + ' is coming up');
+    return this.sendEmail(email, 'Rappel: ' + eventData.eventTitle + ' - Tikeo', html, 'Reminder: ' + eventData.eventTitle);
   }
 
   async sendOrderConfirmationEmail(email: string, orderData: OrderData) {
@@ -265,7 +279,7 @@ export class EmailService {
       '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
       this.getEmailHeader('Confirmation de commande') +
-      '<td style="padding:40px 30px;">' +
+      '<tr><td style="padding:40px 30px;">' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Merci pour votre achat!</h2>' +
       '<div style="background:#f5f5f5;border-radius:8px;padding:20px;margin:20px 0;">' +
       '<p style="margin:5px 0;"><strong>Commande:</strong> ' + orderData.orderId + '</p>' +
@@ -274,7 +288,7 @@ export class EmailService {
       '<p style="margin:5px 0;"><strong>Total:</strong> ' + orderData.total + '€</p></div>' +
       '<p style="color:#666;font-size:16px;">Vos billets vous ont été envoyés par email.</p>' +
       this.getButton(baseUrl + '/orders', 'Voir mes commandes') +
-      '</td>' + this.getEmailFooter() +
+      '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
     return this.sendEmail(email, 'Confirmation commande ' + orderData.orderId + ' - Tikeo', html, 'Order confirmed: ' + orderData.orderId);
@@ -287,7 +301,7 @@ export class EmailService {
       '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
       this.getEmailHeader('Nouveau code promo exclusif!') +
-      '<td style="padding:40px 30px;text-align:center;">' +
+      '<tr><td style="padding:40px 30px;text-align:center;">' +
       '<p style="color:#666;font-size:16px;margin:0 0 20px 0;">Nous avons une offre spéciale pour vous!</p>' +
       '<div style="background:linear-gradient(135deg,#5B7CFF,#7B61FF);border-radius:8px;padding:30px;margin:20px 0;">' +
       '<p style="color:white;margin:0;font-size:14px;">Code promo</p>' +
@@ -295,7 +309,7 @@ export class EmailService {
       '<p style="color:white;margin:0;font-size:18px;">' + promoData.discount + ' de réduction</p></div>' +
       '<p style="color:#666;font-size:16px;">Valide jusqu\'au ' + promoData.validUntil + '</p>' +
       this.getButton(baseUrl + '/events', 'Découvrir les événements') +
-      '</td>' + this.getEmailFooter() +
+      '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
     return this.sendEmail(email, 'Code promo: ' + promoData.code + ' - Tikeo', html, 'Promo code: ' + promoData.code);

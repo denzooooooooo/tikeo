@@ -5,7 +5,10 @@ import { useState, useEffect } from 'react';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
 interface DebugInfo {
-  smtpConfigured: boolean;
+  emailConfigured: boolean;
+  emailProvider: string;
+  emailFrom: string;
+  resendConfigured: boolean;
   smtpHost?: string;
   smtpPort?: string;
   smtpFrom?: string;
@@ -30,7 +33,10 @@ export default function DebugEmailPage() {
       const res = await fetch(`${API_URL}/health`);
       const data = await res.json();
       setDebugInfo({
-        smtpConfigured: data.smtpConfigured || false,
+        emailConfigured: data.emailConfigured || false,
+        emailProvider: data.emailProvider || 'none',
+        emailFrom: data.emailFrom,
+        resendConfigured: data.resendConfigured || false,
         smtpHost: data.smtpHost,
         smtpPort: data.smtpPort?.toString(),
         smtpFrom: data.smtpFrom,
@@ -38,7 +44,10 @@ export default function DebugEmailPage() {
       });
     } catch (e) {
       setDebugInfo({
-        smtpConfigured: false,
+        emailConfigured: false,
+        emailProvider: 'none',
+        emailFrom: '',
+        resendConfigured: false,
         timestamp: new Date().toISOString(),
       });
     } finally {
@@ -83,34 +92,36 @@ export default function DebugEmailPage() {
 
         {/* Configuration Status */}
         <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">📧 Configuration SMTP</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">📧 Configuration Email</h2>
           
           {loading ? (
             <div className="flex items-center gap-2 text-gray-500">
               <div className="w-5 h-5 border-2 border-gray-300 border-t-[#5B7CFF] rounded-full animate-spin" />
               Chargement...
             </div>
-          ) : debugInfo?.smtpConfigured ? (
+          ) : debugInfo?.emailConfigured ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-green-600">
                 <span className="text-2xl">✅</span>
-                <span className="font-semibold">SMTP est configuré !</span>
+                <span className="font-semibold">Email est configuré !</span>
               </div>
               <div className="bg-gray-50 rounded-xl p-4 text-sm space-y-2">
-                <p><strong>Hôte:</strong> {debugInfo.smtpHost}</p>
-                <p><strong>Port:</strong> {debugInfo.smtpPort}</p>
-                <p><strong>Email From:</strong> {debugInfo.smtpFrom}</p>
+                <p><strong>Fournisseur:</strong> {debugInfo.emailProvider}</p>
+                <p><strong>Email From:</strong> {debugInfo.emailFrom}</p>
+                {debugInfo.resendConfigured && (
+                  <p className="text-green-600"><strong>🔗 Resend API:</strong> Configuré</p>
+                )}
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-red-600">
                 <span className="text-2xl">❌</span>
-                <span className="font-semibold">SMTP n'est PAS configuré !</span>
+                <span className="font-semibold">Email n'est PAS configuré !</span>
               </div>
               <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <p className="text-red-700 font-medium mb-2">Les emails ne peuvent pas être envoyés.</p>
-                <p className="text-red-600 text-sm">Configurez les variables SMTP sur votre serveur.</p>
+                <p className="text-red-600 text-sm">Configurez RESEND_API_KEY sur votre serveur.</p>
               </div>
             </div>
           )}
@@ -137,7 +148,7 @@ export default function DebugEmailPage() {
             />
             <button
               onClick={sendTestEmail}
-              disabled={!testEmail || sending || !debugInfo?.smtpConfigured}
+              disabled={!testEmail || sending || !debugInfo?.emailConfigured}
               className="px-6 py-3 bg-gradient-to-r from-[#5B7CFF] to-[#7B61FF] text-white font-bold rounded-xl disabled:opacity-50"
             >
               {sending ? 'Envoi...' : 'Envoyer'}
@@ -162,56 +173,32 @@ export default function DebugEmailPage() {
         </div>
 
         {/* Instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mt-6">
-          <h2 className="text-xl font-bold text-blue-900 mb-4">📝 Comment configurer SMTP</h2>
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mt-6">
+          <h2 className="text-xl font-bold text-green-900 mb-4">🚀 Comment configurer Resend (Recommandé)</h2>
           
-          <div className="space-y-4 text-blue-800">
-            <p>Ajoutez ces variables d'environnement sur votre serveur (Railway, VPS, etc.):</p>
+          <div className="space-y-4 text-green-800">
+            <p>Resend est gratuit (3,000 emails/mois) et fonctionne parfaitement sur Railway.</p>
             
             <div className="bg-white rounded-xl p-4 overflow-x-auto">
               <code className="text-sm text-gray-700">
-                SMTP_HOST=smtp.gmail.com<br/>
-                SMTP_PORT=587<br/>
-                SMTP_USER=djedjedange4@gmail.com<br/>
-                SMTP_PASS=pqdipngwfnkkouou<br/>
-                SMTP_FROM=Tikeo {"<"}no-reply@tikeo.co{">"}
+                RESEND_API_KEY=re_xxxxxxxxxxxxx<br/>
+                SMTP_FROM=Tikeo <onboarding@resend.dev>
               </code>
             </div>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-              <p className="font-semibold text-yellow-800">⚠️ Problème avec Gmail sur Railway:</p>
-              <p className="text-sm">Gmail bloque souvent les connexions depuis des serveurs cloud. Solutions:</p>
-              <ul className="list-disc list-inside text-sm mt-2 space-y-1">
-                <li>1. Utilise un mot de passe d'application (déjà fait)</li>
-                <li>2. Ou utilise <strong>Resend.com</strong> (gratuit, plus fiable)</li>
-                <li>3. Ajoute aussi: <code>SMTP_FORCE_IPV4=true</code></li>
-              </ul>
+              <p className="font-semibold text-yellow-800">⚠️ Important:</p>
+              <p className="text-sm">Va sur <a href="https://resend.com" target="_blank" className="underline">resend.com</a>, récupère ta clé API (commence par re_) et configure la variable RESEND_API_KEY sur Railway.</p>
             </div>
 
-            <p className="text-sm">Autres fournisseurs SMTP (plus fiables sur Railway):</p>
-            <ul className="list-disc list-inside text-sm space-y-1">
-              <li><strong>Resend.com</strong>: smtp.resend.com (port 587) - ❤️ Recommandé!</li>
-              <li><strong>Brevo</strong>: smtp-relay.brevo.com (port 587)</li>
-              <li><strong>Mailgun</strong>: smtp.mailgun.org (port 587)</li>
-              <li><strong>SendGrid</strong>: smtp.sendgrid.net (port 587)</li>
-            </ul>
-          </div>
-
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mt-6">
-            <h2 className="text-xl font-bold text-green-900 mb-4">🚀 Solution recommandée: Resend</h2>
-            <div className="space-y-3 text-green-800">
-              <p>Resend est gratuit (3,000 emails/mois) et fonctionne parfaitement sur Railway.</p>
-              <div className="bg-white rounded-xl p-4 overflow-x-auto">
-                <code className="text-sm text-gray-700">
-                  SMTP_HOST=smtp.resend.com<br/>
-                  SMTP_PORT=587<br/>
-                  SMTP_USER=resend<br/>
-                  SMTP_PASS=re_EUM89iwC_EAUhHmvN7jgGEfhU6pafeetQ<br/>
-                  SMTP_FROM=Tikeo {"<"}onboarding@resend.dev{">"}
-                </code>
-              </div>
-              <p className="text-sm">Va sur Railway et configure ces variables, puis redéploie!</p>
-            </div>
+            <p className="text-sm">Instructions:</p>
+            <ol className="list-decimal list-inside text-sm space-y-1">
+              <li>Va sur <a href="https://resend.com" target="_blank" className="underline">resend.com</a> et connecte-toi</li>
+              <li>Va dans API Keys et copie ta clé (commence par re_)</li>
+              <li>Va sur Railway, dans les variables d'environnement</li>
+              <li>Ajoute: <code>RESEND_API_KEY=re_ta_cle_api</code></li>
+              <li>Redéploie le projet!</li>
+            </ol>
           </div>
         </div>
 
