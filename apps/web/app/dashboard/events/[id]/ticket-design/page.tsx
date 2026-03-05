@@ -20,28 +20,37 @@ function getToken(): string | null {
   }
 }
 
-type StudioTab = 'style' | 'content' | 'layout';
+type OngletStudio = 'style' | 'contenu' | 'mise_en_page' | 'typographie';
 
-const TEMPLATES = [
-  { value: 'CLASSIC', label: 'Classic' },
-  { value: 'NEON', label: 'Neon' },
+const MODELES = [
+  { value: 'CLASSIC', label: 'Classique' },
+  { value: 'NEON', label: 'Néon' },
   { value: 'GOLD', label: 'Gold' },
   { value: 'MINIMAL', label: 'Minimal' },
-  { value: 'LUXURY', label: 'Luxury' },
-  { value: 'FESTIVE', label: 'Festive' },
+  { value: 'LUXURY', label: 'Luxe' },
+  { value: 'FESTIVE', label: 'Festif' },
   { value: 'CORPORATE', label: 'Corporate' },
 ];
 
-const COLOR_PRESETS = [
-  { name: 'Royal Blue', primary: '#5B7CFF', secondary: '#7B61FF', text: '#FFFFFF' },
-  { name: 'Neon Night', primary: '#00E5FF', secondary: '#7C3AED', text: '#E6FFFA' },
-  { name: 'Gold Prestige', primary: '#C8A951', secondary: '#F8E7A0', text: '#111827' },
-  { name: 'Emerald', primary: '#047857', secondary: '#10B981', text: '#ECFDF5' },
-  { name: 'Sunset', primary: '#F97316', secondary: '#EC4899', text: '#FFFFFF' },
-  { name: 'Carbon', primary: '#111827', secondary: '#374151', text: '#F9FAFB' },
+const PRESETS_COULEURS = [
+  { name: 'Bleu Royal', primary: '#5B7CFF', secondary: '#7B61FF', text: '#FFFFFF' },
+  { name: 'Nuit Néon', primary: '#00E5FF', secondary: '#7C3AED', text: '#E6FFFA' },
+  { name: 'Prestige Or', primary: '#C8A951', secondary: '#F8E7A0', text: '#111827' },
+  { name: 'Émeraude', primary: '#047857', secondary: '#10B981', text: '#ECFDF5' },
+  { name: 'Coucher de soleil', primary: '#F97316', secondary: '#EC4899', text: '#FFFFFF' },
+  { name: 'Carbone', primary: '#111827', secondary: '#374151', text: '#F9FAFB' },
 ];
 
-type DesignForm = {
+const POLICES = [
+  { value: 'Inter, sans-serif', label: 'Inter (moderne)' },
+  { value: 'Poppins, sans-serif', label: 'Poppins (arrondie)' },
+  { value: 'Montserrat, sans-serif', label: 'Montserrat (premium)' },
+  { value: '"Playfair Display", serif', label: 'Playfair (élégante)' },
+  { value: 'Oswald, sans-serif', label: 'Oswald (impact)' },
+  { value: '"Trebuchet MS", sans-serif', label: 'Trebuchet (lisible)' },
+];
+
+type FormDesign = {
   title: string;
   venueCity: string;
   ticketDesignTemplate: string;
@@ -54,9 +63,19 @@ type DesignForm = {
   ticketDesignShowQr: boolean;
   ticketDesignShowSeat: boolean;
   ticketDesignShowTerms: boolean;
+
+  fontFamily: string;
+  titleSize: number;
+  contentSize: number;
+  titleWeight: number;
+  letterSpacing: number;
+
+  overlayOpacity: number;
+  borderRadius: number;
+  shadowIntensity: 'soft' | 'medium' | 'strong';
 };
 
-const INITIAL_FORM: DesignForm = {
+const INITIAL_FORM: FormDesign = {
   title: 'Mon Événement',
   venueCity: 'Abidjan',
   ticketDesignTemplate: 'CLASSIC',
@@ -69,16 +88,26 @@ const INITIAL_FORM: DesignForm = {
   ticketDesignShowQr: true,
   ticketDesignShowSeat: true,
   ticketDesignShowTerms: true,
+
+  fontFamily: 'Inter, sans-serif',
+  titleSize: 34,
+  contentSize: 14,
+  titleWeight: 800,
+  letterSpacing: 0.3,
+
+  overlayOpacity: 0.3,
+  borderRadius: 18,
+  shadowIntensity: 'medium',
 };
 
 export default function TicketDesignStudioPage() {
   const params = useParams();
   const eventId = params?.id as string;
 
-  const [tab, setTab] = useState<StudioTab>('style');
-  const [mobilePreview, setMobilePreview] = useState(false);
+  const [onglet, setOnglet] = useState<OngletStudio>('style');
+  const [previewMobile, setPreviewMobile] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [activePicker, setActivePicker] = useState<'primary' | 'secondary' | 'text' | null>(null);
+  const [pickerActif, setPickerActif] = useState<'primary' | 'secondary' | 'text' | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -87,22 +116,22 @@ export default function TicketDesignStudioPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
-  const [form, setForm] = useState<DesignForm>(INITIAL_FORM);
-  const [history, setHistory] = useState<DesignForm[]>([INITIAL_FORM]);
+  const [form, setForm] = useState<FormDesign>(INITIAL_FORM);
+  const [history, setHistory] = useState<FormDesign[]>([INITIAL_FORM]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const pushHistory = (next: DesignForm) => {
+  const pushHistory = (next: FormDesign) => {
     setHistory((prev) => {
       const sliced = prev.slice(0, historyIndex + 1);
-      const merged = [...sliced, next].slice(-50);
+      const merged = [...sliced, next].slice(-80);
       return merged;
     });
-    setHistoryIndex((prev) => Math.min(prev + 1, 49));
+    setHistoryIndex((prev) => Math.min(prev + 1, 79));
   };
 
-  const updateForm = (patch: Partial<DesignForm>) => {
+  const updateForm = (patch: Partial<FormDesign>) => {
     setForm((prev) => {
       const next = { ...prev, ...patch };
       pushHistory(next);
@@ -142,14 +171,15 @@ export default function TicketDesignStudioPage() {
 
         const event = await res.json();
 
-        const loaded: DesignForm = {
-          title: event.title || 'Mon Événement',
-          venueCity: event.venueCity || 'Abidjan',
-          ticketDesignTemplate: event.ticketDesignTemplate || 'CLASSIC',
+        const loaded: FormDesign = {
+          ...INITIAL_FORM,
+          title: event.title || INITIAL_FORM.title,
+          venueCity: event.venueCity || INITIAL_FORM.venueCity,
+          ticketDesignTemplate: event.ticketDesignTemplate || INITIAL_FORM.ticketDesignTemplate,
           ticketDesignBackgroundUrl: event.ticketDesignBackgroundUrl || '',
-          ticketDesignPrimaryColor: event.ticketDesignPrimaryColor || '#5B7CFF',
-          ticketDesignSecondaryColor: event.ticketDesignSecondaryColor || '#7B61FF',
-          ticketDesignTextColor: event.ticketDesignTextColor || '#FFFFFF',
+          ticketDesignPrimaryColor: event.ticketDesignPrimaryColor || INITIAL_FORM.ticketDesignPrimaryColor,
+          ticketDesignSecondaryColor: event.ticketDesignSecondaryColor || INITIAL_FORM.ticketDesignSecondaryColor,
+          ticketDesignTextColor: event.ticketDesignTextColor || INITIAL_FORM.ticketDesignTextColor,
           ticketDesignCustomTitle: event.ticketDesignCustomTitle || '',
           ticketDesignFooterNote: event.ticketDesignFooterNote || '',
           ticketDesignShowQr: event.ticketDesignShowQr ?? true,
@@ -177,7 +207,7 @@ export default function TicketDesignStudioPage() {
     reader.onload = () => {
       setImageError(false);
       updateForm({ ticketDesignBackgroundUrl: String(reader.result || '') });
-      setTab('content');
+      setOnglet('contenu');
     };
     reader.readAsDataURL(file);
   };
@@ -218,7 +248,7 @@ export default function TicketDesignStudioPage() {
         throw new Error(err.message || 'Échec de sauvegarde');
       }
 
-      setSuccess('Studio sauvegardé avec succès ✨');
+      setSuccess('Design sauvegardé avec succès ✨');
       setTimeout(() => setSuccess(null), 2500);
     } catch (e: any) {
       setError(e.message || 'Erreur');
@@ -252,92 +282,118 @@ export default function TicketDesignStudioPage() {
     setImageError(false);
   };
 
-  const displayTitle = useMemo(() => form.ticketDesignCustomTitle?.trim() || 'Billet Officiel', [form.ticketDesignCustomTitle]);
+  const displayTitle = useMemo(
+    () => form.ticketDesignCustomTitle?.trim() || 'Billet Officiel',
+    [form.ticketDesignCustomTitle]
+  );
+
+  const shadowClass =
+    form.shadowIntensity === 'soft'
+      ? 'shadow-lg'
+      : form.shadowIntensity === 'strong'
+        ? 'shadow-2xl'
+        : 'shadow-xl';
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  const inputCls = 'w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-slate-100 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none';
+  const inputCls =
+    'w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 outline-none';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+    <div className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-slate-100 text-slate-900">
       <div className="max-w-7xl mx-auto p-4 md:p-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <Link href={`/dashboard/events/${eventId}/edit`} className="text-cyan-300 hover:text-cyan-200 text-sm">
-              ← Retour à l’édition événement
+            <Link href={`/dashboard/events/${eventId}/edit`} className="text-indigo-600 hover:text-indigo-700 text-sm">
+              ← Retour à l’édition de l’événement
             </Link>
-            <h1 className="text-2xl md:text-4xl font-black mt-2 tracking-tight">Ticket Design Studio — Premium</h1>
-            <p className="text-slate-400 text-sm mt-1">Live preview, animation, export, undo/redo, upload visuel</p>
+            <h1 className="text-2xl md:text-4xl font-black mt-2 tracking-tight">Studio de design de billet — Premium</h1>
+            <p className="text-slate-500 text-sm mt-1">Personnalisation avancée : couleurs, typographie, mise en page, export.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={undo} disabled={historyIndex <= 0} className="px-3 py-2 rounded-xl border border-slate-700 disabled:opacity-40">Undo</button>
-            <button onClick={redo} disabled={historyIndex >= history.length - 1} className="px-3 py-2 rounded-xl border border-slate-700 disabled:opacity-40">Redo</button>
-            <button onClick={resetAll} className="px-3 py-2 rounded-xl border border-slate-700">Reset</button>
-            <button onClick={exportPreview} disabled={isExporting} className="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700">
+            <button onClick={undo} disabled={historyIndex <= 0} className="px-3 py-2 rounded-xl border border-slate-300 bg-white disabled:opacity-40">Annuler</button>
+            <button onClick={redo} disabled={historyIndex >= history.length - 1} className="px-3 py-2 rounded-xl border border-slate-300 bg-white disabled:opacity-40">Rétablir</button>
+            <button onClick={resetAll} className="px-3 py-2 rounded-xl border border-slate-300 bg-white">Réinitialiser</button>
+            <button onClick={exportPreview} disabled={isExporting} className="px-3 py-2 rounded-xl bg-white border border-slate-300">
               {isExporting ? 'Export...' : 'Exporter PNG'}
             </button>
-            <button onClick={saveDesign} disabled={isSaving} className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-600 font-semibold">
+            <button onClick={saveDesign} disabled={isSaving} className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-semibold">
               {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
             </button>
           </div>
         </div>
 
-        {error && <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-300">{error}</div>}
-        {success && <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-300">{success}</div>}
+        {error && <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">{error}</div>}
+        {success && <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">{success}</div>}
 
-        <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 backdrop-blur p-4 md:p-5">
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {(['style', 'content', 'layout'] as StudioTab[]).map((t) => (
+        <div className="grid grid-cols-1 xl:grid-cols-[430px_1fr] gap-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-5">
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {([
+                { key: 'style', label: 'Style' },
+                { key: 'contenu', label: 'Contenu' },
+                { key: 'mise_en_page', label: 'Mise en page' },
+                { key: 'typographie', label: 'Police' },
+              ] as { key: OngletStudio; label: string }[]).map((t) => (
                 <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium border ${tab === t ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200' : 'bg-slate-900 border-slate-700 text-slate-300'}`}
+                  key={t.key}
+                  onClick={() => setOnglet(t.key)}
+                  className={`px-2 py-2 rounded-lg text-xs font-semibold border ${
+                    onglet === t.key
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                      : 'bg-white border-slate-200 text-slate-600'
+                  }`}
                 >
-                  {t}
+                  {t.label}
                 </button>
               ))}
             </div>
 
-            {tab === 'style' && (
+            {onglet === 'style' && (
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs text-slate-400">Template</label>
+                  <label className="text-xs text-slate-500">Modèle</label>
                   <select className={inputCls} value={form.ticketDesignTemplate} onChange={(e) => updateForm({ ticketDesignTemplate: e.target.value })}>
-                    {TEMPLATES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    {MODELES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400">Presets couleurs</label>
+                  <label className="text-xs text-slate-500">Presets de couleurs</label>
                   <div className="grid grid-cols-2 gap-2 mt-2">
-                    {COLOR_PRESETS.map((preset) => (
+                    {PRESETS_COULEURS.map((preset) => (
                       <button
                         key={preset.name}
-                        onClick={() => updateForm({ ticketDesignPrimaryColor: preset.primary, ticketDesignSecondaryColor: preset.secondary, ticketDesignTextColor: preset.text })}
-                        className="rounded-xl border border-slate-700 p-2 text-left"
+                        onClick={() =>
+                          updateForm({
+                            ticketDesignPrimaryColor: preset.primary,
+                            ticketDesignSecondaryColor: preset.secondary,
+                            ticketDesignTextColor: preset.text,
+                          })
+                        }
+                        className="rounded-xl border border-slate-200 p-2 text-left bg-white"
                       >
                         <div className="h-6 rounded mb-1" style={{ background: `linear-gradient(90deg, ${preset.primary}, ${preset.secondary})` }} />
-                        <div className="text-xs">{preset.name}</div>
+                        <div className="text-xs text-slate-700">{preset.name}</div>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-xs text-slate-400">Couleurs avancées</label>
+                  <label className="text-xs text-slate-500">Couleurs avancées</label>
                   <div className="grid grid-cols-3 gap-2">
                     {(['primary', 'secondary', 'text'] as const).map((type) => (
                       <button
                         key={type}
-                        onClick={() => setActivePicker(type)}
-                        className="rounded-xl border border-slate-700 p-2 text-xs"
+                        onClick={() => setPickerActif(type)}
+                        className="rounded-xl border border-slate-200 p-2 text-xs bg-white"
                       >
                         <div
                           className="h-7 rounded mb-1"
@@ -350,26 +406,26 @@ export default function TicketDesignStudioPage() {
                                   : form.ticketDesignTextColor,
                           }}
                         />
-                        {type}
+                        {type === 'primary' ? 'Primaire' : type === 'secondary' ? 'Secondaire' : 'Texte'}
                       </button>
                     ))}
                   </div>
 
-                  {activePicker && (
-                    <div className="p-3 rounded-xl border border-slate-700 bg-slate-950">
+                  {pickerActif && (
+                    <div className="p-3 rounded-xl border border-slate-200 bg-slate-50">
                       <HexColorPicker
                         color={
-                          activePicker === 'primary'
+                          pickerActif === 'primary'
                             ? form.ticketDesignPrimaryColor
-                            : activePicker === 'secondary'
+                            : pickerActif === 'secondary'
                               ? form.ticketDesignSecondaryColor
                               : form.ticketDesignTextColor
                         }
                         onChange={(color) =>
                           updateForm(
-                            activePicker === 'primary'
+                            pickerActif === 'primary'
                               ? { ticketDesignPrimaryColor: color }
-                              : activePicker === 'secondary'
+                              : pickerActif === 'secondary'
                                 ? { ticketDesignSecondaryColor: color }
                                 : { ticketDesignTextColor: color }
                           )
@@ -381,30 +437,57 @@ export default function TicketDesignStudioPage() {
               </div>
             )}
 
-            {tab === 'content' && (
+            {onglet === 'contenu' && (
               <div className="space-y-4">
-                <div {...getRootProps()} className={`rounded-xl border-2 border-dashed p-4 text-center cursor-pointer ${isDragActive ? 'border-cyan-400 bg-cyan-400/10' : 'border-slate-700 bg-slate-900'}`}>
+                <div
+                  {...getRootProps()}
+                  className={`rounded-xl border-2 border-dashed p-4 text-center cursor-pointer ${
+                    isDragActive ? 'border-indigo-400 bg-indigo-50' : 'border-slate-300 bg-slate-50'
+                  }`}
+                >
                   <input {...getInputProps()} />
-                  <p className="text-sm text-slate-300">Glissez-déposez une image de fond ou cliquez pour uploader</p>
+                  <p className="text-sm text-slate-700">Glissez-déposez une image de fond ou cliquez pour uploader</p>
                   <p className="text-xs text-slate-500 mt-1">JPG / PNG / WebP</p>
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400">URL image fond (optionnel)</label>
-                  <input className={inputCls} value={form.ticketDesignBackgroundUrl} onChange={(e) => { setImageError(false); updateForm({ ticketDesignBackgroundUrl: e.target.value }); }} />
+                  <label className="text-xs text-slate-500">URL image de fond (optionnel)</label>
+                  <input
+                    className={inputCls}
+                    value={form.ticketDesignBackgroundUrl}
+                    onChange={(e) => {
+                      setImageError(false);
+                      updateForm({ ticketDesignBackgroundUrl: e.target.value });
+                    }}
+                  />
                 </div>
+
                 <div>
-                  <label className="text-xs text-slate-400">Titre billet</label>
+                  <label className="text-xs text-slate-500">Titre du billet</label>
                   <input className={inputCls} value={form.ticketDesignCustomTitle} onChange={(e) => updateForm({ ticketDesignCustomTitle: e.target.value })} />
                 </div>
+
                 <div>
-                  <label className="text-xs text-slate-400">Note footer</label>
+                  <label className="text-xs text-slate-500">Note en bas du billet</label>
                   <input className={inputCls} value={form.ticketDesignFooterNote} onChange={(e) => updateForm({ ticketDesignFooterNote: e.target.value })} />
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-500">Intensité overlay image ({Math.round(form.overlayOpacity * 100)}%)</label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.8}
+                    step={0.01}
+                    value={form.overlayOpacity}
+                    onChange={(e) => updateForm({ overlayOpacity: Number(e.target.value) })}
+                    className="w-full"
+                  />
                 </div>
               </div>
             )}
 
-            {tab === 'layout' && (
+            {onglet === 'mise_en_page' && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-2">
                   <label className="flex items-center gap-2 text-sm">
@@ -417,58 +500,132 @@ export default function TicketDesignStudioPage() {
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" checked={form.ticketDesignShowTerms} onChange={(e) => updateForm({ ticketDesignShowTerms: e.target.checked })} />
-                    Afficher conditions footer
+                    Afficher conditions de bas de billet
                   </label>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800">
-                  <label className="text-xs text-slate-400">Mode preview</label>
+                <div className="pt-2 border-t border-slate-200">
+                  <label className="text-xs text-slate-500">Mode de prévisualisation</label>
                   <div className="mt-2 flex gap-2">
-                    <button onClick={() => setMobilePreview(false)} className={`px-3 py-1.5 rounded-lg text-xs border ${!mobilePreview ? 'border-cyan-400 text-cyan-200' : 'border-slate-700 text-slate-400'}`}>Desktop</button>
-                    <button onClick={() => setMobilePreview(true)} className={`px-3 py-1.5 rounded-lg text-xs border ${mobilePreview ? 'border-cyan-400 text-cyan-200' : 'border-slate-700 text-slate-400'}`}>Mobile</button>
+                    <button
+                      onClick={() => setPreviewMobile(false)}
+                      className={`px-3 py-1.5 rounded-lg text-xs border ${!previewMobile ? 'border-indigo-300 text-indigo-700 bg-indigo-50' : 'border-slate-300 text-slate-500 bg-white'}`}
+                    >
+                      Desktop
+                    </button>
+                    <button
+                      onClick={() => setPreviewMobile(true)}
+                      className={`px-3 py-1.5 rounded-lg text-xs border ${previewMobile ? 'border-indigo-300 text-indigo-700 bg-indigo-50' : 'border-slate-300 text-slate-500 bg-white'}`}
+                    >
+                      Mobile
+                    </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-400">Zoom: {Math.round(zoom * 100)}%</label>
+                  <label className="text-xs text-slate-500">Zoom : {Math.round(zoom * 100)}%</label>
                   <input type="range" min={0.7} max={1.3} step={0.01} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full" />
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-500">Rayon des coins : {form.borderRadius}px</label>
+                  <input type="range" min={6} max={34} step={1} value={form.borderRadius} onChange={(e) => updateForm({ borderRadius: Number(e.target.value) })} className="w-full" />
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-500">Ombre</label>
+                  <select className={inputCls} value={form.shadowIntensity} onChange={(e) => updateForm({ shadowIntensity: e.target.value as FormDesign['shadowIntensity'] })}>
+                    <option value="soft">Douce</option>
+                    <option value="medium">Moyenne</option>
+                    <option value="strong">Forte</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {onglet === 'typographie' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-slate-500">Police</label>
+                  <select className={inputCls} value={form.fontFamily} onChange={(e) => updateForm({ fontFamily: e.target.value })}>
+                    {POLICES.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-500">Taille du titre : {form.titleSize}px</label>
+                  <input type="range" min={24} max={56} step={1} value={form.titleSize} onChange={(e) => updateForm({ titleSize: Number(e.target.value) })} className="w-full" />
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-500">Taille du contenu : {form.contentSize}px</label>
+                  <input type="range" min={11} max={22} step={1} value={form.contentSize} onChange={(e) => updateForm({ contentSize: Number(e.target.value) })} className="w-full" />
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-500">Épaisseur du titre : {form.titleWeight}</label>
+                  <input type="range" min={500} max={900} step={100} value={form.titleWeight} onChange={(e) => updateForm({ titleWeight: Number(e.target.value) })} className="w-full" />
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-500">Espacement des lettres : {form.letterSpacing.toFixed(1)}px</label>
+                  <input type="range" min={0} max={4} step={0.1} value={form.letterSpacing} onChange={(e) => updateForm({ letterSpacing: Number(e.target.value) })} className="w-full" />
                 </div>
               </div>
             )}
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 md:p-6">
-            <div className="text-sm text-slate-400 mb-3">Aperçu temps réel</div>
-            <div className={`mx-auto transition-all ${mobilePreview ? 'max-w-[360px]' : 'max-w-[760px]'}`}>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-6">
+            <div className="text-sm text-slate-500 mb-3">Prévisualisation en temps réel</div>
+            <div className={`mx-auto transition-all ${previewMobile ? 'max-w-[360px]' : 'max-w-[760px]'}`}>
               <motion.div
-                key={`${form.ticketDesignTemplate}-${form.ticketDesignPrimaryColor}-${form.ticketDesignSecondaryColor}-${form.ticketDesignTextColor}`}
-                initial={{ opacity: 0.5, y: 8 }}
+                key={`${form.ticketDesignTemplate}-${form.ticketDesignPrimaryColor}-${form.ticketDesignSecondaryColor}-${form.ticketDesignTextColor}-${form.fontFamily}-${form.titleSize}-${form.contentSize}-${form.titleWeight}-${form.letterSpacing}`}
+                initial={{ opacity: 0.65, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
                 style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
               >
-                <div ref={previewRef} className="rounded-2xl overflow-hidden border border-slate-700 shadow-2xl">
+                <div ref={previewRef} className={`overflow-hidden border border-slate-200 ${shadowClass}`} style={{ borderRadius: `${form.borderRadius}px` }}>
                   <div
                     className="relative p-6 md:p-8 min-h-[280px]"
                     style={{
                       background: `linear-gradient(135deg, ${form.ticketDesignPrimaryColor}, ${form.ticketDesignSecondaryColor})`,
                       color: form.ticketDesignTextColor,
+                      fontFamily: form.fontFamily,
                     }}
                   >
                     {form.ticketDesignBackgroundUrl && !imageError && (
                       <img
                         src={form.ticketDesignBackgroundUrl}
                         alt="background"
-                        className="absolute inset-0 w-full h-full object-cover opacity-30"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ opacity: form.overlayOpacity }}
                         onError={() => setImageError(true)}
                       />
                     )}
                     <div className="relative z-10">
-                      <div className="text-xs uppercase tracking-[0.2em] opacity-90">{form.ticketDesignTemplate}</div>
-                      <h3 className="text-2xl md:text-3xl font-black mt-2">{displayTitle}</h3>
-                      <p className="opacity-90 mt-1">{form.title}</p>
+                      <div
+                        className="uppercase opacity-90"
+                        style={{ letterSpacing: `${Math.max(form.letterSpacing, 0.2)}px`, fontSize: `${Math.max(form.contentSize - 2, 10)}px` }}
+                      >
+                        {form.ticketDesignTemplate}
+                      </div>
+                      <h3
+                        className="mt-2"
+                        style={{
+                          fontSize: `${form.titleSize}px`,
+                          fontWeight: form.titleWeight,
+                          letterSpacing: `${form.letterSpacing}px`,
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        {displayTitle}
+                      </h3>
+                      <p className="mt-1 opacity-90" style={{ fontSize: `${form.contentSize}px` }}>{form.title}</p>
 
-                      <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
+                      <div className="mt-6 grid grid-cols-2 gap-3" style={{ fontSize: `${form.contentSize}px` }}>
                         <div>
                           <div className="opacity-70 text-xs">Date</div>
                           <div className="font-bold">12 Avril 2026</div>
@@ -494,14 +651,14 @@ export default function TicketDesignStudioPage() {
                   </div>
 
                   {form.ticketDesignShowTerms && (
-                    <div className="px-5 py-3 text-xs text-slate-300 bg-slate-950 border-t border-slate-700">
+                    <div className="px-5 py-3 text-xs text-slate-600 bg-slate-50 border-t border-slate-200" style={{ fontFamily: form.fontFamily }}>
                       {form.ticketDesignFooterNote?.trim() || 'Merci de présenter ce billet à l’entrée.'}
                     </div>
                   )}
                 </div>
               </motion.div>
             </div>
-            {imageError && <p className="text-xs text-amber-400 mt-3">Image non accessible : fallback gradient activé.</p>}
+            {imageError && <p className="text-xs text-amber-600 mt-3">Image non accessible : fallback gradient actif.</p>}
           </div>
         </div>
       </div>
