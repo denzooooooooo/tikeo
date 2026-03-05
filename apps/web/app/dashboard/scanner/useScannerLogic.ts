@@ -20,6 +20,23 @@ declare class BarcodeDetector {
   detect(img: HTMLVideoElement): Promise<Array<{ rawValue: string }>>;
 }
 
+interface Html5QrcodeLike {
+  start: (
+    cameraIdOrConfig: { facingMode: string } | string,
+    config: { fps?: number; qrbox?: { width: number; height: number } },
+    onSuccess: (decodedText: string) => void,
+    onError?: (errorMessage: string) => void
+  ) => Promise<void>;
+  stop: () => Promise<void>;
+  clear: () => Promise<void>;
+}
+
+declare global {
+  interface Window {
+    Html5Qrcode?: new (elementId: string) => Html5QrcodeLike;
+  }
+}
+
 export function beep(ok: boolean) {
   try {
     const ctx = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
@@ -64,6 +81,7 @@ export function useScannerLogic() {
   const [camActive, setCamActive] = useState(false);
   const [camErr, setCamErr] = useState<string|null>(null);
   const [hasDetector, setHasDetector] = useState(false);
+  const [usingHtml5Qrcode, setUsingHtml5Qrcode] = useState(false);
   const [lastCode, setLastCode] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(false);
   const [cameraStarting, setCameraStarting] = useState(false);
@@ -73,6 +91,7 @@ export function useScannerLogic() {
   const streamRef = useRef<MediaStream|null>(null);
   const rafRef = useRef<number|null>(null);
   const detRef = useRef<BarcodeDetector|null>(null);
+  const html5Ref = useRef<Html5QrcodeLike | null>(null);
   const sseRef = useRef<AbortController|null>(null);
   const tidRef = useRef(0);
 
@@ -125,8 +144,16 @@ export function useScannerLogic() {
     return () => { sseRef.current?.abort(); };
   }, [connectSSE]);
 
-  const stopCam = useCallback(() => {
+  const stopCam = useCallback(async () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+    if (html5Ref.current) {
+      try { await html5Ref.current.stop(); } catch {}
+      try { await html5Ref.current.clear(); } catch {}
+      html5Ref.current = null;
+      setUsingHtml5Qrcode(false);
+    }
+
     streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     setCamActive(false); setLastCode(null);
@@ -135,22 +162,22 @@ export function useScannerLogic() {
   const startCam = useCallback(async () => {
     setCamErr(null);
     setCameraStarting(true);
-    if (!hasDetector) {
-      setCamErr('BarcodeDetector non supporte. Utilisez Chrome 83+, Edge 83+ ou Safari 17+.');
-      setCameraStarting(false);
-      return;
-    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+      if (hasDetector) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        detRef.current = new BarcodeDetector({ formats: ['qr_code'] });
+        setCamActive(true);
+        return;
       }
-      detRef.current = new BarcodeDetector({ formats: ['qr_code'] });
-      setCamActive(true);
+
+      setCamErr('BarcodeDetector non supporté ici. Utilisez le mode Manuel / USB.');
     } catch (e: any) {
       if (e?.name === 'NotAllowedError') setCamErr("Permission camera refusee. Autorisez l'acces dans les parametres.");
       else if (e?.name === 'NotFoundError') setCamErr('Aucune camera detectee.');
@@ -184,6 +211,7 @@ export function useScannerLogic() {
   }, [qrInput, toast]);
 
   useEffect(() => {
+    if (usingHtml5Qrcode) return;
     if (!camActive || !detRef.current || !videoRef.current) return;
     let alive = true;
     const scan = async () => {
@@ -210,9 +238,9 @@ export function useScannerLogic() {
   }, [camActive, cooldown, lastCode, doScan]);
 
   useEffect(() => {
-    if (mode === 'camera') startCam(); else stopCam();
-    return () => stopCam();
-  }, [mode]); // eslint-disable-line
+    if (mode === 'camera') { void startCam(); } else { void stopCam(); }
+    return () => { void stopCam(); };
+  }, [mode, startCam, stopCam]);
 
   useEffect(() => () => { stopCam(); sseRef.current?.abort(); }, []); // eslint-disable-line
 

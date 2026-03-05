@@ -37,6 +37,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [tokens, setTokens] = useState<AuthTokens | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const syncFromStorage = useCallback(() => {
+    try {
+      const storedTokens = localStorage.getItem(TOKEN_KEY);
+      const storedUser = localStorage.getItem(USER_KEY);
+
+      if (!storedTokens || !storedUser) {
+        setTokens(null);
+        setUser(null);
+        return;
+      }
+
+      const parsedTokens: AuthTokens = JSON.parse(storedTokens);
+      const parsedUser: AuthUser = JSON.parse(storedUser);
+
+      if (!parsedTokens?.accessToken) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        setTokens(null);
+        setUser(null);
+        return;
+      }
+
+      setTokens(parsedTokens);
+      setUser(parsedUser);
+    } catch {
+      setTokens(null);
+      setUser(null);
+    }
+  }, []);
+
   // Initialize auth state from localStorage on mount — validate token against API
   useEffect(() => {
     const initializeAuth = async () => {
@@ -133,6 +163,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initializeAuth();
   }, []);
+
+  useEffect(() => {
+    const handleAuthUpdated = () => syncFromStorage();
+    const handleStorage = (e: StorageEvent) => {
+      if (!e.key || e.key === TOKEN_KEY || e.key === USER_KEY) {
+        syncFromStorage();
+      }
+    };
+
+    window.addEventListener('auth-updated', handleAuthUpdated);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('auth-updated', handleAuthUpdated);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [syncFromStorage]);
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);

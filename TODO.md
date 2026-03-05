@@ -1,21 +1,22 @@
-# TODO - Refonte emails + scanner billets
+# TODO - Ticket design links + email parity
 
 - [x] Lire les fichiers clés
+  - [x] apps/web/app/dashboard/events/create/page.tsx
+  - [x] apps/web/app/dashboard/events/[id]/edit/page.tsx
+  - [x] apps/web/app/dashboard/events/[id]/ticket-design/page.tsx
   - [x] services/api-gateway/src/email/email.service.ts
-  - [x] services/api-gateway/src/tickets/tickets.service.ts
-  - [x] services/api-gateway/src/tickets/tickets.controller.ts
-  - [x] apps/web/app/dashboard/scanner/page.tsx
   - [x] apps/web/app/dashboard/scanner/useScannerLogic.ts
 
 - [ ] Implémentation
-  - [ ] Refonte visuelle des templates email
-  - [ ] Améliorer le rendu du billet dans email avec design organisateur
-  - [ ] Ajouter reply-to/headers utiles dans l’envoi email
-  - [ ] Renforcer validation QR backend (garde-fous/messages)
-  - [ ] Améliorer scanner UI dark + fiabilité scan
+  - [x] Supprimer formulaire inline design sur create event (garder uniquement logique lien/studio)
+  - [x] Supprimer formulaire inline design sur edit event (garder uniquement lien studio)
+  - [ ] Aligner sendTicketEmail sur le rendu preview du studio design
+  - [ ] Mettre texte email: "Cher client, voici votre billet pour l’événement ..."
+  - [ ] S’assurer que le QR valide est bien inséré et visible dans le mail
+  - [ ] Finaliser fallback scanner si BarcodeDetector non supporté (mode manuel)
 
 - [ ] Vérifications après implémentation
-  - [ ] Build API gateway
-  - [ ] Tests API scanner/validate (curl)
-  - [ ] Vérification fonctionnelle page scanner
-  - [ ] Test envoi email template (endpoint test-email)
+  - [ ] Build TypeScript web
+  - [ ] Build TypeScript api-gateway
+  - [ ] Vérification UI create/edit: lien studio seulement
+  - [ ] Vérification rendu email billet + présence QR

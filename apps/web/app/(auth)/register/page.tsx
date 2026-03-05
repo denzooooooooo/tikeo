@@ -95,6 +95,11 @@ export default function RegisterPage() {
 
   const strength = passwordStrength();
 
+  const handleOAuthLogin = (provider: string) => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+    window.location.href = `${apiUrl}/auth/${provider}`;
+  };
+
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Decorative */}
@@ -170,6 +175,7 @@ export default function RegisterPage() {
           <div className="space-y-3">
             <button
               type="button"
+              onClick={() => handleOAuthLogin('google')}
               className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-gray-200 rounded-xl hover:border-[#5B7CFF] hover:shadow-lg transition-all duration-200 group"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -185,6 +191,7 @@ export default function RegisterPage() {
 
             <button
               type="button"
+              onClick={() => handleOAuthLogin('github')}
               className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white border-2 border-gray-200 rounded-xl hover:border-[#5B7CFF] hover:shadow-lg transition-all duration-200 group"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

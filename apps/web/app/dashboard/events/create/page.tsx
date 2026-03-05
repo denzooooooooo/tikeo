@@ -23,15 +23,6 @@ const COUNTRIES = [
   'Burkina Faso', 'Niger', 'Guinée', 'France', 'Belgique', 'Canada', 'Autre',
 ];
 
-const TICKET_DESIGN_TEMPLATES = [
-  { value: 'CLASSIC', label: 'Classic' },
-  { value: 'NEON', label: 'Neon' },
-  { value: 'GOLD', label: 'Gold' },
-  { value: 'MINIMAL', label: 'Minimal' },
-  { value: 'LUXURY', label: 'Luxury' },
-  { value: 'FESTIVE', label: 'Festive' },
-  { value: 'CORPORATE', label: 'Corporate' },
-];
 
 const STEPS = ['Infos', 'Date & Lieu', 'Billets'];
 
@@ -69,17 +60,6 @@ function CreateEventForm() {
     venueName: '', venueAddress: '', venueCity: '', venueCountry: "Côte d'Ivoire",
     currency: 'XOF',
     isOnline: false, isFree: false,
-    // Ticket design customization
-    ticketDesignTemplate: 'CLASSIC',
-    ticketDesignBackgroundUrl: '',
-    ticketDesignPrimaryColor: '#5B7CFF',
-    ticketDesignSecondaryColor: '#7B61FF',
-    ticketDesignTextColor: '#111827',
-    ticketDesignCustomTitle: '',
-    ticketDesignFooterNote: '',
-    ticketDesignShowQr: true,
-    ticketDesignShowSeat: true,
-    ticketDesignShowTerms: true,
     tickets: [{ name: 'Standard', description: '', price: '0', quantity: '100' }] as TicketType[],
   });
 
@@ -176,17 +156,6 @@ function CreateEventForm() {
             price: f.isFree ? 0 : parseFloat(t.price) || 0,
             quantity: parseInt(t.quantity) || 0,
           })),
-          // Ticket design customization
-          ticketDesignTemplate: f.ticketDesignTemplate,
-          ticketDesignBackgroundUrl: f.ticketDesignBackgroundUrl || undefined,
-          ticketDesignPrimaryColor: f.ticketDesignPrimaryColor,
-          ticketDesignSecondaryColor: f.ticketDesignSecondaryColor,
-          ticketDesignTextColor: f.ticketDesignTextColor,
-          ticketDesignCustomTitle: f.ticketDesignCustomTitle || undefined,
-          ticketDesignFooterNote: f.ticketDesignFooterNote || undefined,
-          ticketDesignShowQr: f.ticketDesignShowQr,
-          ticketDesignShowSeat: f.ticketDesignShowSeat,
-          ticketDesignShowTerms: f.ticketDesignShowTerms,
         }),
       });
 
@@ -526,69 +495,11 @@ function CreateEventForm() {
               </div>
               <Toggle on={f.isFree} onToggle={() => set('isFree', !f.isFree)} />
             </div>
-            <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-4">
-              <h3 className="font-semibold text-gray-800 text-sm">🎨 Design du billet</h3>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Template</label>
-                <select
-                  value={f.ticketDesignTemplate}
-                  onChange={e => set('ticketDesignTemplate', e.target.value)}
-                  className={inp_sm}
-                >
-                  {TICKET_DESIGN_TEMPLATES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Image de fond (URL)</label>
-                <input
-                  type="url"
-                  value={f.ticketDesignBackgroundUrl}
-                  onChange={e => set('ticketDesignBackgroundUrl', e.target.value)}
-                  className={inp_sm}
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Couleur primaire</label>
-                  <input type="color" value={f.ticketDesignPrimaryColor} onChange={e => set('ticketDesignPrimaryColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Couleur secondaire</label>
-                  <input type="color" value={f.ticketDesignSecondaryColor} onChange={e => set('ticketDesignSecondaryColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Couleur texte</label>
-                  <input type="color" value={f.ticketDesignTextColor} onChange={e => set('ticketDesignTextColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Titre personnalisé</label>
-                <input
-                  type="text"
-                  value={f.ticketDesignCustomTitle}
-                  onChange={e => set('ticketDesignCustomTitle', e.target.value)}
-                  className={inp_sm}
-                  placeholder="Ex: Billet VIP Officiel"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Note en bas de billet</label>
-                <input
-                  type="text"
-                  value={f.ticketDesignFooterNote}
-                  onChange={e => set('ticketDesignFooterNote', e.target.value)}
-                  className={inp_sm}
-                  placeholder="Ex: Non remboursable"
-                />
-              </div>
+            <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+              <p className="text-sm font-semibold text-indigo-900">🎨 Design du billet</p>
+              <p className="text-xs text-indigo-700 mt-1">
+                Le design du billet se configure dans le studio après la création de l’événement.
+              </p>
             </div>
 
             <TicketSection

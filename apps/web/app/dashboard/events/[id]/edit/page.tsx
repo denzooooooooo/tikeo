@@ -605,54 +605,11 @@ export default function EditEventPage() {
           </div>
 
           {/* Ticket design */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">🎨 Design du billet</h2>
-            <div className="space-y-4">
-              <div>
-                <label className={labelCls}>Template</label>
-                <select
-                  value={form.ticketDesignTemplate}
-                  onChange={(e) => handleChange('ticketDesignTemplate', e.target.value)}
-                  className={inputCls}
-                >
-                  {TICKET_DESIGN_TEMPLATES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Image de fond (URL)</label>
-                <input
-                  type="url"
-                  value={form.ticketDesignBackgroundUrl}
-                  onChange={(e) => handleChange('ticketDesignBackgroundUrl', e.target.value)}
-                  className={inputCls}
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className={labelCls}>Couleur primaire</label>
-                  <input type="color" value={form.ticketDesignPrimaryColor} onChange={(e) => handleChange('ticketDesignPrimaryColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200" />
-                </div>
-                <div>
-                  <label className={labelCls}>Couleur secondaire</label>
-                  <input type="color" value={form.ticketDesignSecondaryColor} onChange={(e) => handleChange('ticketDesignSecondaryColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200" />
-                </div>
-                <div>
-                  <label className={labelCls}>Couleur texte</label>
-                  <input type="color" value={form.ticketDesignTextColor} onChange={(e) => handleChange('ticketDesignTextColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200" />
-                </div>
-              </div>
-              <div>
-                <label className={labelCls}>Titre personnalisé</label>
-                <input type="text" value={form.ticketDesignCustomTitle} onChange={(e) => handleChange('ticketDesignCustomTitle', e.target.value)} className={inputCls} placeholder="Ex: Billet VIP Officiel" />
-              </div>
-              <div>
-                <label className={labelCls}>Note en bas de billet</label>
-                <input type="text" value={form.ticketDesignFooterNote} onChange={(e) => handleChange('ticketDesignFooterNote', e.target.value)} className={inputCls} placeholder="Ex: Non remboursable" />
-              </div>
-            </div>
+          <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6">
+            <h2 className="text-lg font-bold text-indigo-900 mb-2">🎨 Design du billet</h2>
+            <p className="text-sm text-indigo-700">
+              Le design du billet se configure uniquement dans le studio de design billet.
+            </p>
           </div>
 
           {/* Save button */}

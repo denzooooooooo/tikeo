@@ -300,9 +300,16 @@ export default function PromoCodesPage() {
           <EmptyState
             title="Aucun code promo"
             description="Créez votre premier code promo pour attirer plus de clients"
-            icon={TicketIcon}
-            actionLabel="Créer un code"
-            onAction={() => setShowModal(true)}
+            icon={<TicketIcon size={28} className="text-gray-400" />}
+            action={
+              <button
+                onClick={() => setShowModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#5B7CFF] text-white font-medium hover:bg-[#4a6be8] transition-colors"
+              >
+                <PlusIcon size={16} />
+                Créer un code
+              </button>
+            }
           />
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">

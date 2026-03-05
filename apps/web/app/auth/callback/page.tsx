@@ -54,8 +54,8 @@ function OAuthCallbackContent() {
       setStatus('success');
       setMessage(`Connexion ${provider} réussie ! Redirection...`);
 
-      // Déclencher un événement pour que AuthContext se mette à jour
-      window.dispatchEvent(new Event('storage'));
+      // Déclencher un événement explicite pour sync AuthContext (même onglet)
+      window.dispatchEvent(new Event('auth-updated'));
 
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err) {
