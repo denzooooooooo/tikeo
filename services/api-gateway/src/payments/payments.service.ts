@@ -62,7 +62,8 @@ export class PaymentsService implements OnModuleInit {
   }
 
   async confirmPayment(paymentIntentId: string) {
-    const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+    this.checkStripe();
+    const paymentIntent = await this.stripe!.paymentIntents.retrieve(paymentIntentId);
 
     const payment = await this.prisma.payment.findFirst({
       where: { stripePaymentIntentId: paymentIntentId },
@@ -93,151 +94,165 @@ export class PaymentsService implements OnModuleInit {
         include: { OrderItem: true },
       });
 
-      if (order) {
-        // ✅ Update event stats + invalidate Redis cache
-        const eventData = await this.prisma.event.findUnique({
-          where: { id: order.eventId },
-          select: { slug: true, title: true, startDate: true, venueName: true },
-        });
-        const totalQty = order.OrderItem.reduce((s, i) => s + i.quantity, 0);
-        await this.prisma.event.update({
-          where: { id: order.eventId },
-          data: {
-            ticketsAvailable: { decrement: totalQty },
-            ticketsSold: { increment: totalQty },
-          },
-        });
-        if (eventData) {
-          await this.redis.del(`event:${order.eventId}`);
-          await this.redis.del(`event:slug:${eventData.slug}`);
-        }
+      if (!order) {
+        this.logger.error(`Order not found for payment ${paymentIntentId}`);
+        return { success: false, error: 'Order not found' };
+      }
 
-        const createdTicketsByType = new Map<string, Array<{ id: string; qrCode: string }>>();
-        for (const item of order.OrderItem) {
-          // ✅ Decrement available count for paid tickets
-          await this.prisma.ticketType.update({
-            where: { id: item.ticketTypeId },
-            data: { available: { decrement: item.quantity }, sold: { increment: item.quantity } },
+      // ✅ Update event stats + invalidate Redis cache
+      const eventData = await this.prisma.event.findUnique({
+        where: { id: order.eventId },
+        select: { slug: true, title: true, startDate: true, venueName: true },
+      });
+      const totalQty = order.OrderItem.reduce((s, i) => s + i.quantity, 0);
+      await this.prisma.event.update({
+        where: { id: order.eventId },
+        data: {
+          ticketsAvailable: { decrement: totalQty },
+          ticketsSold: { increment: totalQty },
+        },
+      });
+      if (eventData) {
+        await this.redis.del(`event:${order.eventId}`);
+        await this.redis.del(`event:slug:${eventData.slug}`);
+      }
+
+      const createdTicketsByType = new Map<string, Array<{ id: string; qrCode: string }>>();
+      for (const item of order.OrderItem) {
+        // ✅ Decrement available count for paid tickets
+        await this.prisma.ticketType.update({
+          where: { id: item.ticketTypeId },
+          data: { available: { decrement: item.quantity }, sold: { increment: item.quantity } },
+        });
+
+        const createdTickets: Array<{ id: string; qrCode: string }> = [];
+        for (let i = 0; i < item.quantity; i++) {
+          const createdTicket = await this.prisma.ticket.create({
+            data: {
+              orderId: order.id,
+              eventId: order.eventId,
+              userId: order.userId,
+              ticketTypeId: item.ticketTypeId,
+              qrCode: this.generateQRCode(),
+              status: 'VALID',
+              purchaseDate: new Date(),
+              price: item.price,
+              fees: 0,
+              total: item.price,
+            } as any,
+            select: { id: true, qrCode: true },
           });
-
-          const createdTickets: Array<{ id: string; qrCode: string }> = [];
-          for (let i = 0; i < item.quantity; i++) {
-            const createdTicket = await this.prisma.ticket.create({
-              data: {
-                orderId: order.id,
-                eventId: order.eventId,
-                userId: order.userId,
-                ticketTypeId: item.ticketTypeId,
-                qrCode: this.generateQRCode(),
-                status: 'VALID',
-                purchaseDate: new Date(),
-                price: item.price,
-                fees: 0,
-                total: item.price,
-              } as any,
-              select: { id: true, qrCode: true },
-            });
-            createdTickets.push(createdTicket);
-          }
-          createdTicketsByType.set(item.ticketTypeId, createdTickets);
+          createdTickets.push(createdTicket);
         }
+        createdTicketsByType.set(item.ticketTypeId, createdTickets);
+      }
 
-        // Send confirmation email (fire and forget)
+      // Send confirmation email (fire and forget)
+      // Get user email (logged in) OR guest email
+      let confirmEmail: string | null = null;
+
+      if (order.userId) {
+        // Logged in user
         const user = await this.prisma.user.findUnique({
           where: { id: order.userId },
           select: { email: true },
         });
-        const event = eventData ?? await this.prisma.event.findUnique({
-          where: { id: order.eventId },
-          select: {
-            title: true,
-            startDate: true,
-            venueName: true,
-            ticketDesignTemplate: true,
-            ticketDesignBackgroundUrl: true,
-            ticketDesignPrimaryColor: true,
-            ticketDesignSecondaryColor: true,
-            ticketDesignTextColor: true,
-            ticketDesignShowQr: true,
-            ticketDesignShowSeat: true,
-            ticketDesignShowTerms: true,
-            ticketDesignCustomTitle: true,
-            ticketDesignFooterNote: true,
-          },
-        });
+        confirmEmail = user?.email || null;
+      } else if (order.guestEmail) {
+        // Guest (not logged in)
+        confirmEmail = order.guestEmail;
+      }
 
-        if (user && event) {
-          try {
-            const result = await this.emailService.sendOrderConfirmationEmail(user.email, {
-              orderId: order.id,
-              total: order.total,
-              eventTitle: event.title,
-              ticketCount: order.OrderItem.reduce((sum, i) => sum + i.quantity, 0),
-            });
-            
-            if (result.success) {
-              this.logger.log(`Order confirmation email sent successfully to ${user.email} for order ${order.id} (messageId: ${result.messageId})`);
-            } else {
-              this.logger.error(`Failed to send order confirmation email to ${user.email} for order ${order.id}: ${result.error}`);
-            }
-          } catch (err) {
-            this.logger.error(`Exception sending order confirmation email to ${user.email} for order ${order.id}: ${err}`);
+      const event = eventData ?? await this.prisma.event.findUnique({
+        where: { id: order.eventId },
+        select: {
+          title: true,
+          startDate: true,
+          venueName: true,
+          ticketDesignTemplate: true,
+          ticketDesignBackgroundUrl: true,
+          ticketDesignPrimaryColor: true,
+          ticketDesignSecondaryColor: true,
+          ticketDesignTextColor: true,
+          ticketDesignShowQr: true,
+          ticketDesignShowSeat: true,
+          ticketDesignShowTerms: true,
+          ticketDesignCustomTitle: true,
+          ticketDesignFooterNote: true,
+        },
+      });
+
+      if (confirmEmail && event) {
+        try {
+          const result = await this.emailService.sendOrderConfirmationEmail(confirmEmail, {
+            orderId: order.id,
+            total: order.total,
+            eventTitle: event.title,
+            ticketCount: order.OrderItem.reduce((sum, i) => sum + i.quantity, 0),
+          });
+
+          if (result.success) {
+            this.logger.log(`Order confirmation email sent successfully to ${confirmEmail} for order ${order.id} (messageId: ${result.messageId})`);
+          } else {
+            this.logger.error(`Failed to send order confirmation email to ${confirmEmail} for order ${order.id}: ${result.error}`);
           }
+        } catch (err) {
+          this.logger.error(`Exception sending order confirmation email to ${confirmEmail} for order ${order.id}: ${err}`);
+        }
 
-          const ticketDesign = {
-            template: (event as any).ticketDesignTemplate,
-            backgroundUrl: (event as any).ticketDesignBackgroundUrl,
-            primaryColor: (event as any).ticketDesignPrimaryColor,
-            secondaryColor: (event as any).ticketDesignSecondaryColor,
-            textColor: (event as any).ticketDesignTextColor,
-            showQr: (event as any).ticketDesignShowQr,
-            showSeat: (event as any).ticketDesignShowSeat,
-            showTerms: (event as any).ticketDesignShowTerms,
-            customTitle: (event as any).ticketDesignCustomTitle,
-            footerNote: (event as any).ticketDesignFooterNote,
-          };
+        const ticketDesign = {
+          template: (event as any).ticketDesignTemplate,
+          backgroundUrl: (event as any).ticketDesignBackgroundUrl,
+          primaryColor: (event as any).ticketDesignPrimaryColor,
+          secondaryColor: (event as any).ticketDesignSecondaryColor,
+          textColor: (event as any).ticketDesignTextColor,
+          showQr: (event as any).ticketDesignShowQr,
+          showSeat: (event as any).ticketDesignShowSeat,
+          showTerms: (event as any).ticketDesignShowTerms,
+          customTitle: (event as any).ticketDesignCustomTitle,
+          footerNote: (event as any).ticketDesignFooterNote,
+        };
 
-          for (const item of order.OrderItem) {
-            const itemTicketType = await this.prisma.ticketType.findUnique({
-              where: { id: item.ticketTypeId },
-              select: { name: true },
-            });
-            const itemTickets = createdTicketsByType.get(item.ticketTypeId) || [];
+        for (const item of order.OrderItem) {
+          const itemTicketType = await this.prisma.ticketType.findUnique({
+            where: { id: item.ticketTypeId },
+            select: { name: true },
+          });
+          const itemTickets = createdTicketsByType.get(item.ticketTypeId) || [];
 
-            for (const t of itemTickets) {
-              try {
-                const result = await this.emailService.sendTicketEmail(user.email, {
-                  eventTitle: event.title,
-                  eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
-                  venue: event.venueName || '',
-                  ticketType: itemTicketType?.name || 'Billet',
-                  orderId: order.id,
-                  ticketId: t.id,
-                  qrCode: t.qrCode,
-                  ticketDesign,
-                });
-                
-                if (result.success) {
-                  this.logger.log(`Ticket email sent successfully to ${user.email} for ticket ${t.id} (messageId: ${result.messageId})`);
-                } else {
-                  this.logger.error(`Failed to send ticket email to ${user.email} for ticket ${t.id}: ${result.error}`);
-                }
-              } catch (err) {
-                this.logger.error(`Exception sending ticket email to ${user.email} for ticket ${t.id}: ${err}`);
+          for (const t of itemTickets) {
+            try {
+              const result = await this.emailService.sendTicketEmail(confirmEmail, {
+                eventTitle: event.title,
+                eventDate: event.startDate?.toLocaleDateString('fr-FR') || '',
+                venue: event.venueName || '',
+                ticketType: itemTicketType?.name || 'Billet',
+                orderId: order.id,
+                ticketId: t.id,
+                qrCode: t.qrCode,
+                ticketDesign,
+              });
+
+              if (result.success) {
+                this.logger.log(`Ticket email sent successfully to ${confirmEmail} for ticket ${t.id} (messageId: ${result.messageId})`);
+              } else {
+                this.logger.error(`Failed to send ticket email to ${confirmEmail} for ticket ${t.id}: ${result.error}`);
               }
+            } catch (err) {
+              this.logger.error(`Exception sending ticket email to ${confirmEmail} for ticket ${t.id}: ${err}`);
             }
           }
         }
-
-        // 🔔 Real notification: payment confirmed
-        this.notificationsService.createNotification({
-          userId: order.userId,
-          type: 'TICKET_PURCHASED',
-          title: '🎫 Paiement confirmé !',
-          message: `Votre paiement pour "${event?.title || 'l\'événement'}" a été accepté. Vos billets sont prêts !`,
-          data: { orderId: order.id, eventId: order.eventId },
-        }).catch(() => {});
       }
+
+      // 🔔 Real notification: payment confirmed
+      this.notificationsService.createNotification({
+        userId: order.userId,
+        type: 'TICKET_PURCHASED',
+        title: '🎫 Paiement confirmé !',
+        message: `Votre paiement pour "${event?.title || 'l\'événement'}" a été accepté. Vos billets sont prêts !`,
+        data: { orderId: order.id, eventId: order.eventId },
+      }).catch(() => {});
 
       return { success: true, payment };
     }
@@ -254,7 +269,8 @@ export class PaymentsService implements OnModuleInit {
       throw new Error('Payment not found');
     }
 
-    const refund = await this.stripe.refunds.create({
+    this.checkStripe();
+    const refund = await this.stripe!.refunds.create({
       payment_intent: payment.stripePaymentIntentId,
     });
 
