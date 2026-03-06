@@ -100,7 +100,7 @@ export class OrganizersService {
   }
 
   // Payout Configuration
-  async updatePayoutConfig(data: {
+  async updatePayoutConfig(userId: string, data: {
     payoutMethod: string;
     payoutPhone?: string;
     payoutEmail?: string;
@@ -108,7 +108,49 @@ export class OrganizersService {
     payoutBankName?: string;
     payoutSwift?: string;
   }) {
-    return { success: true, message: 'Payout config updated' };
+    const organizer = await this.prisma.organizer.findUnique({
+      where: { userId },
+    });
+
+    if (!organizer) {
+      throw new NotFoundException('Organisateur non trouvé');
+    }
+
+    return this.prisma.organizer.update({
+      where: { id: organizer.id },
+      data: {
+        payoutMethod: data.payoutMethod,
+        payoutPhone: data.payoutPhone || null,
+        payoutEmail: data.payoutEmail || null,
+        payoutIban: data.payoutIban || null,
+        payoutBankName: data.payoutBankName || null,
+        payoutSwift: data.payoutSwift || null,
+      },
+    });
+  }
+
+  // Get payout config for current user
+  async getPayoutConfig(userId: string) {
+    const organizer = await this.prisma.organizer.findUnique({
+      where: { userId },
+      select: {
+        payoutMethod: true,
+        payoutPhone: true,
+        payoutEmail: true,
+        payoutIban: true,
+        payoutBankName: true,
+        payoutSwift: true,
+      },
+    });
+
+    if (!organizer) {
+      throw new NotFoundException('Organisateur non trouvé');
+    }
+
+    return {
+      isConfigured: this.isPayoutConfigured(organizer),
+      ...organizer,
+    };
   }
 
   // Get pending payouts for an organizer (after event ends)
@@ -278,11 +320,11 @@ export class OrganizersService {
     return { sent: false, reason: result.error || 'EMAIL_FAILED' };
   }
 
-  // Calculate commission for an order (3% of total revenue)
+  // Calculate commission for an order (1% of total revenue)
   calculateCommission(
     totalRevenue: number,
     ticketCount: number,
-    baseRate: number = 3.0,  // 3% commission
+    baseRate: number = 1.0,  // 1% commission
   ): number {
     const percentageCommission = totalRevenue * (baseRate / 100);
     return percentageCommission;

@@ -38,6 +38,15 @@ export class OrdersController {
     return this.ordersService.findUserOrders(userId);
   }
 
+  @Get('organizer')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get organizer orders with buyer info' })
+  @ApiResponse({ status: 200, description: 'Orders retrieved successfully' })
+  async getOrganizerOrders(@Request() req: any) {
+    return this.ordersService.findOrganizerOrders(req.user.id);
+  }
+
   @Get(':id/user/:userId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

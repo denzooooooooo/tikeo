@@ -14,14 +14,6 @@ function getToken(): string | null {
   } catch { return null; }
 }
 
-function getUserId(): string | null {
-  try {
-    const stored = localStorage.getItem('auth_user');
-    if (!stored) return null;
-    return JSON.parse(stored).id ?? null;
-  } catch { return null; }
-}
-
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700',
   CONFIRMED: 'bg-blue-100 text-blue-700',
@@ -50,13 +42,13 @@ export default function DashboardOrdersPage() {
     setError(null);
     try {
       const token = getToken();
-      const userId = getUserId();
-      if (!userId) throw new Error('Utilisateur non connecté');
+      if (!token) throw new Error('Utilisateur non connecté');
 
-      const res = await fetch(`${API_URL}/orders/user/${userId}`, {
+      // Use organizer endpoint to get orders with buyer info
+      const res = await fetch(`${API_URL}/orders/organizer`, {
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
       });
       if (!res.ok) throw new Error('Erreur lors du chargement des commandes');
@@ -171,6 +163,7 @@ export default function DashboardOrdersPage() {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Commande</th>
+                      <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Acheteur</th>
                       <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Événement</th>
                       <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Date</th>
                       <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Statut</th>
@@ -183,6 +176,21 @@ export default function DashboardOrdersPage() {
                       <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-4 px-6">
                           <p className="font-mono text-xs text-gray-500">#{order.id?.slice(-8).toUpperCase()}</p>
+                        </td>
+                        <td className="py-4 px-6">
+                          {order.buyer ? (
+                            <div>
+                              <p className="font-medium text-gray-900 text-sm">
+                                {order.buyer.firstName} {order.buyer.lastName}
+                              </p>
+                              <p className="text-xs text-gray-500">{order.buyer.email}</p>
+                              {order.buyer.phone && (
+                                <p className="text-xs text-gray-400">{order.buyer.phone}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">—</span>
+                          )}
                         </td>
                         <td className="py-4 px-6">
                           <p className="font-semibold text-gray-900 text-sm line-clamp-1">

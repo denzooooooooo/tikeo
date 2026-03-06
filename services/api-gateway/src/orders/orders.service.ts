@@ -350,4 +350,93 @@ export class OrdersService {
       },
     });
   }
+
+  // Get orders for organizer events with buyer info
+  async findOrganizerOrders(userId: string) {
+    // First find the organizer
+    const organizer = await this.prisma.organizer.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!organizer) {
+      return [];
+    }
+
+    // Get orders for events owned by this organizer
+    const orders = await this.prisma.order.findMany({
+      where: {
+        event: { organizerId: organizer.id },
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            coverImage: true,
+            startDate: true,
+            venueName: true,
+            venueCity: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        OrderItem: {
+          include: {
+            ticketType: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+              },
+            },
+          },
+        },
+        tickets: {
+          select: {
+            id: true,
+            qrCode: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Transform to include buyer info (user or guest)
+    return orders.map((order) => ({
+      ...order,
+      buyer: order.user
+        ? {
+            type: 'user',
+            firstName: order.user.firstName,
+            lastName: order.user.lastName,
+            email: order.user.email,
+            phone: order.user.phone,
+          }
+        : order.guestEmail
+        ? {
+            type: 'guest',
+            firstName: order.guestEmail.split('@')[0], // Fallback
+            lastName: '',
+            email: order.guestEmail,
+            phone: order.guestPhone,
+          }
+        : null,
+      items: order.OrderItem,
+      OrderItem: undefined,
+      user: undefined,
+      guestEmail: undefined,
+      guestPhone: undefined,
+    }));
+  }
 }

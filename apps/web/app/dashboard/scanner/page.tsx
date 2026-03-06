@@ -55,7 +55,7 @@ export default function ScannerPage() {
   const {
     mode, setMode, qrInput, setQrInput, result, loading,
     history, setHistory, toasts, rmToast, sseOk,
-    camActive, camErr, cameraStarting, camLastDetected, videoRef, startCam, stopCam, doScan, stats,
+    camActive, camErr, cameraStarting, camLastDetected, scannerContainerRef, startCam, stopCam, doScan, stats,
   } = useScannerLogic();
 
   return (
@@ -129,8 +129,7 @@ export default function ScannerPage() {
                   <p className="text-gray-600 text-xs mt-3">Ou passez en mode <strong className="text-gray-400">Manuel / USB</strong></p>
                 </div>
               ) : (
-                <div className="relative bg-black">
-                  <video ref={videoRef} className="w-full aspect-square object-cover" playsInline muted autoPlay />
+                <div className="relative bg-black aspect-square" ref={scannerContainerRef}>
                   {camActive && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="absolute inset-0 bg-black/30" />

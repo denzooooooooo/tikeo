@@ -383,45 +383,210 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Security Section */}
+        {/* Payout Section for Organizers */}
         <div className="mt-8 bg-white rounded-2xl shadow-lg p-6 md:p-8">
           <div className="flex items-center gap-3 mb-6">
-            <ShieldCheckIcon className="text-green-500" size={24} />
-            <h2 className="text-xl font-bold text-gray-900">Sécurité du compte</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <p className="font-medium text-gray-900 mb-1">Mot de passe</p>
-              <p className="text-sm text-gray-500 mb-3">Dernière modification il y a 30 jours</p>
-              <Link
-                href="/settings?tab=security"
-                className="text-[#5B7CFF] text-sm font-medium hover:underline"
-              >
-                Modifier
-              </Link>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <p className="font-medium text-gray-900 mb-1">Authentification à deux facteurs</p>
-              <p className="text-sm text-gray-500 mb-3">Non activée</p>
-              <Link
-                href="/settings?tab=security"
-                className="text-[#5B7CFF] text-sm font-medium hover:underline"
-              >
-                Activer
-              </Link>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <p className="font-medium text-gray-900 mb-1">Sessions actives</p>
-              <p className="text-sm text-gray-500 mb-3">1 appareil</p>
-              <Link
-                href="/settings?tab=security"
-                className="text-[#5B7CFF] text-sm font-medium hover:underline"
-              >
-                Gérer
-              </Link>
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl">💳</div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Informations de paiement</h2>
+              <p className="text-sm text-gray-500">Configurez vos informations pour recevoir vos revenus</p>
             </div>
           </div>
+          
+          <PayoutSettings />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PayoutSettings() {
+  const [payoutConfig, setPayoutConfig] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getToken = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const stored = localStorage.getItem('auth_tokens');
+      return stored ? JSON.parse(stored).accessToken : null;
+    } catch { return null; }
+  };
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+
+  useEffect(() => {
+    fetchPayoutConfig();
+  }, []);
+
+  const fetchPayoutConfig = async () => {
+    setIsLoading(true);
+    const token = getToken();
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/organizers/payout/config`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPayoutConfig(data);
+      }
+    } catch (err) {
+      console.error('Error fetching payout config:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError(null);
+    const token = getToken();
+    if (!token) {
+      setError('Vous devez être connecté');
+      setIsSaving(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/organizers/payout-config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payoutConfig),
+      });
+
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        const data = await res.json();
+        setError(data.message || 'Erreur lors de l\'enregistrement');
+      }
+    } catch (err) {
+      setError('Erreur de connexion');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-12 bg-gray-200 rounded"></div>
+      </div>
+    );
+  }
+
+  const handleChange = (field: string, value: string) => {
+    setPayoutConfig((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{error}</div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Méthode de paiement</label>
+          <select
+            value={payoutConfig?.payoutMethod || ''}
+            onChange={(e) => handleChange('payoutMethod', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent"
+          >
+            <option value="">Sélectionner...</option>
+            <option value="BANK_TRANSFER">Virement bancaire</option>
+            <option value="MOBILE_MONEY">Mobile Money</option>
+            <option value="PAYPAL">PayPal</option>
+          </select>
+        </div>
+
+        {payoutConfig?.payoutMethod === 'BANK_TRANSFER' && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Nom de la banque</label>
+              <input
+                type="text"
+                value={payoutConfig?.payoutBankName || ''}
+                onChange={(e) => handleChange('payoutBankName', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent"
+                placeholder="Ex: Société Générale"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">IBAN</label>
+              <input
+                type="text"
+                value={payoutConfig?.payoutIban || ''}
+                onChange={(e) => handleChange('payoutIban', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent"
+                placeholder="FR76 3000 4000 0000 0000 0000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">SWIFT/BIC</label>
+              <input
+                type="text"
+                value={payoutConfig?.payoutSwift || ''}
+                onChange={(e) => handleChange('payoutSwift', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent"
+                placeholder="SOGEFRPP"
+              />
+            </div>
+          </>
+        )}
+
+        {payoutConfig?.payoutMethod === 'MOBILE_MONEY' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Numéro de téléphone</label>
+            <input
+              type="text"
+              value={payoutConfig?.payoutPhone || ''}
+              onChange={(e) => handleChange('payoutPhone', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent"
+              placeholder="+33 6 00 00 00 00"
+            />
+          </div>
+        )}
+
+        {payoutConfig?.payoutMethod === 'PAYPAL' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email PayPal</label>
+            <input
+              type="email"
+              value={payoutConfig?.payoutEmail || ''}
+              onChange={(e) => handleChange('payoutEmail', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent"
+              placeholder="votre@email.com"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-4">
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-medium hover:bg-[#7B61FF] transition-colors disabled:opacity-50"
+        >
+          {isSaving ? 'Enregistrement...' : saved ? '✓ Enregistré!' : 'Enregistrer'}
+        </button>
+        {payoutConfig?.isConfigured && (
+          <span className="text-green-600 text-sm flex items-center gap-1">
+            ✓ Configuré
+          </span>
+        )}
       </div>
     </div>
   );

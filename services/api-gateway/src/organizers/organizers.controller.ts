@@ -25,6 +25,7 @@ export class OrganizersController {
   @Put('payout-config')
   @UseGuards(JwtAuthGuard)
   updatePayoutConfig(
+    @Request() req: any,
     @Body() payoutData: {
       payoutMethod: string;
       payoutPhone?: string;
@@ -34,7 +35,13 @@ export class OrganizersController {
       payoutSwift?: string;
     },
   ) {
-    return this.organizersService.updatePayoutConfig(payoutData);
+    return this.organizersService.updatePayoutConfig(req.user.id, payoutData);
+  }
+
+  @Get('payout/config')
+  @UseGuards(JwtAuthGuard)
+  getPayoutConfig(@Request() req: any) {
+    return this.organizersService.getPayoutConfig(req.user.id);
   }
 
   @Get('payout/pending')
