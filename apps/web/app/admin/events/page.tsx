@@ -12,11 +12,16 @@ interface Event {
   status: string;
   category: string;
   startDate: string;
+  endDate: string;
   venueCity: string;
   venueCountry: string;
   ticketsSold: number;
+  ticketsAvailable: number;
   capacity: number;
   coverImage: string;
+  minPrice: number;
+  maxPrice: number;
+  currency: string;
   organizer: {
     id: string;
     companyName: string;
@@ -28,6 +33,14 @@ interface Event {
   };
 }
 
+const STATUSES = [
+  { value: 'PUBLISHED', label: 'Publié', color: 'green' },
+  { value: 'DRAFT', label: 'Brouillon', color: 'gray' },
+  { value: 'CANCELLED', label: 'Annulé', color: 'red' },
+  { value: 'COMPLETED', label: 'Terminé', color: 'blue' },
+  { value: 'POSTPONED', label: 'Reporté', color: 'yellow' },
+];
+
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,78 +49,102 @@ export default function AdminEventsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  const fetchEvents = async () => {
+    try {
+      const token = localStorage.getItem('auth_tokens');
+      const parsedToken = token ? JSON.parse(token) : null;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (parsedToken?.accessToken) {
+        headers['Authorization'] = `Bearer ${parsedToken.accessToken}`;
+      }
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '20',
+      });
+      if (statusFilter) params.append('status', statusFilter);
+      if (search) params.append('search', search);
+
+      const response = await fetch(`${API_URL}/admin/events?${params}`, {
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des événements');
+      }
+
+      const data = await response.json();
+      setEvents(data.events || []);
+      setTotalPages(data.pagination?.totalPages || 1);
+    } catch (err) {
+      console.error('Error fetching events:', err);
+      // Demo data fallback
+      setEvents([
+        {
+          id: '1', title: 'MASA 2025', slug: 'masa-2025', status: 'PUBLISHED', category: 'MUSIC',
+          startDate: '2025-03-10', endDate: '2025-03-15', venueCity: 'Abidjan', venueCountry: "Côte d'Ivoire",
+          ticketsSold: 1250, ticketsAvailable: 3750, capacity: 5000, coverImage: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
+          minPrice: 5000, maxPrice: 50000, currency: 'XOF',
+          organizer: { id: '1', companyName: 'Tikeoh Events', user: { email: 'contact@tikeo.africa' } },
+          _count: { tickets: 5, orders: 850 }
+        },
+        {
+          id: '2', title: 'Dakar Jazz Festival', slug: 'dakar-jazz-2025', status: 'DRAFT', category: 'MUSIC',
+          startDate: '2025-04-05', endDate: '2025-04-07', venueCity: 'Dakar', venueCountry: 'Sénégal',
+          ticketsSold: 0, ticketsAvailable: 2000, capacity: 2000, coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400',
+          minPrice: 10000, maxPrice: 25000, currency: 'XOF',
+          organizer: { id: '2', companyName: 'Dakar Events', user: { email: 'contact@dakar.sn' } },
+          _count: { tickets: 3, orders: 0 }
+        },
+        {
+          id: '3', title: 'Lagos Tech Summit', slug: 'lagos-tech-2025', status: 'PUBLISHED', category: 'TECHNOLOGY',
+          startDate: '2025-05-20', endDate: '2025-05-22', venueCity: 'Lagos', venueCountry: 'Nigeria',
+          ticketsSold: 890, ticketsAvailable: 110, capacity: 1000, coverImage: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400',
+          minPrice: 15000, maxPrice: 75000, currency: 'NGN',
+          organizer: { id: '3', companyName: 'Lagos Tech', user: { email: 'info@lagos.ng' } },
+          _count: { tickets: 8, orders: 420 }
+        },
+      ]);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const token = localStorage.getItem('auth_tokens');
-        const parsedToken = token ? JSON.parse(token) : null;
-        
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        
-        if (parsedToken?.accessToken) {
-          headers['Authorization'] = `Bearer ${parsedToken.accessToken}`;
-        }
-
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: '20',
-        });
-        if (statusFilter) params.append('status', statusFilter);
-        if (search) params.append('search', search);
-
-        const response = await fetch(`${API_URL}/admin/events?${params}`, {
-          headers,
-        });
-
-        if (!response.ok) {
-          throw new Error('Erreur lors du chargement des événements');
-        }
-
-        const data = await response.json();
-        setEvents(data.events);
-        setTotalPages(data.pagination.totalPages);
-      } catch (err) {
-        console.error('Error fetching events:', err);
-        setError(err instanceof Error ? err.message : 'Erreur inconnue');
-        
-        // Demo data
-        setEvents([
-          {
-            id: '1', title: 'MASA 2025', slug: 'masa-2025', status: 'PUBLISHED', category: 'Festival',
-            startDate: '2025-03-10', venueCity: 'Abidjan', venueCountry: "Côte d'Ivoire",
-            ticketsSold: 1250, capacity: 5000, coverImage: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
-            organizer: { id: '1', companyName: 'Tikeoh Events', user: { email: 'contact@tikeoh.com' } },
-            _count: { tickets: 5, orders: 850 }
-          },
-          {
-            id: '2', title: 'Dakar Jazz Festival', slug: 'dakar-jazz-2025', status: 'DRAFT', category: 'Music',
-            startDate: '2025-04-05', venueCity: 'Dakar', venueCountry: 'Sénégal',
-            ticketsSold: 0, capacity: 2000, coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400',
-            organizer: { id: '2', companyName: 'Dakar Events', user: { email: 'contact@dakar.com' } },
-            _count: { tickets: 3, orders: 0 }
-          },
-        ]);
-        setTotalPages(1);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchEvents();
   }, [page, statusFilter, search]);
 
+  const formatCurrency = (amount: number, currency: string = 'XOF') => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const getStatusBadge = (status: string) => {
-    const statuses: Record<string, { label: string; className: string }> = {
-      PUBLISHED: { label: 'Publié', className: 'bg-green-100 text-green-700' },
-      DRAFT: { label: 'Brouillon', className: 'bg-gray-100 text-gray-600' },
-      CANCELLED: { label: 'Annulé', className: 'bg-red-100 text-red-600' },
-      COMPLETED: { label: 'Terminé', className: 'bg-blue-100 text-blue-600' },
+    const statusConfig = STATUSES.find(s => s.value === status);
+    const colors: Record<string, string> = {
+      green: 'bg-green-100 text-green-700',
+      gray: 'bg-gray-100 text-gray-600',
+      red: 'bg-red-100 text-red-600',
+      blue: 'bg-blue-100 text-blue-600',
+      yellow: 'bg-yellow-100 text-yellow-700',
     };
-    const s = statuses[status] || { label: status, className: 'bg-gray-100 text-gray-600' };
-    return <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${s.className}`}>{s.label}</span>;
+    return (
+      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${colors[statusConfig?.color || 'gray']}`}>
+        {statusConfig?.label || status}
+      </span>
+    );
   };
 
   return (
@@ -117,33 +154,36 @@ export default function AdminEventsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Événements</h1>
           <p className="text-gray-500 mt-1">Gérer tous les événements de la plateforme</p>
         </div>
+        <div className="text-sm text-gray-500">
+          {events.length} événement(s)
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <input
           type="text"
           placeholder="Rechercher un événement..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           className="flex-1 min-w-[200px] max-w-md px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B7CFF]/20 focus:border-[#5B7CFF]"
         />
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
           className="px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B7CFF]/20 focus:border-[#5B7CFF]"
         >
           <option value="">Tous les statuts</option>
-          <option value="PUBLISHED">Publié</option>
-          <option value="DRAFT">Brouillon</option>
-          <option value="CANCELLED">Annulé</option>
-          <option value="COMPLETED">Terminé</option>
+          {STATUSES.map(s => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
         </select>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center justify-between">
           <p className="text-yellow-700 text-sm">{error}</p>
+          <button onClick={() => setError(null)} className="text-yellow-700 hover:text-yellow-900">✕</button>
         </div>
       )}
 
@@ -166,10 +206,11 @@ export default function AdminEventsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Éénement</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Événement</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Organisateur</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Billets</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Prix</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
                 </tr>
@@ -181,7 +222,7 @@ export default function AdminEventsPage() {
                     <tr key={event.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-14 h-10 rounded-lg bg-gray-100 overflow-hidden">
+                          <div className="w-14 h-10 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
                             {event.coverImage && (
                               <img src={event.coverImage} alt={event.title} className="w-full h-full object-cover" />
                             )}
@@ -204,19 +245,41 @@ export default function AdminEventsPage() {
                               style={{ width: `${soldPct}%`, backgroundColor: soldPct >= 80 ? '#ef4444' : '#5B7CFF' }}
                             />
                           </div>
-                          <span className="text-xs text-gray-600">{event.ticketsSold}/{event.capacity}</span>
+                          <span className="text-xs text-gray-600 whitespace-nowrap">
+                            {event.ticketsSold.toLocaleString()}/{event.capacity.toLocaleString()}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {new Date(event.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {formatCurrency(event.minPrice, event.currency)} - {formatCurrency(event.maxPrice, event.currency)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {new Date(event.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                       </td>
                       <td className="px-6 py-4">
-                        <Link
-                          href={`/events/${event.slug}`}
-                          className="text-[#5B7CFF] hover:underline text-sm font-medium"
-                        >
-                          Voir
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => { setSelectedEvent(event); setShowDetailModal(true); }}
+                            className="p-2 text-gray-500 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
+                            title="Voir les détails"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          </button>
+                          <Link
+                            href={`/events/${event.slug}`}
+                            className="p-2 text-gray-500 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
+                            title="Voir sur le site"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                              <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -245,6 +308,101 @@ export default function AdminEventsPage() {
           >
             Suivant
           </button>
+        </div>
+      )}
+
+      {/* Event Detail Modal */}
+      {showDetailModal && selectedEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="relative h-48 bg-gray-100">
+              {selectedEvent.coverImage && (
+                <img 
+                  src={selectedEvent.coverImage} 
+                  alt={selectedEvent.title} 
+                  className="w-full h-full object-cover"
+                />
+              )}
+              <div className="absolute top-4 right-4">
+                {getStatusBadge(selectedEvent.status)}
+              </div>
+              <button
+                onClick={() => { setShowDetailModal(false); setSelectedEvent(null); }}
+                className="absolute top-4 left-4 p-2 bg-white/90 rounded-full hover:bg-white transition-colors"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedEvent.title}</h2>
+              <p className="text-gray-500 mb-6">{selectedEvent.venueName || selectedEvent.venueCity}, {selectedEvent.venueCountry}</p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 mb-1">Billets vendus</p>
+                  <p className="text-xl font-bold text-gray-900">{selectedEvent.ticketsSold.toLocaleString()}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 mb-1">Disponibles</p>
+                  <p className="text-xl font-bold text-gray-900">{selectedEvent.ticketsAvailable.toLocaleString()}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 mb-1">Capacité</p>
+                  <p className="text-xl font-bold text-gray-900">{selectedEvent.capacity.toLocaleString()}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 mb-1">Taux de remplissage</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {selectedEvent.capacity > 0 ? Math.round((selectedEvent.ticketsSold / selectedEvent.capacity) * 100) : 0}%
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Prix minimum</span>
+                  <span className="font-medium">{formatCurrency(selectedEvent.minPrice, selectedEvent.currency)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Prix maximum</span>
+                  <span className="font-medium">{formatCurrency(selectedEvent.maxPrice, selectedEvent.currency)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Date de début</span>
+                  <span className="font-medium">{new Date(selectedEvent.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Date de fin</span>
+                  <span className="font-medium">{new Date(selectedEvent.endDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <p className="text-sm text-gray-500 mb-2">Organisateur</p>
+                <p className="font-medium text-gray-900">{selectedEvent.organizer.companyName}</p>
+                <p className="text-sm text-gray-500">{selectedEvent.organizer.user.email}</p>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <Link
+                  href={`/events/${selectedEvent.slug}`}
+                  className="flex-1 px-4 py-2 bg-[#5B7CFF] text-white rounded-xl font-medium text-center hover:bg-[#4B6CEF] transition-colors"
+                >
+                  Voir sur le site
+                </Link>
+                <Link
+                  href={`/admin/events`}
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded-xl font-medium text-center text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Gérer les événements
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
