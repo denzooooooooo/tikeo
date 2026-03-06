@@ -105,6 +105,7 @@ model Organizer {
   events        Event[]
   subscriptions OrganizerSubscription[]
   reviews       OrganizerReview[]
+  payoutRecords PayoutRecord[]
 
   @@map("organizers")
 }
@@ -612,4 +613,73 @@ model PromoCodeUsage {
   @@index([promoCodeId])
   @@index([userId])
   @@map("promo_code_usages")
+}
+
+// ============================================
+// ADMIN DASHBOARD TABLES
+// ============================================
+
+// Payout Record - Track payments to organizers
+model PayoutRecord {
+  id          String   @id @default(cuid())
+  organizerId String
+  
+  // Amounts
+  grossAmount      Float  // Total sales amount
+  commissionAmount Float  // Admin commission (1%)
+  netAmount        Float  // Amount to pay organizer (99%)
+  
+  // Status
+  status     String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  method     String?  // BANK_TRANSFER, PAYPAL, MOBILE_MONEY
+  reference  String?  // Payment reference/transaction ID
+  
+  // Dates
+  requestedAt DateTime @default(now())
+  processedAt DateTime?
+  
+  // Notes
+  notes      String?
+  
+  // Relations
+  organizer  Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  
+  @@index([organizerId])
+  @@index([status])
+  @@map("payout_records")
+}
+
+// Admin Settings - System configuration
+model AdminSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  type      String   @default("STRING") // STRING, NUMBER, BOOLEAN, JSON
+  category  String   @default("GENERAL") // GENERAL, PAYMENTS, EMAIL, SECURITY
+  description String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("admin_settings")
+}
+
+// Audit Log - Track admin actions
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String   // Admin user who performed action
+  action     String   // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity     String   // User, Event, Organizer, etc.
+  entityId   String?  // ID of affected entity
+  oldValue   String?  @db.Text // JSON of old values
+  newValue   String?  @db.Text // JSON of new values
+  ipAddress  String?
+  userAgent  String?
+  
+  createdAt  DateTime @default(now())
+  
+  @@index([adminId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
