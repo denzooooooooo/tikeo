@@ -278,15 +278,13 @@ export class OrganizersService {
     return { sent: false, reason: result.error || 'EMAIL_FAILED' };
   }
 
-  // Calculate commission for an order
+  // Calculate commission for an order (3% of total revenue)
   calculateCommission(
     totalRevenue: number,
     ticketCount: number,
-    baseRate: number = 0.30,
-    perTicketRate: number = 0.10,
+    baseRate: number = 3.0,  // 3% commission
   ): number {
     const percentageCommission = totalRevenue * (baseRate / 100);
-    const ticketCommission = ticketCount * perTicketRate;
-    return percentageCommission + ticketCommission;
+    return percentageCommission;
   }
 }

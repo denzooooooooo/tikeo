@@ -48,15 +48,17 @@ interface RecentEvent {
 }
 
 const ScanIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><line x1="7" x2="17" y1="12" y2="12" /></svg>;
+const WalletIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>;
 
 const quickLinks = [
   { id: 1, title: 'Créer un événement', href: '/dashboard/events/create', Icon: PlusIcon, color: 'bg-[#5B7CFF]', desc: 'Nouvel événement' },
   { id: 2, title: 'Mes événements', href: '/dashboard/events', Icon: CalendarIcon, color: 'bg-purple-500', desc: 'Gérer' },
   { id: 3, title: 'Scanner billets', href: '/dashboard/scanner', Icon: ScanIcon, color: 'bg-emerald-500', desc: 'Valider à l\'entrée' },
-  { id: 4, title: 'Commandes', href: '/dashboard/orders', Icon: TicketIcon, color: 'bg-green-500', desc: 'Voir les ventes' },
-  { id: 5, title: 'Analytics', href: '/dashboard/analytics', Icon: BarChartIcon, color: 'bg-orange-500', desc: 'Statistiques' },
-  { id: 6, title: 'Codes promo', href: '/dashboard/promo-codes', Icon: TagIcon, color: 'bg-pink-500', desc: 'Promotions' },
-  { id: 7, title: 'Paramètres', href: '/dashboard/settings', Icon: SettingsIcon, color: 'bg-gray-500', desc: 'Configuration' },
+  { id: 4, title: 'Paiements', href: '/dashboard/payouts', Icon: WalletIcon, color: 'bg-green-500', desc: 'Revenus & payouts' },
+  { id: 5, title: 'Commandes', href: '/dashboard/orders', Icon: TicketIcon, color: 'bg-green-500', desc: 'Voir les ventes' },
+  { id: 6, title: 'Analytics', href: '/dashboard/analytics', Icon: BarChartIcon, color: 'bg-orange-500', desc: 'Statistiques' },
+  { id: 7, title: 'Codes promo', href: '/dashboard/promo-codes', Icon: TagIcon, color: 'bg-pink-500', desc: 'Promotions' },
+  { id: 8, title: 'Paramètres', href: '/dashboard/settings', Icon: SettingsIcon, color: 'bg-gray-500', desc: 'Configuration' },
 ];
 
 function StatCard({ title, value, subtitle, Icon, color, trend, href }: {
