@@ -235,6 +235,8 @@ export default function TicketsPage() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [eventFilter, setEventFilter] = useState('');
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const token = getAuthToken();
@@ -257,6 +259,18 @@ export default function TicketsPage() {
 
   const isUpcoming = (date?: string) => date ? new Date(date) > new Date() : false;
 
+  // Get unique events for filter
+  const events = useMemo(() => {
+    const eventMap = new Map();
+    tickets.forEach(t => {
+      const event = t.order?.event;
+      if (event?.id && event.title) {
+        eventMap.set(event.id, { id: event.id, title: event.title });
+      }
+    });
+    return Array.from(eventMap.values());
+  }, [tickets]);
+
   const stats = useMemo(() => ({
     valid: tickets.filter(t => t.status === 'VALID').length,
     upcoming: tickets.filter(t => isUpcoming(t.order?.event?.startDate)).length,
@@ -274,6 +288,32 @@ export default function TicketsPage() {
     }
     return list;
   }, [tickets, filter, search]);
+
+  // Group tickets by event
+  const groupedTickets = useMemo(() => {
+    const groups = new Map<string, Ticket[]>();
+    filtered.forEach(ticket => {
+      const eventId = ticket.order?.event?.id || 'unknown';
+      const eventTitle = ticket.order?.event?.title || 'Événement inconnu';
+      const key = `${eventId}|||${eventTitle}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(ticket);
+    });
+    
+    let result = Array.from(groups.entries()).map(([key, tickets]) => {
+      const [id, title] = key.split('|||');
+      return { eventId: id, eventTitle: title, tickets };
+    });
+    
+    // Filter by selected event
+    if (eventFilter) {
+      result = result.filter(g => g.eventId === eventFilter);
+    }
+    
+    return result;
+  }, [filtered, eventFilter]);
 
   if (!isLoggedIn && !loading) {
     return (
@@ -320,23 +360,39 @@ export default function TicketsPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {tickets.length > 0 && (
-          <>
-            {/* Search */}
-            <div className="relative mb-4">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><SearchSvg /></span>
-              <input type="text" placeholder="Rechercher un evenement ou une ville..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#5B7CFF]/30 bg-white" />
-            </div>
-            {/* Filters */}
-            <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-              {[{ key: 'all', label: 'Tous' }, { key: 'upcoming', label: 'A venir' }, { key: 'past', label: 'Passes' }, { key: 'VALID', label: 'Valides' }, { key: 'USED', label: 'Utilises' }, { key: 'CANCELLED', label: 'Annules' }].map(f => (
-                <button key={f.key} onClick={() => setFilter(f.key)} className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${filter === f.key ? 'bg-[#5B7CFF] text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:border-[#5B7CFF] hover:text-[#5B7CFF]'}`}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+          {tickets.length > 0 && (
+            <>
+              {/* Search */}
+              <div className="relative mb-4">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><SearchSvg /></span>
+                <input type="text" placeholder="Rechercher un evenement ou une ville..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#5B7CFF]/30 bg-white" />
+              </div>
+              
+              {/* Filters */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {/* Event filter */}
+                {events.length > 0 && (
+                  <select
+                    value={eventFilter}
+                    onChange={(e) => setEventFilter(e.target.value)}
+                    className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#5B7CFF]/30"
+                  >
+                    <option value="">Tous les evenements</option>
+                    {events.map(event => (
+                      <option key={event.id} value={event.id}>{event.title}</option>
+                    ))}
+                  </select>
+                )}
+                
+                {/* Status filters */}
+                {[{ key: 'all', label: 'Tous' }, { key: 'upcoming', label: 'A venir' }, { key: 'past', label: 'Passes' }, { key: 'VALID', label: 'Valides' }, { key: 'USED', label: 'Utilises' }, { key: 'CANCELLED', label: 'Annules' }].map(f => (
+                  <button key={f.key} onClick={() => setFilter(f.key)} className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${filter === f.key ? 'bg-[#5B7CFF] text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:border-[#5B7CFF] hover:text-[#5B7CFF]'}`}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-[#5B7CFF] border-t-transparent rounded-full animate-spin" /></div>
@@ -349,54 +405,118 @@ export default function TicketsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filtered.map(ticket => {
-              const event = ticket.order?.event;
-              const upcoming = isUpcoming(event?.startDate);
-              const countdown = event?.startDate ? getCountdown(event.startDate) : '';
+            {/* Grouped tickets by event */}
+            {groupedTickets.map((group) => {
+              const event = group.tickets[0]?.order?.event;
+              const isExpanded = expandedEvents.has(group.eventId);
+              
               return (
-                <div key={ticket.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={() => setSelectedTicket(ticket)}>
-                  <div className="flex">
-                    {/* Event image */}
-                    <div className="relative w-24 h-24 flex-shrink-0 bg-gray-100">
-                      {event?.coverImage ? (
-                        <Image src={event.coverImage} alt={event.title || ''} fill className="object-cover" sizes="96px" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#5B7CFF]/20 to-[#7B61FF]/20 text-[#5B7CFF]"><TicketSvg /></div>
-                      )}
-                      {upcoming && <div className="absolute top-1 left-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 p-4 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <div className="min-w-0">
-                          <span className="inline-block px-2 py-0.5 bg-[#5B7CFF]/10 text-[#5B7CFF] text-xs font-semibold rounded-full mb-1">{ticket.ticketType?.name || 'Standard'}</span>
-                          <h3 className="text-sm font-bold text-gray-900 truncate">{event?.title || 'Evenement'}</h3>
-                        </div>
-                        <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[ticket.status] || 'bg-gray-100 text-gray-600'}`}>
-                          {STATUS_LABELS[ticket.status] || ticket.status}
-                        </span>
+                <div key={group.eventId} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  {/* Event Header - Clickable to expand/collapse */}
+                  <div 
+                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => {
+                      const newExpanded = new Set(expandedEvents);
+                      if (newExpanded.has(group.eventId)) {
+                        newExpanded.delete(group.eventId);
+                      } else {
+                        newExpanded.add(group.eventId);
+                      }
+                      setExpandedEvents(newExpanded);
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-[#5B7CFF]/10 rounded-xl flex items-center justify-center">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B7CFF" strokeWidth="2">
+                          <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                          <line x1="16" x2="16" y1="2" y2="6" />
+                          <line x1="8" x2="8" y1="2" y2="6" />
+                          <line x1="3" x2="21" y1="10" y2="10" />
+                        </svg>
                       </div>
-                      {event && (
-                        <div className="space-y-0.5 text-xs text-gray-500">
-                          <div className="flex items-center gap-1.5"><CalSvg /><span>{new Date(event.startDate).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
-                          <div className="flex items-center gap-1.5"><PinSvg /><span>{event.venueName}, {event.venueCity}</span></div>
-                        </div>
-                      )}
-                      {countdown && (
-                        <div className="flex items-center gap-1 mt-1.5 text-xs font-semibold text-green-600">
-                          <ClockSvg />{countdown}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* QR thumbnail */}
-                    <div className="w-16 bg-gray-50 flex items-center justify-center border-l border-gray-100 flex-shrink-0">
-                      <div className="w-12 h-12 bg-white rounded-lg shadow-sm p-0.5 flex items-center justify-center">
-                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=48x48&data=${encodeURIComponent(ticket.qrCode || ticket.id)}&bgcolor=ffffff&color=000000&margin=2`} alt="QR" className="w-full h-full object-contain" loading="lazy" />
+                      <div>
+                        <h3 className="font-bold text-gray-900">{group.eventTitle}</h3>
+                        <p className="text-xs text-gray-500">{group.tickets.length} billet{group.tickets.length !== 1 ? 's' : ''}</p>
                       </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        group.tickets.every(t => t.status === 'VALID') ? 'bg-green-100 text-green-700' :
+                        group.tickets.every(t => t.status === 'USED') ? 'bg-gray-100 text-gray-600' :
+                        'bg-blue-100 text-blue-700'
+                      }`}>
+                        {group.tickets.filter(t => t.status === 'VALID').length} valide{group.tickets.filter(t => t.status === 'VALID').length !== 1 ? 's' : ''}
+                      </span>
+                      <svg 
+                        width="20" 
+                        height="20" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2"
+                        className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
                     </div>
                   </div>
+                  
+                  {/* Tickets for this event */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-100">
+                      {group.tickets.map(ticket => {
+                        const ticketEvent = ticket.order?.event;
+                        const upcoming = isUpcoming(ticketEvent?.startDate);
+                        const countdown = ticketEvent?.startDate ? getCountdown(ticketEvent.startDate) : '';
+                        return (
+                          <div key={ticket.id} className="p-4 border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedTicket(ticket)}>
+                            <div className="flex">
+                              {/* Event image */}
+                              <div className="relative w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+                                {ticketEvent?.coverImage ? (
+                                  <Image src={ticketEvent.coverImage} alt={ticketEvent.title || ''} fill className="object-cover" sizes="64px" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#5B7CFF]/20 to-[#7B61FF]/20 text-[#5B7CFF]"><TicketSvg /></div>
+                                )}
+                                {upcoming && <div className="absolute top-1 left-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />}
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 ml-3 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <div className="min-w-0">
+                                    <span className="inline-block px-2 py-0.5 bg-[#5B7CFF]/10 text-[#5B7CFF] text-xs font-semibold rounded-full mb-1">{ticket.ticketType?.name || 'Standard'}</span>
+                                    <h3 className="text-sm font-bold text-gray-900 truncate">{ticketEvent?.title || 'Evenement'}</h3>
+                                  </div>
+                                  <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[ticket.status] || 'bg-gray-100 text-gray-600'}`}>
+                                    {STATUS_LABELS[ticket.status] || ticket.status}
+                                  </span>
+                                </div>
+                                {ticketEvent && (
+                                  <div className="space-y-0.5 text-xs text-gray-500">
+                                    <div className="flex items-center gap-1.5"><CalSvg /><span>{new Date(ticketEvent.startDate).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
+                                    <div className="flex items-center gap-1.5"><PinSvg /><span>{ticketEvent.venueName}, {ticketEvent.venueCity}</span></div>
+                                  </div>
+                                )}
+                                {countdown && (
+                                  <div className="flex items-center gap-1 mt-1 text-xs font-semibold text-green-600">
+                                    <ClockSvg />{countdown}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* QR thumbnail */}
+                              <div className="w-12 bg-gray-50 flex items-center justify-center border-l border-gray-100 flex-shrink-0 ml-2">
+                                <div className="w-10 h-10 bg-white rounded-lg shadow-sm p-0.5 flex items-center justify-center">
+                                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=48x48&data=${encodeURIComponent(ticket.qrCode || ticket.id)}&bgcolor=ffffff&color=000000&margin=2`} alt="QR" className="w-full h-full object-contain" loading="lazy" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })}

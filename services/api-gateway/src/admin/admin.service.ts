@@ -126,6 +126,44 @@ export class AdminService {
     });
   }
 
+  async deleteUser(id: string, adminId: string) {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+
+    // Prevent deleting yourself
+    if (user.id === adminId) {
+      throw new Error('Vous ne pouvez pas supprimer votre propre compte');
+    }
+
+    // Prevent deleting other admins
+    if (user.role === 'ADMIN') {
+      throw new Error('Vous ne pouvez pas supprimer un autre administrateur');
+    }
+
+    // Delete user's tickets first
+    await this.prisma.ticket.deleteMany({ where: { userId: id } });
+
+    // Delete user's orders
+    await this.prisma.order.deleteMany({ where: { userId: id } });
+
+    // Delete user
+    await this.prisma.user.delete({ where: { id } });
+
+    // Log admin action
+    await this.prisma.auditLog.create({
+      data: {
+        adminId,
+        action: 'DELETE_USER',
+        entity: 'User',
+        entityId: id,
+        oldValue: JSON.stringify({ email: user.email, role: user.role }),
+      },
+    });
+
+    return { success: true, message: 'Utilisateur supprimé avec succès' };
+  }
+
   // ========== EVENTS MANAGEMENT ==========
 
   async getEvents(page = 1, limit = 20, status?: string, search?: string) {
@@ -181,6 +219,71 @@ export class AdminService {
 
     if (!event) throw new NotFoundException('Événement non trouvé');
     return event;
+  }
+
+  async deleteEvent(id: string, adminId: string) {
+    // Check if event exists
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) throw new NotFoundException('Événement non trouvé');
+
+    // Delete related tickets first
+    await this.prisma.ticket.deleteMany({ where: { eventId: id } });
+
+    // Delete related orders
+    await this.prisma.order.deleteMany({ where: { eventId: id } });
+
+    // Delete ticket types
+    await this.prisma.ticketType.deleteMany({ where: { eventId: id } });
+
+    // Delete event
+    await this.prisma.event.delete({ where: { id } });
+
+    // Log admin action
+    await this.prisma.auditLog.create({
+      data: {
+        adminId,
+        action: 'DELETE_EVENT',
+        entity: 'Event',
+        entityId: id,
+        oldValue: JSON.stringify({ title: event.title, status: event.status }),
+      },
+    });
+
+    return { success: true, message: 'Événement supprimé avec succès' };
+  }
+
+  async updateEventStatus(id: string, status: string, adminId: string) {
+    // Check if event exists
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) throw new NotFoundException('Événement non trouvé');
+
+    // Validate status
+    const validStatuses = ['DRAFT', 'PUBLISHED', 'CANCELLED', 'POSTPONED', 'COMPLETED'];
+    if (!validStatuses.includes(status)) {
+      throw new Error('Statut invalide');
+    }
+
+    const oldStatus = event.status;
+
+    // Update event status
+    const updated = await this.prisma.event.update({
+      where: { id },
+      data: { status },
+    });
+
+    // Log admin action
+    await this.prisma.auditLog.create({
+      data: {
+        adminId,
+        action: 'UPDATE_EVENT_STATUS',
+        entity: 'Event',
+        entityId: id,
+        oldValue: JSON.stringify({ oldStatus }),
+        newValue: JSON.stringify({ newStatus: status }),
+      },
+    });
+
+    return { success: true, message: 'Statut mis à jour', event: updated };
   }
 
   // ========== TICKETS MANAGEMENT ==========

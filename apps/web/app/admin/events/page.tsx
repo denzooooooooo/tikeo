@@ -41,6 +41,14 @@ const STATUSES = [
   { value: 'POSTPONED', label: 'Reporté', color: 'yellow' },
 ];
 
+const STATUS_ACTIONS = [
+  { value: 'PUBLISHED', label: 'Publier', color: 'green' },
+  { value: 'DRAFT', label: 'Remettre en brouillon', color: 'gray' },
+  { value: 'CANCELLED', label: 'Annuler', color: 'red' },
+  { value: 'POSTPONED', label: 'Reporter', color: 'yellow' },
+  { value: 'COMPLETED', label: 'Marquer comme terminé', color: 'blue' },
+];
+
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +59,17 @@ export default function AdminEventsPage() {
   const [search, setSearch] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingEvent, setDeletingEvent] = useState<Event | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  
+  // Status change modal
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusEvent, setStatusEvent] = useState<Event | null>(null);
+  const [newStatus, setNewStatus] = useState('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const fetchEvents = async () => {
     try {
@@ -145,6 +164,80 @@ export default function AdminEventsPage() {
         {statusConfig?.label || status}
       </span>
     );
+  };
+
+  const deleteEvent = async (eventId: string) => {
+    setDeleting(true);
+    try {
+      const token = localStorage.getItem('auth_tokens');
+      const parsedToken = token ? JSON.parse(token) : null;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (parsedToken?.accessToken) {
+        headers['Authorization'] = `Bearer ${parsedToken.accessToken}`;
+      }
+
+      const response = await fetch(`${API_URL}/admin/events/${eventId}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Erreur lors de la suppression');
+      }
+
+      // Remove event from list
+      setEvents(events.filter(e => e.id !== eventId));
+      setShowDeleteModal(false);
+      setDeletingEvent(null);
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const updateEventStatus = async (eventId: string, status: string) => {
+    setUpdatingStatus(true);
+    try {
+      const token = localStorage.getItem('auth_tokens');
+      const parsedToken = token ? JSON.parse(token) : null;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (parsedToken?.accessToken) {
+        headers['Authorization'] = `Bearer ${parsedToken.accessToken}`;
+      }
+
+      const response = await fetch(`${API_URL}/admin/events/${eventId}/status`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Erreur lors de la mise à jour du statut');
+      }
+
+      // Update event in list
+      setEvents(events.map(e => e.id === eventId ? { ...e, status } : e));
+      setShowStatusModal(false);
+      setStatusEvent(null);
+      setNewStatus('');
+    } catch (err) {
+      console.error('Error updating status:', err);
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   return (
@@ -259,6 +352,16 @@ export default function AdminEventsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => { setStatusEvent(event); setNewStatus(event.status); setShowStatusModal(true); }}
+                            className="p-2 text-gray-500 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
+                            title="Changer le statut"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                          <button
                             onClick={() => { setSelectedEvent(event); setShowDetailModal(true); }}
                             className="p-2 text-gray-500 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/10 rounded-lg transition-colors"
                             title="Voir les détails"
@@ -279,6 +382,16 @@ export default function AdminEventsPage() {
                               <line x1="10" y1="14" x2="21" y2="3" />
                             </svg>
                           </Link>
+                          <button
+                            onClick={() => { setDeletingEvent(event); setShowDeleteModal(true); }}
+                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Supprimer l'événement"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -339,7 +452,7 @@ export default function AdminEventsPage() {
             
             <div className="p-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedEvent.title}</h2>
-              <p className="text-gray-500 mb-6">{selectedEvent.venueName || selectedEvent.venueCity}, {selectedEvent.venueCountry}</p>
+              <p className="text-gray-500 mb-6">{selectedEvent.venueCity}, {selectedEvent.venueCountry}</p>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-gray-50 rounded-xl p-4">
@@ -401,6 +514,102 @@ export default function AdminEventsPage() {
                   Gérer les événements
                 </Link>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deletingEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Confirmer la suppression</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Êtes-vous sûr de vouloir supprimer l'événement <strong>{deletingEvent.title}</strong> ?
+              <br />
+              <span className="text-red-500 text-sm">Cette action est irréversible et supprimera également tous les billets et commandes associés.</span>
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeletingEvent(null); }}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                disabled={deleting}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => deleteEvent(deletingEvent.id)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Suppression...' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Change Modal */}
+      {showStatusModal && statusEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Changer le statut</h3>
+            <p className="text-gray-600 mb-6">
+              Changer le statut de <strong>{statusEvent.title}</strong>
+            </p>
+            
+            <div className="space-y-3 mb-6">
+              {STATUS_ACTIONS.filter(s => s.value !== statusEvent.status).map((status) => (
+                <label
+                  key={status.value}
+                  className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                    newStatus === status.value 
+                      ? 'border-[#5B7CFF] bg-[#5B7CFF]/5' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="status"
+                    value={status.value}
+                    checked={newStatus === status.value}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    className="w-4 h-4 text-[#5B7CFF] border-gray-300 focus:ring-[#5B7CFF]"
+                  />
+                  <span className={`ml-3 font-medium ${
+                    status.color === 'green' ? 'text-green-600' :
+                    status.color === 'red' ? 'text-red-600' :
+                    status.color === 'yellow' ? 'text-yellow-600' :
+                    status.color === 'blue' ? 'text-blue-600' :
+                    'text-gray-600'
+                  }`}>
+                    {status.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowStatusModal(false); setStatusEvent(null); setNewStatus(''); }}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                disabled={updatingStatus}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => updateEventStatus(statusEvent.id, newStatus)}
+                disabled={updatingStatus || newStatus === statusEvent.status}
+                className="flex-1 px-4 py-2 bg-[#5B7CFF] text-white rounded-xl font-medium hover:bg-[#4B6CEF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updatingStatus ? 'Mise à jour...' : 'Enregistrer'}
+              </button>
             </div>
           </div>
         </div>

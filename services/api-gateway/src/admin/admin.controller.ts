@@ -50,6 +50,12 @@ export class AdminController {
     return this.adminService.updateUserRole(id, role);
   }
 
+  @Delete('users/:id')
+  @ApiOperation({ summary: 'Delete user' })
+  deleteUser(@Param('id') id: string, @Request() req: any) {
+    return this.adminService.deleteUser(id, req.user.id);
+  }
+
   // ========== EVENTS ==========
 
   @Get('events')
@@ -67,6 +73,22 @@ export class AdminController {
   @ApiOperation({ summary: 'Get event by ID' })
   getEventById(@Param('id') id: string) {
     return this.adminService.getEventById(id);
+  }
+
+  @Delete('events/:id')
+  @ApiOperation({ summary: 'Delete event' })
+  deleteEvent(@Param('id') id: string, @Request() req: any) {
+    return this.adminService.deleteEvent(id, req.user.id);
+  }
+
+  @Patch('events/:id/status')
+  @ApiOperation({ summary: 'Update event status' })
+  updateEventStatus(
+    @Param('id') id: string,
+    @Body('status') status: string,
+    @Request() req: any,
+  ) {
+    return this.adminService.updateEventStatus(id, status, req.user.id);
   }
 
   // ========== TICKETS ==========

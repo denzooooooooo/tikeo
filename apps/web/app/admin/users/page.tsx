@@ -39,6 +39,11 @@ export default function AdminUsersPage() {
   const [newRole, setNewRole] = useState('');
   const [updating, setUpdating] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -123,6 +128,42 @@ export default function AdminUsersPage() {
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    setDeleting(true);
+    try {
+      const token = localStorage.getItem('auth_tokens');
+      const parsedToken = token ? JSON.parse(token) : null;
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (parsedToken?.accessToken) {
+        headers['Authorization'] = `Bearer ${parsedToken.accessToken}`;
+      }
+
+      const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Erreur lors de la suppression');
+      }
+
+      // Remove user from list
+      setUsers(users.filter(u => u.id !== userId));
+      setShowDeleteModal(false);
+      setDeletingUser(null);
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -259,6 +300,18 @@ export default function AdminUsersPage() {
                             <circle cx="12" cy="12" r="3" />
                           </svg>
                         </Link>
+                        {user.role !== 'ADMIN' && (
+                          <button
+                            onClick={() => { setDeletingUser(user); setShowDeleteModal(true); }}
+                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Supprimer l'utilisateur"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -335,6 +388,42 @@ export default function AdminUsersPage() {
                 className="flex-1 px-4 py-2 bg-[#5B7CFF] text-white rounded-xl font-medium hover:bg-[#4B6CEF] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {updating ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deletingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Confirmer la suppression</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{deletingUser.firstName} {deletingUser.lastName}</strong> ?
+              <br />
+              <span className="text-red-500 text-sm">Cette action est irréversible et supprimera également tous ses billets et commandes.</span>
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeleteModal(false); setDeletingUser(null); }}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                disabled={deleting}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => deleteUser(deletingUser.id)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
           </div>
