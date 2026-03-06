@@ -148,7 +148,7 @@ export function GlassFooter() {
         <div className="pt-8 border-t border-white/10">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-500">
-              © 2024 Tikeo. Tous droits réservés.
+              © 2024 Tikeoh. Tous droits réservés.
             </p>
             <div className="flex flex-wrap gap-6 text-sm">
               {[

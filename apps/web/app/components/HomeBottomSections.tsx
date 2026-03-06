@@ -73,7 +73,7 @@ export function HomeStatsSection() {
       </div>
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-3">Tikeo en chiffres</h2>
+          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-3">Tikeoh en chiffres</h2>
           <p className="text-xl text-white/65">La confiance de milliers d&apos;utilisateurs</p>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
@@ -290,9 +290,9 @@ export function HomeCTASection() {
             prochain événement
           </span>
         </h2>
-        <p className="text-xl text-white/45 mb-10 max-w-2xl mx-auto">
-          Créez, gérez et vendez vos billets en quelques clics. Rejoignez des milliers d&apos;organisateurs sur Tikeo.
-        </p>
+          <p className="text-xl text-white/45 mb-10 max-w-2xl mx-auto">
+            Créez, gérez et vendez vos billets en quelques clics. Rejoignez des milliers d&apos;organisateurs sur Tikeoh.
+          </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
           <Link href="/dashboard/events/create" className="btn-cloud w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 text-white font-bold rounded-xl text-lg transition-all hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#5B7CFF]/30" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)' }}>
             Créer mon événement

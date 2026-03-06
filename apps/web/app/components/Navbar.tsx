@@ -151,7 +151,7 @@ export function Navbar() {
                 <div className="px-3 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Découvrir</p></div>
                 <DLink href="/events?category=Festivals" icon={FestivalIcon}>Festivals</DLink>
                 <div className="border-t border-gray-100 my-1" />
-                <div className="px-3 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tikeo</p></div>
+                <div className="px-3 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tikeoh</p></div>
                 <DLink href="/about" icon={UserIcon}>À propos</DLink>
                 <DLink href="/contact" icon={CalendarIcon}>Contact</DLink>
               </DropMenu>

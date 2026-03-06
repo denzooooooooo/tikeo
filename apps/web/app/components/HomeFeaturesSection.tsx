@@ -61,7 +61,7 @@ export default function HomeFeaturesSection() {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5 border border-red-900/40 bg-red-950/30">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-sm font-medium text-red-300/80">Pourquoi choisir Tikeo</span>
+            <span className="text-sm font-medium text-red-300/80">Pourquoi choisir Tikeoh</span>
           </div>
           <h2 className="text-4xl lg:text-6xl font-bold text-white mb-5 leading-tight">
             La plateforme{' '}

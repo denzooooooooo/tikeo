@@ -159,11 +159,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b border-gray-700">
-            <Link href="/admin" className="flex items-center gap-3">
+              <Link href="/admin" className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5B7CFF] to-[#7B61FF] flex items-center justify-center">
                 <ShieldIcon />
               </div>
-              <span className="text-white font-bold text-lg">Tikeo Admin</span>
+              <span className="text-white font-bold text-lg">Tikeoh Admin</span>
             </Link>
             <button 
               onClick={() => setSidebarOpen(false)}
@@ -228,7 +228,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <MenuIcon />
           </button>
-          <span className="font-bold text-gray-900">Admin Tikeo</span>
+          <span className="font-bold text-gray-900">Admin Tikeoh</span>
           <div className="w-10" />
         </header>
 

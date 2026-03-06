@@ -346,7 +346,7 @@ export class AdminService {
     
     return this.prisma.payoutRecord.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { processedAt: 'desc' },
       include: {
         organizer: {
           include: { user: { select: { email: true, firstName: true, lastName: true } } },

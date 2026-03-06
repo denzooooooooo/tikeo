@@ -172,7 +172,7 @@ export default async function HomePage() {
       {/* Catégories */}
       <HomeCategoriesSection categoryCounts={categoryCounts} />
 
-      {/* Pourquoi Tikeo */}
+      {/* Pourquoi Tikeoh */}
       <HomeFeaturesSection />
 
       {/* Stats */}

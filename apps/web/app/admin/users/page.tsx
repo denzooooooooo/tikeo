@@ -66,7 +66,7 @@ export default function AdminUsersPage() {
         setUsers([
           { id: '1', email: 'john@example.com', firstName: 'John', lastName: 'Doe', avatar: null, role: 'USER', createdAt: '2024-01-15', _count: { orders: 5, tickets: 12 } },
           { id: '2', email: 'jane@example.com', firstName: 'Jane', lastName: 'Smith', avatar: null, role: 'ORGANIZER', createdAt: '2024-02-20', _count: { orders: 3, tickets: 8 } },
-          { id: '3', email: 'admin@tikeo.com', firstName: 'Admin', lastName: 'Tikeo', avatar: null, role: 'ADMIN', createdAt: '2024-01-01', _count: { orders: 0, tickets: 0 } },
+          { id: '3', email: 'admin@tikeoh.com', firstName: 'Admin', lastName: 'Tikeoh', avatar: null, role: 'ADMIN', createdAt: '2024-01-01', _count: { orders: 0, tickets: 0 } },
         ]);
         setTotalPages(1);
       } finally {

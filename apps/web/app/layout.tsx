@@ -8,16 +8,16 @@ import { CookieConsentBanner } from './components/CookieConsentBanner';
 
 const inter = Inter({ subsets: ['latin'] });
 
-const SITE_URL = 'https://tikeo.com';
+const SITE_URL = 'https://tikeoh.com';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Tikeo - Billetterie Événementielle Nouvelle Génération',
-    template: '%s | Tikeo',
+    default: 'Tikeoh - Billetterie Événementielle Nouvelle Génération',
+    template: '%s | Tikeoh',
   },
   description:
-    'Découvrez et réservez les meilleurs événements près de chez vous. Concerts, festivals, spectacles et bien plus encore sur Tikeo.',
+    'Découvrez et réservez les meilleurs événements près de chez vous. Concerts, festivals, spectacles et bien plus encore sur Tikeoh.',
   keywords: [
     'billetterie',
     'événements',
@@ -29,9 +29,9 @@ export const metadata: Metadata = {
     'achat billet',
     'événementiel',
   ],
-  authors: [{ name: 'Tikeo' }],
-  creator: 'Tikeo',
-  publisher: 'Tikeo',
+  authors: [{ name: 'Tikeoh' }],
+  creator: 'Tikeoh',
+  publisher: 'Tikeoh',
   formatDetection: {
     email: false,
     address: false,
@@ -47,8 +47,8 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'fr_FR',
     url: SITE_URL,
-    siteName: 'Tikeo',
-    title: 'Tikeo - Billetterie Événementielle Nouvelle Génération',
+    siteName: 'Tikeoh',
+    title: 'Tikeoh - Billetterie Événementielle Nouvelle Génération',
     description:
       'Découvrez et réservez les meilleurs événements près de chez vous. Concerts, festivals, spectacles et bien plus encore.',
     images: [
@@ -56,13 +56,13 @@ export const metadata: Metadata = {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Tikeo - Réservez vos événements',
+        alt: 'Tikeoh - Réservez vos événements',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Tikeo - Billetterie Événementielle',
+    title: 'Tikeoh - Billetterie Événementielle',
     description:
       'Découvrez et réservez les meilleurs événements près de chez vous.',
     images: ['/og-image.jpg'],
@@ -114,7 +114,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Organization',
-              name: 'Tikeo',
+              name: 'Tikeoh',
               url: SITE_URL,
               logo: `${SITE_URL}/logo.png`,
               description:

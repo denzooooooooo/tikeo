@@ -56,7 +56,7 @@ export default function AdminPayoutsPage() {
         // Demo data
         setOrganizers([
           {
-            id: '1', companyName: 'Tikeo Events', user: { email: 'contact@tikeo.com', firstName: 'John', lastName: 'Doe' },
+            id: '1', companyName: 'Tikeoh Events', user: { email: 'contact@tikeoh.com', firstName: 'John', lastName: 'Doe' },
             totalEvents: 12, grossRevenue: 15000000, commission: 150000, netPayout: 14850000, alreadyPaid: 10000000,
             pendingPayout: 4850000, isPayoutConfigured: true, payoutMethod: 'BANK_TRANSFER', payoutStatus: 'VERIFIED'
           },

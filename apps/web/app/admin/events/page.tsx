@@ -79,7 +79,7 @@ export default function AdminEventsPage() {
             id: '1', title: 'MASA 2025', slug: 'masa-2025', status: 'PUBLISHED', category: 'Festival',
             startDate: '2025-03-10', venueCity: 'Abidjan', venueCountry: "Côte d'Ivoire",
             ticketsSold: 1250, capacity: 5000, coverImage: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400',
-            organizer: { id: '1', companyName: 'Tikeo Events', user: { email: 'contact@tikeo.com' } },
+            organizer: { id: '1', companyName: 'Tikeoh Events', user: { email: 'contact@tikeoh.com' } },
             _count: { tickets: 5, orders: 850 }
           },
           {

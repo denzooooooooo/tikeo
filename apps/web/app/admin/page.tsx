@@ -183,7 +183,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrateur</h1>
-        <p className="text-gray-500 mt-1">Vue d&apos;ensemble de la plateforme Tikeo</p>
+        <p className="text-gray-500 mt-1">Vue d&apos;ensemble de la plateforme Tikeoh</p>
       </div>
 
       {error && (
