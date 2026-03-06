@@ -86,7 +86,7 @@ function isValidEmail(email: string): boolean {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user: authUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -116,30 +116,20 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      // Call login API directly to get user role for proper redirect
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email.toLowerCase().trim(), password: formData.password }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Échec de la connexion');
-      }
-
-      const data: LoginResponse = await response.json();
-      
-      // Use login from AuthContext to store tokens/user in state and localStorage
+      // Call login via AuthContext - this stores tokens and user in localStorage and state
       await login(formData.email, formData.password);
       
-      // Redirect based on user role from the API response
-      if (data.user.role === 'ADMIN') {
-        router.push('/admin');
+      // Redirect based on user role - get from localStorage after successful login
+      // (React state may not be updated yet, but localStorage is)
+      const storedUser = localStorage.getItem('auth_user');
+      const userData = storedUser ? JSON.parse(storedUser) : authUser;
+      
+      if (userData?.role === 'ADMIN') {
+        router.replace('/admin');
+      } else if (userData?.role === 'ORGANIZER') {
+        router.replace('/dashboard');
       } else {
-        router.push('/dashboard');
+        router.replace('/dashboard');
       }
     } catch (err: any) {
       const msg = (err?.message || '').toLowerCase();
@@ -147,6 +137,11 @@ export default function LoginPage() {
         setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.');
       } else if (msg.includes('not found') || msg.includes('introuvable')) {
         setError('Aucun compte trouvé avec cet email.');
+      } else if (
+        msg.includes('timeout') ||
+        msg.includes('trop de temps')
+      ) {
+        setError('Le serveur met trop de temps à répondre. Veuillez réessayer.');
       } else if (
         msg.includes('failed to fetch') ||
         msg.includes('network') ||
@@ -161,7 +156,7 @@ export default function LoginPage() {
       ) {
         setError('Impossible de se connecter au serveur API. Assurez-vous que le serveur est démarré sur le port 3000.');
       } else {
-        setError('Une erreur est survenue. Veuillez réessayer.');
+        setError(err.message || 'Une erreur est survenue. Veuillez réessayer.');
       }
     } finally {
       setIsLoading(false);

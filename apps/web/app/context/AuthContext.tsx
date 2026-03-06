@@ -184,13 +184,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      // Add timeout to prevent infinite hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
       const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email: email.toLowerCase().trim(), password }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const error = await response.json();
@@ -219,8 +226,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setTokens(newTokens);
       setUser(newUser);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      if (error.name === 'AbortError') {
+        throw new Error('Le serveur met trop de temps à répondre. Veuillez réessayer.');
+      }
       throw error;
     } finally {
       setIsLoading(false);
