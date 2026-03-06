@@ -177,5 +177,24 @@ export class AdminController {
   removeAdmin(@Param('id') id: string, @Request() req: any) {
     return this.adminService.removeAdmin(id, req.user.id);
   }
+
+  // ========== PAYOUT NOTIFICATIONS ==========
+
+  @Post('organizers/:id/send-payout-reminder')
+  @ApiOperation({ summary: 'Send payout reminder email to organizer' })
+  sendPayoutReminder(@Param('id') id: string) {
+    return this.adminService.sendPayoutReminderEmail(id);
+  }
+
+  @Post('payouts/:id/send-confirmation')
+  @ApiOperation({ summary: 'Send payout confirmation email to organizer' })
+  sendPayoutConfirmation(@Param('id') id: string) {
+    // Get organizer ID from payout record
+    return this.adminService.getPayoutHistory(id).then(payouts => {
+      const payout = payouts[0];
+      if (!payout) throw new Error('Payout non trouvé');
+      return this.adminService.sendPayoutCompletedEmail(payout.organizerId, id);
+    });
+  }
 }
 

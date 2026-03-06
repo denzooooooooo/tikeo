@@ -52,6 +52,17 @@ interface OrganizerPayoutReminderData {
   payoutSetupUrl: string;
 }
 
+interface OrganizerPayoutCompletedData {
+  organizerName: string;
+  companyName: string;
+  amount: number;
+  currency: string;
+  method: string;
+  reference: string;
+  payoutDate: string;
+  balanceRemaining: number;
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -455,6 +466,59 @@ export class EmailService {
       '</table></td></tr></table></body></html>';
 
     return this.sendEmail(email, 'Code promo: ' + promoData.code + ' - Tikeo', html, 'Promo code: ' + promoData.code);
+  }
+
+  async sendOrganizerPayoutCompletedEmail(email: string, data: OrganizerPayoutCompletedData) {
+    const baseUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
+    
+    const formattedAmount = new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: data.currency,
+    }).format(data.amount);
+
+    const formattedBalance = new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: data.currency,
+    }).format(data.balanceRemaining);
+
+    const methodLabels: Record<string, string> = {
+      BANK_TRANSFER: 'Virement bancaire',
+      MOBILE_MONEY: 'Mobile Money',
+      PAYPAL: 'PayPal',
+    };
+
+    const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#f5f5f5;">' +
+      '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
+      this.getEmailHeader('💰 Paiement reçu!') +
+      '<tr><td style="padding:40px 30px;">' +
+      '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Bonjour ' + data.organizerName + ',</h2>' +
+      '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">Nous avons le plaisir de vous informer qu\'un paiement a été effectué vers votre compte.</p>' +
+      '<div style="background:linear-gradient(135deg,#10b981,#059669);border-radius:12px;padding:24px;margin:20px 0;text-align:center;">' +
+      '<p style="color:white;margin:0;font-size:14px;">Montant reçu</p>' +
+      '<p style="color:white;margin:8px 0;font-size:36px;font-weight:bold;">' + formattedAmount + '</p></div>' +
+      '<div style="background:#f5f5f5;border-radius:8px;padding:20px;margin:20px 0;">' +
+      '<table width="100%" cellpadding="0" cellspacing="0">' +
+      '<tr><td style="padding:8px 0;border-bottom:1px solid #eee;"><strong>Organisation:</strong></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;">' + data.companyName + '</td></tr>' +
+      '<tr><td style="padding:8px 0;border-bottom:1px solid #eee;"><strong>Méthode:</strong></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;">' + (methodLabels[data.method] || data.method) + '</td></tr>' +
+      '<tr><td style="padding:8px 0;border-bottom:1px solid #eee;"><strong>Référence:</strong></td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;font-family:monospace;">' + data.reference + '</td></tr>' +
+      '<tr><td style="padding:8px 0;"><strong>Date:</strong></td><td style="padding:8px 0;text-align:right;">' + data.payoutDate + '</td></tr>' +
+      '</table></div>' +
+      (data.balanceRemaining > 0 
+        ? '<p style="color:#666;font-size:14px;margin:20px 0 0 0;">Solde restant à payer: <strong>' + formattedBalance + '</strong></p>'
+        : '<p style="color:#10b981;font-size:14px;margin:20px 0 0 0;">✅ Tous vos paiements ont été effectués!</p>'
+      ) +
+      this.getButton(baseUrl + '/dashboard/payouts', 'Voir mes paiements') +
+      '<p style="color:#999;font-size:12px;line-height:1.5;margin:20px 0 0 0;">Cet email confirme le paiement de vos revenus sur Tikeo. Pour toute question, contactez notre support.</p>' +
+      '</td></tr>' + this.getEmailFooter() +
+      '</table></td></tr></table></body></html>';
+
+    return this.sendEmail(
+      email,
+      'Paiement reçu: ' + formattedAmount + ' - Tikeo',
+      html,
+      'Votre paiement de ' + formattedAmount + ' a été effectué vers votre compte.',
+    );
   }
 }
 

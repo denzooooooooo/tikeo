@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   // ========== STATS & OVERVIEW ==========
   
@@ -634,6 +638,96 @@ export class AdminService {
     });
 
     return updated;
+  }
+
+  // ========== PAYOUT NOTIFICATIONS ==========
+
+  async sendPayoutReminderEmail(organizerId: string) {
+    const organizer = await this.prisma.organizer.findUnique({
+      where: { id: organizerId },
+      include: {
+        user: { select: { email: true, firstName: true } },
+        events: {
+          where: { status: 'PUBLISHED' },
+          select: { id: true, title: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!organizer || !organizer.user?.email) {
+      throw new Error('Organisateur non trouvé');
+    }
+
+    // Check if payout is not configured
+    if (organizer.payoutIban || organizer.payoutPhone || organizer.payoutEmail) {
+      throw new Error('Les informations de payout sont déjà configurées');
+    }
+
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const eventTitle = organizer.events[0]?.title || 'vos événements';
+
+    await this.emailService.sendOrganizerPayoutReminderEmail(organizer.user.email, {
+      organizerName: organizer.user.firstName || 'Organisateur',
+      eventTitle,
+      payoutSetupUrl: `${baseUrl}/dashboard/settings`,
+    });
+
+    return { success: true, message: 'Email de rappel envoyé' };
+  }
+
+  async sendPayoutCompletedEmail(organizerId: string, payoutId: string) {
+    const payout = await this.prisma.payoutRecord.findUnique({
+      where: { id: payoutId },
+      include: {
+        organizer: {
+          include: {
+            user: { select: { email: true, firstName: true } },
+          },
+        },
+      },
+    });
+
+    if (!payout || !payout.organizer.user?.email) {
+      throw new Error('Payout non trouvé');
+    }
+
+    // Calculate remaining balance
+    const allPayouts = await this.prisma.payoutRecord.findMany({
+      where: {
+        organizerId,
+        status: 'COMPLETED',
+      },
+      select: { netAmount: true },
+    });
+
+    const totalPaid = allPayouts.reduce((sum, p) => sum + p.netAmount, 0);
+
+    // Get gross revenue to calculate remaining
+    const orders = await this.prisma.order.findMany({
+      where: {
+        event: { organizerId },
+        status: { in: ['CONFIRMED', 'COMPLETED'] },
+      },
+      select: { total: true },
+    });
+
+    const grossRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+    const netPayout = grossRevenue * 0.99;
+    const balanceRemaining = Math.max(0, netPayout - totalPaid);
+
+    await this.emailService.sendOrganizerPayoutCompletedEmail(payout.organizer.user.email, {
+      organizerName: payout.organizer.user.firstName || 'Organisateur',
+      companyName: payout.organizer.companyName,
+      amount: payout.netAmount,
+      currency: (payout as any).currency || 'XOF',
+      method: payout.method,
+      reference: payout.reference || payout.id,
+      payoutDate: payout.processedAt?.toLocaleDateString('fr-FR') || new Date().toLocaleDateString('fr-FR'),
+      balanceRemaining,
+    });
+
+    return { success: true, message: 'Email de confirmation envoyé' };
   }
 }
 
