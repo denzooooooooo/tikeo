@@ -520,5 +520,39 @@ export class EmailService {
       'Votre paiement de ' + formattedAmount + ' a été effectué vers votre compte.',
     );
   }
+
+  // Send custom notification email (admin)
+  async sendCustomNotificationEmail(email: string, data: { type: string; title: string; message: string }) {
+    const { type, title, message } = data;
+    
+    const typeLabels: Record<string, string> = {
+      TICKET_READY: 'Billets',
+      EVENT_REMINDER: 'Rappel',
+      PAYMENT_RECEIVED: 'Paiement',
+      EVENT_CANCELLED: 'Annulation',
+      REVIEW_REQUEST: 'Avis',
+      MARKETING: 'Promotion',
+      SYSTEM: 'Système',
+      NEW_FOLLOWER: 'Nouvel abonné',
+      RECOMMENDATION: 'Recommandation',
+    };
+
+    const typeLabel = typeLabels[type] || 'Notification';
+    const baseUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
+    
+    const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#f5f5f5;">' +
+      '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
+      this.getEmailHeader(title) +
+      '<tr><td style="padding:40px 30px;">' +
+      '<span style="display:inline-block;background:#f0f0f0;color:#666;font-size:12px;padding:4px 12px;border-radius:20px;margin-bottom:20px;">' + typeLabel + '</span>' +
+      '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">' + title + '</h2>' +
+      '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">' + message + '</p>' +
+      this.getButton(baseUrl, 'Voir sur Tikeo') +
+      '</td></tr>' + this.getEmailFooter() +
+      '</table></td></tr></table></body></html>';
+
+    return this.sendEmail(email, title + ' - Tikeo', html, title + ': ' + message);
+  }
 }
 
