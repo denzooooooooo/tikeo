@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { OrganizersService } from '../organizers/organizers.service';
 
 export interface GuestInfo {
   firstName: string;
@@ -29,6 +30,7 @@ export class OrdersService {
     private emailService: EmailService,
     private redis: RedisService,
     private notificationsService: NotificationsService,
+    private organizersService: OrganizersService,
   ) {}
 
   async createOrder(userId: string | null, dto: CreateOrderDto) {
@@ -253,6 +255,10 @@ export class OrdersService {
         }
       }
 
+      // 📩 Rappel payout organisateur si config manquante (non bloquant)
+      this.organizersService.sendPayoutReminderIfNeeded(event.organizerId, event.title || 'Événement')
+        .catch(() => {});
+
       // 🔔 Notification en app uniquement pour les utilisateurs connectés
       if (userId) {
         this.notificationsService.createNotification({
@@ -264,6 +270,10 @@ export class OrdersService {
         }).catch(() => {});
       }
     } else {
+      // 📩 Rappel payout organisateur si config manquante (non bloquant)
+      this.organizersService.sendPayoutReminderIfNeeded(event.organizerId, event.title || 'Événement')
+        .catch(() => {});
+
       // Paid event: pending payment — notify user that order is pending (connecté seulement)
       if (userId) {
         this.notificationsService.createNotification({

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 import * as QRCode from 'qrcode';
+import PDFDocument from 'pdfkit';
 
 interface TicketData {
   eventTitle: string;
@@ -43,6 +44,12 @@ interface PromoData {
   code: string;
   discount: string;
   validUntil: string;
+}
+
+interface OrganizerPayoutReminderData {
+  organizerName: string;
+  eventTitle: string;
+  payoutSetupUrl: string;
 }
 
 @Injectable()
@@ -91,7 +98,13 @@ export class EmailService {
     };
   }
 
-  private async sendEmail(to: string, subject: string, html: string, text: string) {
+  private async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+    text: string,
+    attachments?: Array<{ filename: string; content: string }>
+  ) {
     if (!this.isConfigured) {
       this.logger.error('=== EMAIL NOT SENT (NO EMAIL SERVICE CONFIGURED) ===');
       return { success: false, error: 'EMAIL_SERVICE_NOT_CONFIGURED' };
@@ -107,6 +120,7 @@ export class EmailService {
           subject,
           html,
           text,
+          ...(attachments && attachments.length > 0 ? { attachments } : {}),
           ...(replyTo ? { replyTo } : {}),
           headers: {
             'X-Entity-Ref-ID': `tikeo-${Date.now()}`,
@@ -214,6 +228,82 @@ export class EmailService {
     return this.sendEmail(email, 'Bienvenue ' + firstName + '! - Tikeo', html, 'Welcome to Tikeo, ' + firstName + '!');
   }
 
+  private async generateTicketPdfBuffer(ticketData: TicketData, qrImage: string): Promise<Buffer> {
+    const design = ticketData.ticketDesign || {};
+    const primary = design.primaryColor || '#5B7CFF';
+    const secondary = design.secondaryColor || '#7B61FF';
+    const title = design.customTitle || 'Billet officiel';
+    const footerNote = design.footerNote || 'Merci de présenter ce billet à l’entrée.';
+    const showQr = design.showQr !== false;
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk) => chunks.push(chunk as Buffer));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      doc.rect(0, 0, doc.page.width, doc.page.height).fill('#0f1220');
+
+      doc
+        .save()
+        .rect(40, 40, doc.page.width - 80, 110)
+        .fillOpacity(1)
+        .fill(primary)
+        .restore();
+
+      doc
+        .fontSize(24)
+        .fillColor('#ffffff')
+        .text(`🎫 ${title}`, 60, 72, { width: doc.page.width - 120 });
+
+      doc
+        .fontSize(11)
+        .fillColor('#e8eeff')
+        .text('Tikeo • Billet officiel', 60, 108);
+
+      doc
+        .roundedRect(40, 170, doc.page.width - 80, 560, 12)
+        .fill('#13172b');
+
+      doc
+        .fontSize(22)
+        .fillColor('#ffffff')
+        .text(ticketData.eventTitle, 60, 200, { width: 320 });
+
+      const detailsY = 260;
+      doc.fontSize(12).fillColor('#d9e1ff');
+      doc.text(`Date: ${ticketData.eventDate}`, 60, detailsY);
+      doc.text(`Lieu: ${ticketData.venue}`, 60, detailsY + 24);
+      doc.text(`Type: ${ticketData.ticketType}`, 60, detailsY + 48);
+      doc.text(`Commande: ${ticketData.orderId}`, 60, detailsY + 72);
+      if (ticketData.ticketId) doc.text(`Billet ID: ${ticketData.ticketId}`, 60, detailsY + 96);
+
+      if (showQr && qrImage) {
+        doc.roundedRect(390, 240, 150, 150, 8).fill('#ffffff');
+        doc.image(qrImage, 400, 250, { width: 130, height: 130 });
+      }
+
+      doc
+        .fontSize(12)
+        .fillColor('#cfd6f6')
+        .text('Cher client, voici votre billet pour l’événement. Merci de le présenter à l’entrée.', 60, 430, { width: 480, lineGap: 4 });
+
+      doc
+        .fontSize(10)
+        .fillColor('#8d98be')
+        .text(footerNote, 60, 480, { width: 480, lineGap: 3 });
+
+      doc
+        .fontSize(10)
+        .fillColor('#7B61FF')
+        .text(`Document généré par Tikeo • ${new Date().toLocaleString('fr-FR')}`, 60, 700);
+
+      doc.end();
+    });
+  }
+
   async sendTicketEmail(email: string, ticketData: TicketData) {
     const baseUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
 
@@ -231,6 +321,9 @@ export class EmailService {
       ? 'background-image:url(\'' + design.backgroundUrl + '\');background-size:cover;background-position:center;'
       : '';
     const textColor = design.textColor || '#FFFFFF';
+
+    const pdfBuffer = await this.generateTicketPdfBuffer(ticketData, qrImage);
+    const pdfBase64 = pdfBuffer.toString('base64');
 
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#0f1220;">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1220;padding:24px 12px;"><tr><td align="center">' +
@@ -257,13 +350,25 @@ export class EmailService {
           '</div></div>'
         : '') +
       (showQr && ticketData.qrCode ? '<p style="color:#96a1c6;font-size:11px;text-align:center;word-break:break-all;margin:8px 0 0 0;">' + ticketData.qrCode + '</p>' : '') +
-      '<p style="color:#cfd6f6;font-size:14px;line-height:1.6;margin:18px 0 0 0;">Arrivez 30 minutes avant le début de l’événement pour faciliter le contrôle.</p>' +
+      '<p style="color:#cfd6f6;font-size:14px;line-height:1.6;margin:18px 0 0 0;">Cher client, voici votre billet pour l’événement. Le PDF est joint à cet email.</p>' +
+      '<p style="color:#cfd6f6;font-size:14px;line-height:1.6;margin:8px 0 0 0;">Arrivez 30 minutes avant le début de l’événement pour faciliter le contrôle.</p>' +
       (showTerms ? '<p style="color:#8d98be;font-size:12px;line-height:1.5;margin:12px 0 0 0;">' + footerNote + '</p>' : '') +
       this.getButton(baseUrl + '/tickets', 'Voir mes billets') +
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
-    return this.sendEmail(email, 'Vos billets - ' + ticketData.eventTitle + ' - Tikeo', html, 'Your ticket for ' + ticketData.eventTitle);
+    return this.sendEmail(
+      email,
+      'Vos billets - ' + ticketData.eventTitle + ' - Tikeo',
+      html,
+      'Cher client, voici votre billet pour l’événement ' + ticketData.eventTitle,
+      [
+        {
+          filename: `ticket-${ticketData.orderId}-${ticketData.ticketId || 'document'}.pdf`,
+          content: pdfBase64,
+        },
+      ],
+    );
   }
 
   async sendEventReminderEmail(email: string, eventData: EventData) {
@@ -306,6 +411,29 @@ export class EmailService {
       '</table></td></tr></table></body></html>';
 
     return this.sendEmail(email, 'Confirmation commande ' + orderData.orderId + ' - Tikeo', html, 'Order confirmed: ' + orderData.orderId);
+  }
+
+  async sendOrganizerPayoutReminderEmail(email: string, data: OrganizerPayoutReminderData) {
+    const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#f5f5f5;">' +
+      '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
+      this.getEmailHeader('Action requise: configurez vos informations de paiement') +
+      '<tr><td style="padding:40px 30px;">' +
+      '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Bonjour ' + data.organizerName + ',</h2>' +
+      '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">Vous avez des ventes sur votre événement <strong>' + data.eventTitle + '</strong>, ' +
+      'mais vos informations de payout ne sont pas complètes.</p>' +
+      '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">Pour recevoir vos paiements sans retard, complétez votre configuration maintenant.</p>' +
+      this.getButton(data.payoutSetupUrl, 'Configurer mes informations payout') +
+      '<p style="color:#999;font-size:13px;line-height:1.5;margin:18px 0 0 0;">Cet email est transactionnel et lié à vos revenus organisateur.</p>' +
+      '</td></tr>' + this.getEmailFooter() +
+      '</table></td></tr></table></body></html>';
+
+    return this.sendEmail(
+      email,
+      'Action requise: informations payout manquantes - Tikeo',
+      html,
+      'Vos informations payout sont incomplètes. Configurez-les ici: ' + data.payoutSetupUrl,
+    );
   }
 
   async sendPromoCodeEmail(email: string, promoData: PromoData) {

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, Put, Body, UseGuards, Request } from '@nestjs/common';
 import { OrganizersService } from './organizers.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -39,14 +39,14 @@ export class OrganizersController {
 
   @Get('payout/pending')
   @UseGuards(JwtAuthGuard)
-  getPendingPayouts() {
-    return this.organizersService.getPendingPayouts();
+  getPendingPayouts(@Request() req: any) {
+    return this.organizersService.getPendingPayouts(req.user.id);
   }
 
   @Get('revenue/summary')
   @UseGuards(JwtAuthGuard)
-  getRevenueSummary() {
-    return this.organizersService.getRevenueSummary();
+  getRevenueSummary(@Request() req: any) {
+    return this.organizersService.getRevenueSummary(req.user.id);
   }
 }
 

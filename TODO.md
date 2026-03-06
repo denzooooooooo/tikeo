@@ -1,22 +1,17 @@
-# TODO - Ticket design links + email parity
+# TODO - Emails acheteur/vendeur (PDF + reporting)
 
-- [x] Lire les fichiers clés
-  - [x] apps/web/app/dashboard/events/create/page.tsx
-  - [x] apps/web/app/dashboard/events/[id]/edit/page.tsx
-  - [x] apps/web/app/dashboard/events/[id]/ticket-design/page.tsx
-  - [x] services/api-gateway/src/email/email.service.ts
-  - [x] apps/web/app/dashboard/scanner/useScannerLogic.ts
-
-- [ ] Implémentation
-  - [x] Supprimer formulaire inline design sur create event (garder uniquement logique lien/studio)
-  - [x] Supprimer formulaire inline design sur edit event (garder uniquement lien studio)
-  - [ ] Aligner sendTicketEmail sur le rendu preview du studio design
-  - [ ] Mettre texte email: "Cher client, voici votre billet pour l’événement ..."
-  - [ ] S’assurer que le QR valide est bien inséré et visible dans le mail
-  - [ ] Finaliser fallback scanner si BarcodeDetector non supporté (mode manuel)
-
-- [ ] Vérifications après implémentation
-  - [ ] Build TypeScript web
-  - [ ] Build TypeScript api-gateway
-  - [ ] Vérification UI create/edit: lien studio seulement
-  - [ ] Vérification rendu email billet + présence QR
+- [x] Installer dépendances PDF backend (`pdfkit`, `@types/pdfkit`)
+- [ ] Phase 1
+  - [ ] Générer billet PDF dans `EmailService` (design + QR)
+  - [ ] Envoyer billet en pièce jointe PDF dans `sendTicketEmail`
+  - [ ] Mettre texte email acheteur en FR: "Cher client, voici votre billet..."
+  - [ ] Ajouter rappel vendeur si infos payout manquantes (trigger vente)
+- [ ] Phase 2
+  - [ ] Ajouter email hebdomadaire vendeur (stats ventes, CA brut, commission, net)
+  - [ ] Ajouter logique scheduler/cron hebdo jusqu'à fin d'événement
+  - [ ] Ajouter rappel dashboard vendeur pour infos payout manquantes
+  - [ ] Afficher revenu net clair (après commission) côté dashboard
+- [ ] Vérifications
+  - [ ] Type-check api-gateway
+  - [ ] Type-check web
+  - [ ] Tests API critiques (emails/notifications/reporting)

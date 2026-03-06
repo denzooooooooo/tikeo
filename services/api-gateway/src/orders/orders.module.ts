@@ -5,9 +5,10 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
 import { RedisModule } from '../redis/redis.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { OrganizersModule } from '../organizers/organizers.module';
 
 @Module({
-  imports: [PrismaModule, EmailModule, RedisModule, NotificationsModule],
+  imports: [PrismaModule, EmailModule, RedisModule, NotificationsModule, OrganizersModule],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],
