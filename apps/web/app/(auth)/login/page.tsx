@@ -92,6 +92,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [touched, setTouched] = useState({ email: false, password: false });
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
   const emailError = touched.email && formData.email && !isValidEmail(formData.email)
     ? 'Veuillez entrer une adresse email valide'
@@ -100,12 +101,17 @@ export default function LoginPage() {
     ? 'Le mot de passe doit contenir au moins 6 caractères'
     : '';
 
+  const addDebug = (msg: string) => {
+    setDebugInfo(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setDebugInfo([]); // Clear debug on new attempt
 
-    console.log('[LOGIN] Starting login process...');
-    console.log('[LOGIN] Email:', formData.email);
+    addDebug('Starting login process...');
+    addDebug('Email: ' + formData.email);
 
     // Validation manuelle
     if (!formData.email || !isValidEmail(formData.email)) {
@@ -119,34 +125,34 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      console.log('[LOGIN] Calling AuthContext.login...');
+      addDebug('Calling AuthContext.login...');
       
       // Call login via AuthContext - this stores tokens and user in localStorage and state
       await login(formData.email, formData.password);
       
-      console.log('[LOGIN] Login successful, checking role...');
+      addDebug('Login successful, checking role...');
       
       // Redirect based on user role - get from localStorage after successful login
       // (React state may not be updated yet, but localStorage is)
       const storedUser = localStorage.getItem('auth_user');
-      console.log('[LOGIN] Stored user from localStorage:', storedUser);
+      addDebug('Stored user from localStorage: ' + storedUser);
       
       const userData = storedUser ? JSON.parse(storedUser) : authUser;
-      console.log('[LOGIN] User data for redirect:', userData);
-      console.log('[LOGIN] User role:', userData?.role);
+      addDebug('User data: ' + JSON.stringify(userData));
+      addDebug('User role: ' + userData?.role);
       
       if (userData?.role === 'ADMIN') {
-        console.log('[LOGIN] Redirecting to /admin');
+        addDebug('Redirecting to /admin');
         router.replace('/admin');
       } else if (userData?.role === 'ORGANIZER') {
-        console.log('[LOGIN] Redirecting to /dashboard (ORGANIZER)');
+        addDebug('Redirecting to /dashboard (ORGANIZER)');
         router.replace('/dashboard');
       } else {
-        console.log('[LOGIN] Redirecting to /dashboard (default)');
+        addDebug('Redirecting to /dashboard (default)');
         router.replace('/dashboard');
       }
     } catch (err: any) {
-      console.error('[LOGIN] Login error:', err);
+      addDebug('ERROR: ' + err.message);
       const msg = (err?.message || '').toLowerCase();
       if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('credentials') || msg.includes('invalid') || msg.includes('incorrect') || msg.includes('wrong')) {
         setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.');
@@ -247,6 +253,16 @@ export default function LoginPage() {
                   <line x1="12" x2="12.01" y1="16" y2="16" />
                 </svg>
                 <span>{error}</span>
+              </div>
+            )}
+
+            {/* Debug Info - Affiché pour le débogage */}
+            {debugInfo.length > 0 && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs font-mono">
+                <div className="font-bold mb-2">Debug:</div>
+                {debugInfo.map((msg, i) => (
+                  <div key={i}>{msg}</div>
+                ))}
               </div>
             )}
 
