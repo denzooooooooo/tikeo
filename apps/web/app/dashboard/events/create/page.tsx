@@ -26,6 +26,16 @@ const COUNTRIES = [
 
 const STEPS = ['Infos', 'Date & Lieu', 'Billets'];
 
+const TICKET_DESIGN_TEMPLATES = [
+  { value: 'CLASSIC', label: 'Classic' },
+  { value: 'NEON', label: 'Neon' },
+  { value: 'GOLD', label: 'Gold' },
+  { value: 'MINIMAL', label: 'Minimal' },
+  { value: 'LUXURY', label: 'Luxury' },
+  { value: 'FESTIVE', label: 'Festive' },
+  { value: 'CORPORATE', label: 'Corporate' },
+];
+
 interface TicketType { name: string; description: string; price: string; quantity: string; }
 
 const inp = 'w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#5B7CFF] focus:ring-2 focus:ring-[#5B7CFF]/20 outline-none text-base bg-white transition-all';
@@ -60,6 +70,16 @@ function CreateEventForm() {
     venueName: '', venueAddress: '', venueCity: '', venueCountry: "Côte d'Ivoire",
     currency: 'XOF',
     isOnline: false, isFree: false,
+    ticketDesignTemplate: 'CLASSIC',
+    ticketDesignBackgroundUrl: '',
+    ticketDesignPrimaryColor: '#5B7CFF',
+    ticketDesignSecondaryColor: '#7B61FF',
+    ticketDesignTextColor: '#111827',
+    ticketDesignCustomTitle: '',
+    ticketDesignFooterNote: '',
+    ticketDesignShowQr: true,
+    ticketDesignShowSeat: true,
+    ticketDesignShowTerms: true,
     tickets: [{ name: 'Standard', description: '', price: '0', quantity: '100' }] as TicketType[],
   });
 
@@ -498,7 +518,7 @@ function CreateEventForm() {
             <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
               <p className="text-sm font-semibold text-indigo-900">🎨 Design du billet</p>
               <p className="text-xs text-indigo-700 mt-1">
-                Le design du billet se configure dans le studio après la création de l’événement.
+                Configure le design dans le studio après création de l’événement.
               </p>
             </div>
 
