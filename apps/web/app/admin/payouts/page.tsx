@@ -306,16 +306,9 @@ export default function AdminPayoutsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {org.pendingPayout > 0 && org.isPayoutConfigured && (
-                          <button
-                            onClick={() => openPayoutModal(org)}
-                            className="px-3 py-1.5 bg-[#5B7CFF] text-white text-xs font-medium rounded-lg hover:bg-[#4B6CEF] transition-colors"
-                          >
-                            Payer
-                          </button>
-                        )}
-                        {org.pendingPayout > 0 && !org.isPayoutConfigured && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Always show reminder button for unconfigured organizers */}
+                        {!org.isPayoutConfigured && (
                           <button
                             onClick={() => sendReminder(org.id)}
                             className="px-3 py-1.5 bg-orange-500 text-white text-xs font-medium rounded-lg hover:bg-orange-600 transition-colors"
@@ -324,11 +317,21 @@ export default function AdminPayoutsPage() {
                             📧 Rappel
                           </button>
                         )}
-                        {org.pendingPayout > 0 && !org.isPayoutConfigured && (
-                          <span className="text-xs text-gray-400">En attente</span>
+                        {/* Pay button only if there's pending payout AND configured */}
+                        {org.pendingPayout > 0 && org.isPayoutConfigured && (
+                          <button
+                            onClick={() => openPayoutModal(org)}
+                            className="px-3 py-1.5 bg-[#5B7CFF] text-white text-xs font-medium rounded-lg hover:bg-[#4B6CEF] transition-colors"
+                          >
+                            Payer
+                          </button>
                         )}
-                        {org.pendingPayout === 0 && org.isPayoutConfigured && (
-                          <span className="text-xs text-green-600">✓ Payé</span>
+                        {/* Status indicator */}
+                        {org.isPayoutConfigured && org.pendingPayout === 0 && (
+                          <span className="text-xs text-green-600">✓ Configuré</span>
+                        )}
+                        {!org.isPayoutConfigured && (
+                          <span className="text-xs text-gray-400">En attente config</span>
                         )}
                       </div>
                     </td>
