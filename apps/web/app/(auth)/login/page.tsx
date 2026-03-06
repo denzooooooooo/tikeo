@@ -104,6 +104,9 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
+    console.log('[LOGIN] Starting login process...');
+    console.log('[LOGIN] Email:', formData.email);
+
     // Validation manuelle
     if (!formData.email || !isValidEmail(formData.email)) {
       setError('Veuillez entrer une adresse email valide');
@@ -116,22 +119,34 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
+      console.log('[LOGIN] Calling AuthContext.login...');
+      
       // Call login via AuthContext - this stores tokens and user in localStorage and state
       await login(formData.email, formData.password);
+      
+      console.log('[LOGIN] Login successful, checking role...');
       
       // Redirect based on user role - get from localStorage after successful login
       // (React state may not be updated yet, but localStorage is)
       const storedUser = localStorage.getItem('auth_user');
+      console.log('[LOGIN] Stored user from localStorage:', storedUser);
+      
       const userData = storedUser ? JSON.parse(storedUser) : authUser;
+      console.log('[LOGIN] User data for redirect:', userData);
+      console.log('[LOGIN] User role:', userData?.role);
       
       if (userData?.role === 'ADMIN') {
+        console.log('[LOGIN] Redirecting to /admin');
         router.replace('/admin');
       } else if (userData?.role === 'ORGANIZER') {
+        console.log('[LOGIN] Redirecting to /dashboard (ORGANIZER)');
         router.replace('/dashboard');
       } else {
+        console.log('[LOGIN] Redirecting to /dashboard (default)');
         router.replace('/dashboard');
       }
     } catch (err: any) {
+      console.error('[LOGIN] Login error:', err);
       const msg = (err?.message || '').toLowerCase();
       if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('credentials') || msg.includes('invalid') || msg.includes('incorrect') || msg.includes('wrong')) {
         setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.');

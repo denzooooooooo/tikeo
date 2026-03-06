@@ -183,11 +183,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
+    console.log('[AUTH CONTEXT] Starting login for:', email);
     try {
       // Add timeout to prevent infinite hanging
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
 
+      console.log('[AUTH CONTEXT] Calling API...');
       const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -198,13 +200,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       clearTimeout(timeoutId);
+      console.log('[AUTH CONTEXT] API response status:', response.status);
 
       if (!response.ok) {
         const error = await response.json();
+        console.error('[AUTH CONTEXT] API error:', error);
         throw new Error(error.message || 'Échec de la connexion');
       }
 
       const data = await response.json();
+      console.log('[AUTH CONTEXT] Login successful, got user:', data.user);
       
       // Store tokens and user
       const newTokens: AuthTokens = {
@@ -221,13 +226,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: data.user.role,
       };
 
+      console.log('[AUTH CONTEXT] Saving to localStorage, role:', newUser.role);
       localStorage.setItem(TOKEN_KEY, JSON.stringify(newTokens));
       localStorage.setItem(USER_KEY, JSON.stringify(newUser));
 
       setTokens(newTokens);
       setUser(newUser);
+      console.log('[AUTH CONTEXT] Login complete, user set in state');
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('[AUTH CONTEXT] Login error:', error);
       if (error.name === 'AbortError') {
         throw new Error('Le serveur met trop de temps à répondre. Veuillez réessayer.');
       }
