@@ -446,5 +446,194 @@ export class AdminService {
       byDate,
     };
   }
+
+  // ========== RECENT ORDERS ==========
+
+  async getRecentOrders(limit = 10) {
+    return this.prisma.order.findMany({
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { email: true, firstName: true, lastName: true, avatar: true } },
+        event: { select: { title: true, coverImage: true } },
+      },
+    });
+  }
+
+  // ========== TOP EVENTS ==========
+
+  async getTopEvents(limit = 10) {
+    const events = await this.prisma.event.findMany({
+      where: { status: 'PUBLISHED' },
+      include: {
+        organizer: { select: { companyName: true } },
+        _count: { select: { tickets: true, orders: true } },
+        orders: {
+          where: { status: { in: ['CONFIRMED', 'COMPLETED'] } },
+          select: { total: true },
+        },
+      },
+    });
+
+    return events
+      .map((event) => ({
+        id: event.id,
+        title: event.title,
+        coverImage: event.coverImage,
+        organizer: event.organizer.companyName,
+        ticketsSold: event._count.tickets,
+        ordersCount: event._count.orders,
+        revenue: event.orders.reduce((sum, o) => sum + o.total, 0),
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, limit);
+  }
+
+  // ========== TOP ORGANIZERS ==========
+
+  async getTopOrganizers(limit = 10) {
+    const organizers = await this.prisma.organizer.findMany({
+      include: {
+        user: { select: { email: true, firstName: true, lastName: true } },
+        _count: { select: { events: true } },
+        events: {
+          where: { status: 'PUBLISHED' },
+          include: {
+            orders: {
+              where: { status: { in: ['CONFIRMED', 'COMPLETED'] } },
+              select: { total: true },
+            },
+          },
+        },
+      },
+    });
+
+    return organizers
+      .map((org) => ({
+        id: org.id,
+        companyName: org.companyName,
+        logo: org.logo,
+        user: org.user,
+        eventsCount: org._count.events,
+        totalRevenue: org.events.reduce((sum, e) => sum + e.orders.reduce((s, o) => s + o.total, 0), 0),
+      }))
+      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+      .slice(0, limit);
+  }
+
+  // ========== PLATFORM HEALTH ==========
+
+  async getPlatformHealth() {
+    const now = new Date();
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Orders in different periods
+    const [orders24h, orders7d, orders30d] = await Promise.all([
+      this.prisma.order.count({ where: { createdAt: { gte: last24h }, status: { in: ['CONFIRMED', 'COMPLETED'] } } }),
+      this.prisma.order.count({ where: { createdAt: { gte: last7d }, status: { in: ['CONFIRMED', 'COMPLETED'] } } }),
+      this.prisma.order.count({ where: { createdAt: { gte: last30d }, status: { in: ['CONFIRMED', 'COMPLETED'] } } }),
+    ]);
+
+    // Users in different periods
+    const [users24h, users7d, users30d] = await Promise.all([
+      this.prisma.user.count({ where: { createdAt: { gte: last24h } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: last7d } } }),
+      this.prisma.user.count({ where: { createdAt: { gte: last30d } } }),
+    ]);
+
+    // Events published
+    const [events24h, events7d, events30d] = await Promise.all([
+      this.prisma.event.count({ where: { createdAt: { gte: last24h }, status: 'PUBLISHED' } }),
+      this.prisma.event.count({ where: { createdAt: { gte: last7d }, status: 'PUBLISHED' } }),
+      this.prisma.event.count({ where: { createdAt: { gte: last30d }, status: 'PUBLISHED' } }),
+    ]);
+
+    return {
+      orders: { last24h: orders24h, last7d: orders7d, last30d: orders30d },
+      users: { last24h: users24h, last7d: users7d, last30d: users30d },
+      events: { last24h: events24h, last7d: events7d, last30d: events30d },
+      timestamp: now.toISOString(),
+    };
+  }
+
+  // ========== CATEGORY STATS ==========
+
+  async getCategoryStats() {
+    const categories = ['CONCERT', 'FESTIVAL', 'SPECTACLE', 'SPORT', 'CONFERENCE', 'EXHIBITION', 'GASTRONOMIE', 'FAMILLE'];
+    
+    const stats = await Promise.all(
+      categories.map(async (category) => {
+        const count = await this.prisma.event.count({
+          where: { category, status: 'PUBLISHED' },
+        });
+        return { category, count };
+      })
+    );
+
+    return stats.filter(s => s.count > 0);
+  }
+
+  // ========== ADMIN MANAGEMENT ==========
+
+  async getAdmins() {
+    return this.prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async createAdmin(email: string, adminId: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    
+    if (!user) {
+      throw new Error('Utilisateur non trouvé');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { role: 'ADMIN' },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        adminId,
+        action: 'CREATE_ADMIN',
+        entity: 'User',
+        entityId: user.id,
+        newValue: JSON.stringify({ email, role: 'ADMIN' }),
+      },
+    });
+
+    return updated;
+  }
+
+  async removeAdmin(userId: string, adminId: string) {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: 'USER' },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        adminId,
+        action: 'REMOVE_ADMIN',
+        entity: 'User',
+        entityId: userId,
+        oldValue: JSON.stringify({ role: 'ADMIN' }),
+      },
+    });
+
+    return updated;
+  }
 }
 

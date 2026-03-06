@@ -108,17 +108,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const checkAdmin = async () => {
       const token = localStorage.getItem('auth_tokens');
       if (!token) {
-        router.push('/login');
+        router.push('/login?redirect=/admin');
         return;
       }
 
       try {
         const parsed = JSON.parse(token);
-        // Check if user has admin role - we'll check from the user object
-        // For now, allow access if token exists (admin guard handles it on backend)
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+        
+        // Verify token and get user role
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${parsed.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          router.push('/login?redirect=/admin');
+          return;
+        }
+
+        const userData = await response.json();
+        
+        // Check if user has admin role
+        if (userData.role !== 'ADMIN' && userData.role !== 'SUPER_ADMIN') {
+          router.push('/dashboard?error=admin_required');
+          return;
+        }
+
         setIsAdmin(true);
-      } catch {
-        router.push('/login');
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.push('/login?redirect=/admin');
       } finally {
         setLoading(false);
       }
