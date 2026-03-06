@@ -4,6 +4,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import { API_CONFIG } from '@tikeo/utils';
+
+// Types for login response
+interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+    role: string;
+  };
+}
 
 // ─── Icônes SVG inline ───────────────────────────────────────────────────────
 const MailIcon = () => (
@@ -101,8 +116,31 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
+      // Call login API directly to get user role for proper redirect
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email.toLowerCase().trim(), password: formData.password }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Échec de la connexion');
+      }
+
+      const data: LoginResponse = await response.json();
+      
+      // Use login from AuthContext to store tokens/user in state and localStorage
       await login(formData.email, formData.password);
-      router.push('/dashboard');
+      
+      // Redirect based on user role from the API response
+      if (data.user.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       const msg = (err?.message || '').toLowerCase();
       if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('credentials') || msg.includes('invalid') || msg.includes('incorrect') || msg.includes('wrong')) {
