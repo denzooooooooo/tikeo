@@ -117,7 +117,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
         
         // Verify token and get user role
-        const response = await fetch(`${API_URL}/auth/me`, {
+        const response = await fetch(`${API_URL}/users/me`, {
           headers: {
             'Authorization': `Bearer ${parsed.accessToken}`,
             'Content-Type': 'application/json',

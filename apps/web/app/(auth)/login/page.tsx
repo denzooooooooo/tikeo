@@ -141,7 +141,8 @@ export default function LoginPage() {
       addDebug('User data: ' + JSON.stringify(userData));
       addDebug('User role: ' + userData?.role);
       
-      if (userData?.role === 'ADMIN') {
+      // Check for ADMIN or SUPER_ADMIN role
+      if (userData?.role === 'ADMIN' || userData?.role === 'SUPER_ADMIN') {
         addDebug('Redirecting to /admin');
         router.replace('/admin');
       } else if (userData?.role === 'ORGANIZER') {
