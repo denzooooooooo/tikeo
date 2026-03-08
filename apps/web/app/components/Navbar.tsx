@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  SearchIcon, UserIcon, MenuIcon, CloseIcon,
+  SearchIcon, UserIcon, MenuIcon, CloseIcon, TicketIcon,
   ArrowRightIcon, BellIcon, CalendarIcon, HeartIcon, SettingsIcon,
   MusicIcon, SportsIcon, TheaterIcon, FestivalIcon, ConferenceIcon,
   ArtIcon, FoodIcon, FamilyIcon, PlusIcon, ChartIcon, StarIcon,
@@ -137,11 +137,10 @@ export function Navbar() {
           <div className="flex items-center justify-between h-16 lg:h-[68px] gap-3">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-lg" style={{ boxShadow: '0 4px 15px rgba(91,124,255,0.35)' }}>
+            <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-lg">
                 <Image src="/logo.png" alt="Tikeo" width={40} height={40} className="w-full h-full object-cover" />
               </div>
-              <span className="text-2xl font-black tracking-tight text-gray-900">tikeo</span>
             </Link>
 
             {/* Desktop Nav */}

@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { TicketIcon } from '@tikeo/ui';
 
 export function GlassFooter() {
   return (
