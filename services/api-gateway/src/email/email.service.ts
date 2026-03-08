@@ -73,7 +73,7 @@ export class EmailService {
   constructor(private configService: ConfigService) {
     //优先使用 RESEND_API_KEY (推荐方式)
     const resendApiKey = this.configService.get('RESEND_API_KEY');
-    this.fromEmail = this.configService.get('SMTP_FROM') || 'Tikeo <onboarding@resend.dev>';
+    this.fromEmail = this.configService.get('SMTP_FROM') || 'Tikeoh <onboarding@resend.dev>';
 
     if (resendApiKey) {
       this.resend = new Resend(resendApiKey);
@@ -158,13 +158,13 @@ export class EmailService {
 
   private getEmailHeader(title: string): string {
     return '<div style="background: linear-gradient(135deg, #5B7CFF 0%, #7B61FF 100%); padding: 30px; text-align: center;">' +
-      '<h1 style="color: white; margin: 0; font-size: 28px;">Tikeo</h1></div>';
+      '<h1 style="color: white; margin: 0; font-size: 28px;">Tikeoh</h1></div>';
   }
 
   private getEmailFooter(): string {
     const baseUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
     return '<div style="background-color: #f9f9f9; padding: 20px; text-align: center;">' +
-      '<p style="color: #999999; font-size: 14px; margin: 0;">© ' + new Date().getFullYear() + ' Tikeo. Tous droits réservés.</p>' +
+      '<p style="color: #999999; font-size: 14px; margin: 0;">© ' + new Date().getFullYear() + ' Tikeoh. Tous droits réservés.</p>' +
       '<p style="color: #999999; font-size: 12px; margin: 10px 0 0 0;">' +
       '<a href="' + baseUrl + '/contact" style="color: #5B7CFF; text-decoration: none;">Contact</a> • ' +
       '<a href="' + baseUrl + '/privacy" style="color: #5B7CFF; text-decoration: none;">Confidentialité</a> • ' +
@@ -188,13 +188,13 @@ export class EmailService {
       this.getEmailHeader('Vérifiez votre adresse email') +
       '<tr><td style="padding:40px 30px;">' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Vérifiez votre adresse email</h2>' +
-      '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">Merci de vous être inscrit sur Tikeo! ' +
+      '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">Merci de vous être inscrit sur Tikeoh! ' +
       'Cliquez sur le bouton ci-dessous pour vérifier votre adresse email et activer votre compte.</p>' +
       this.getButton(verifyUrl, 'Vérifier mon email') +
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
-    return this.sendEmail(email, 'Vérifiez votre adresse email - Tikeo', html, 'Verify email: ' + verifyUrl);
+    return this.sendEmail(email, 'Vérifiez votre adresse email - Tikeoh', html, 'Verify email: ' + verifyUrl);
   }
 
   async sendPasswordResetEmail(email: string, token: string) {
@@ -213,7 +213,7 @@ export class EmailService {
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
-    return this.sendEmail(email, 'Réinitialisation de votre mot de passe - Tikeo', html, 'Reset password: ' + resetUrl);
+    return this.sendEmail(email, 'Réinitialisation de votre mot de passe - Tikeoh', html, 'Reset password: ' + resetUrl);
   }
 
   async sendWelcomeEmail(email: string, firstName: string) {
@@ -222,11 +222,11 @@ export class EmailService {
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#f5f5f5;">' +
       '<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:12px;overflow:hidden;">' +
-      this.getEmailHeader('Bienvenue sur Tikeo!') +
+      this.getEmailHeader('Bienvenue sur Tikeoh!') +
       '<tr><td style="padding:40px 30px;">' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">Bienvenue ' + firstName + '!</h2>' +
       '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">Nous sommes ravis de vous avoir parmi nous!</p>' +
-      '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 10px 0;">Avec Tikeo, vous pouvez:</p>' +
+      '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 10px 0;">Avec Tikeoh, vous pouvez:</p>' +
       '<ul style="color:#666;font-size:16px;line-height:1.8;">' +
       '<li>Découvrir les meilleurs événements près de chez vous</li>' +
       '<li>Acheter vos billets en toute simplicité</li>' +
@@ -236,7 +236,7 @@ export class EmailService {
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
-    return this.sendEmail(email, 'Bienvenue ' + firstName + '! - Tikeo', html, 'Welcome to Tikeo, ' + firstName + '!');
+    return this.sendEmail(email, 'Bienvenue ' + firstName + '! - Tikeoh', html, 'Welcome to Tikeoh, ' + firstName + '!');
   }
 
   private async generateTicketPdfBuffer(ticketData: TicketData, qrImage: string): Promise<Buffer> {
@@ -272,7 +272,7 @@ export class EmailService {
       doc
         .fontSize(11)
         .fillColor('#e8eeff')
-        .text('Tikeo • Billet officiel', 60, 108);
+        .text('Tikeoh • Billet officiel', 60, 108);
 
       doc
         .roundedRect(40, 170, doc.page.width - 80, 560, 12)
@@ -309,7 +309,7 @@ export class EmailService {
       doc
         .fontSize(10)
         .fillColor('#7B61FF')
-        .text(`Document généré par Tikeo • ${new Date().toLocaleString('fr-FR')}`, 60, 700);
+        .text(`Document généré par Tikeoh • ${new Date().toLocaleString('fr-FR')}`, 60, 700);
 
       doc.end();
     });
@@ -341,7 +341,7 @@ export class EmailService {
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#13172b;border:1px solid #202642;border-radius:16px;overflow:hidden;">' +
       '<tr><td style="background: linear-gradient(135deg, ' + primary + ' 0%, ' + secondary + ' 100%); padding: 26px 28px; text-align: left; color: white;">' +
       '<h1 style="margin:0;font-size:26px;line-height:1.2;">🎫 ' + customTitle + '</h1>' +
-      '<p style="margin:8px 0 0 0;opacity:.95;font-size:13px;">Billet officiel Tikeo • Présentez ce QR code à l’entrée</p></td></tr>' +
+      '<p style="margin:8px 0 0 0;opacity:.95;font-size:13px;">Billet officiel Tikeoh • Présentez ce QR code à l’entrée</p></td></tr>' +
       '<tr><td style="padding:22px;">' +
       '<div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08);' + backgroundImage + '">' +
       '<div style="background:rgba(8,10,16,.72);padding:20px;color:' + textColor + ';">' +
@@ -370,7 +370,7 @@ export class EmailService {
 
     return this.sendEmail(
       email,
-      'Vos billets - ' + ticketData.eventTitle + ' - Tikeo',
+      'Vos billets - ' + ticketData.eventTitle + ' - Tikeoh',
       html,
       'Cher client, voici votre billet pour l’événement ' + ticketData.eventTitle,
       [
@@ -399,7 +399,7 @@ export class EmailService {
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
-    return this.sendEmail(email, 'Rappel: ' + eventData.eventTitle + ' - Tikeo', html, 'Reminder: ' + eventData.eventTitle);
+    return this.sendEmail(email, 'Rappel: ' + eventData.eventTitle + ' - Tikeoh', html, 'Reminder: ' + eventData.eventTitle);
   }
 
   async sendOrderConfirmationEmail(email: string, orderData: OrderData) {
@@ -421,7 +421,7 @@ export class EmailService {
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
-    return this.sendEmail(email, 'Confirmation commande ' + orderData.orderId + ' - Tikeo', html, 'Order confirmed: ' + orderData.orderId);
+    return this.sendEmail(email, 'Confirmation commande ' + orderData.orderId + ' - Tikeoh', html, 'Order confirmed: ' + orderData.orderId);
   }
 
   async sendOrganizerPayoutReminderEmail(email: string, data: OrganizerPayoutReminderData) {
@@ -441,7 +441,7 @@ export class EmailService {
 
     return this.sendEmail(
       email,
-      'Action requise: informations payout manquantes - Tikeo',
+      'Action requise: informations payout manquantes - Tikeoh',
       html,
       'Vos informations payout sont incomplètes. Configurez-les ici: ' + data.payoutSetupUrl,
     );
@@ -465,7 +465,7 @@ export class EmailService {
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
-    return this.sendEmail(email, 'Code promo: ' + promoData.code + ' - Tikeo', html, 'Promo code: ' + promoData.code);
+    return this.sendEmail(email, 'Code promo: ' + promoData.code + ' - Tikeoh', html, 'Promo code: ' + promoData.code);
   }
 
   async sendOrganizerPayoutCompletedEmail(email: string, data: OrganizerPayoutCompletedData) {
@@ -509,13 +509,13 @@ export class EmailService {
         : '<p style="color:#10b981;font-size:14px;margin:20px 0 0 0;">✅ Tous vos paiements ont été effectués!</p>'
       ) +
       this.getButton(baseUrl + '/dashboard/payouts', 'Voir mes paiements') +
-      '<p style="color:#999;font-size:12px;line-height:1.5;margin:20px 0 0 0;">Cet email confirme le paiement de vos revenus sur Tikeo. Pour toute question, contactez notre support.</p>' +
+      '<p style="color:#999;font-size:12px;line-height:1.5;margin:20px 0 0 0;">Cet email confirme le paiement de vos revenus sur Tikeoh. Pour toute question, contactez notre support.</p>' +
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
     return this.sendEmail(
       email,
-      'Paiement reçu: ' + formattedAmount + ' - Tikeo',
+      'Paiement reçu: ' + formattedAmount + ' - Tikeoh',
       html,
       'Votre paiement de ' + formattedAmount + ' a été effectué vers votre compte.',
     );
@@ -570,11 +570,11 @@ export class EmailService {
       '<span style="display:inline-block;background:#f0f0f0;color:#666;font-size:12px;padding:4px 12px;border-radius:20px;margin-bottom:20px;">' + typeLabel + '</span>' +
       '<h2 style="color:#1a1a1a;margin:0 0 20px 0;font-size:24px;">' + title + '</h2>' +
       '<p style="color:#666;font-size:16px;line-height:1.6;margin:0 0 20px 0;">' + message + '</p>' +
-      this.getButton(baseUrl, 'Voir sur Tikeo') +
+      this.getButton(baseUrl, 'Voir sur Tikeoh') +
       '</td></tr>' + this.getEmailFooter() +
       '</table></td></tr></table></body></html>';
 
-    return this.sendEmail(email, title + ' - Tikeo', html, title + ': ' + message);
+    return this.sendEmail(email, title + ' - Tikeoh', html, title + ': ' + message);
   }
 }
 
