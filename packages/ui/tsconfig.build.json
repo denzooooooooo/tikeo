@@ -13,8 +13,8 @@
     "isolatedModules": false,
     "baseUrl": ".",
     "paths": {
-      "@tikeo/types": ["../types/dist"],
-      "@tikeo/utils": ["../utils/dist"]
+      "@tikeo/types": ["../types/src"],
+      "@tikeo/utils": ["../utils/src"]
     }
   },
   "include": ["src/**/*"]

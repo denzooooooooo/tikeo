@@ -3,7 +3,16 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ContestLeaderboardEntry } from '@tikeo/types';
+interface ContestLeaderboardEntry {
+  contestantId: string;
+  contestantName: string;
+  contestantImage?: string;
+  rank: number;
+  votesCount: number;
+  percentage: number;
+  isWinner?: boolean;
+  winnerPosition?: number;
+}
 import { TrophyIcon, CrownIcon, MedalIcon } from './Icons';
 
 interface LeaderboardProps {
