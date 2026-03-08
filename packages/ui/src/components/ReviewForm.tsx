@@ -12,7 +12,8 @@ interface ReviewFormProps {
 export function ReviewForm({ eventId, onSuccess, onError }: ReviewFormProps) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,7 +25,7 @@ export function ReviewForm({ eventId, onSuccess, onError }: ReviewFormProps) {
       return;
     }
 
-    if (comment.trim().length < 10) {
+    if (content.trim().length < 10) {
       setError('Le commentaire doit contenir au moins 10 caractères');
       return;
     }
@@ -47,14 +48,16 @@ export function ReviewForm({ eventId, onSuccess, onError }: ReviewFormProps) {
           },
           body: JSON.stringify({
             rating,
-            comment: comment.trim(),
+            title: title.trim() || undefined,
+            content: content.trim(),
           }),
         }
       );
 
       if (response.ok) {
         setRating(0);
-        setComment('');
+        setTitle('');
+        setContent('');
         onSuccess?.();
       } else {
         const data = await response.json();
@@ -101,20 +104,35 @@ export function ReviewForm({ eventId, onSuccess, onError }: ReviewFormProps) {
         </div>
       </div>
 
-      {/* Comment */}
+      {/* Title */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Titre (optionnel)
+        </label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Résumé de votre expérience..."
+          maxLength={100}
+          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent"
+        />
+      </div>
+
+      {/* Content */}
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Votre commentaire
         </label>
         <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
           placeholder="Partagez votre expérience..."
           rows={4}
           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B7CFF] focus:border-transparent resize-none"
         />
         <p className="text-sm text-gray-500 mt-1">
-          {comment.length} caractères (minimum 10)
+          {content.length} caractères (minimum 10)
         </p>
       </div>
 

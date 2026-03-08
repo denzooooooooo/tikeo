@@ -25,6 +25,7 @@ export * from './components/EventFilters';
 export * from './components/LikeButton';
 export * from './components/FollowButton';
 export * from './components/ReviewForm';
+export * from './components/EventReviews';
 export * from './components/PromoCodeInput';
 
 // Icons
