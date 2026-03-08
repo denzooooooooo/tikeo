@@ -15,6 +15,7 @@ import {
   TicketIcon,
 } from '@tikeo/ui'; 
 import { LikeButton, FollowButton, ReviewForm } from '@tikeo/ui';
+import ShareButton from './ShareButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
@@ -107,9 +108,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             initialLiked={event.isLiked || false}
             initialCount={event.likesCount || 0}
           />
-          <button className="p-2.5 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all shadow-lg">
-            <ShareIcon className="text-gray-700" size={20} />
-          </button>
+          <ShareButton title={event.title} eventId={params.id} />
         </div>
 
         {/* Title overlay */}
