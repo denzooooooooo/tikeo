@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { TicketIcon } from '@tikeo/ui';
+import Image from 'next/image';
 
 export function GlassFooter() {
   return (
@@ -20,8 +20,8 @@ export function GlassFooter() {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#5B7CFF] to-[#7B61FF] rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-glow transition-shadow">
-                <TicketIcon className="text-white" size={20} />
+              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-lg group-hover:shadow-glow transition-shadow">
+                <Image src="/logo.png" alt="Tikeo" width={40} height={40} className="w-full h-full object-cover" />
               </div>
               <span className="text-2xl font-bold text-white">tikeo</span>
             </Link>

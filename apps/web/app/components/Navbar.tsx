@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  SearchIcon, UserIcon, TicketIcon, MenuIcon, CloseIcon,
+  SearchIcon, UserIcon, MenuIcon, CloseIcon,
   ArrowRightIcon, BellIcon, CalendarIcon, HeartIcon, SettingsIcon,
   MusicIcon, SportsIcon, TheaterIcon, FestivalIcon, ConferenceIcon,
   ArtIcon, FoodIcon, FamilyIcon, PlusIcon, ChartIcon, StarIcon,
 } from '@tikeo/ui';
+import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import NavbarMobileMenu from './NavbarMobileMenu';
 
@@ -137,10 +138,10 @@ export function Navbar() {
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center transition-all group-hover:scale-105" style={{ background: 'linear-gradient(135deg,#5B7CFF,#7B61FF)', boxShadow: '0 4px 15px rgba(91,124,255,0.35)' }}>
-                <TicketIcon className="text-white" size={20} />
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden flex items-center justify-center transition-all group-hover:scale-105 shadow-lg" style={{ boxShadow: '0 4px 15px rgba(91,124,255,0.35)' }}>
+                <Image src="/logo.png" alt="Tikeo" width={40} height={40} className="w-full h-full object-cover" />
               </div>
-              <span className="text-2xl font-black tracking-tight bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg,#5B7CFF,#7B61FF)' }}>tikeo</span>
+              <span className="text-2xl font-black tracking-tight text-gray-900">tikeo</span>
             </Link>
 
             {/* Desktop Nav */}
