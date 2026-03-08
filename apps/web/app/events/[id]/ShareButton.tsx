@@ -6,20 +6,27 @@ import { ShareIcon } from '@tikeo/ui';
 interface ShareButtonProps {
   title: string;
   eventId: string;
+  image?: string;
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tikeoh.com';
 
-export default function ShareButton({ title, eventId }: ShareButtonProps) {
+export default function ShareButton({ title, eventId, image }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
     const url = `${SITE_URL}/events/${eventId}`;
-    const shareData = {
+    const shareData: any = {
       title: `${title} | Tikeoh`,
       text: `Découvre cet événement sur Tikeoh : ${title}`,
       url,
     };
+
+    // Add image for native share (supported on some mobile browsers)
+    if (image) {
+      shareData.icon = image;
+      shareData.icons = [image];
+    }
 
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {

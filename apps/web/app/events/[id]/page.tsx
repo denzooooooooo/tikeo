@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Metadata } from 'next';
 import {
   CalendarIcon,
   ClockIcon,
@@ -18,6 +19,7 @@ import { LikeButton, FollowButton, ReviewForm } from '@tikeo/ui';
 import ShareButton from './ShareButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tikeoh.com';
 
 async function getEvent(id: string) {
   try {
@@ -27,6 +29,49 @@ async function getEvent(id: string) {
   } catch {
     return null;
   }
+}
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const event = await getEvent(params.id);
+  
+  if (!event) {
+    return {
+      title: 'Événement non trouvé | Tikeoh',
+    };
+  }
+
+  const eventUrl = `${SITE_URL}/events/${params.id}`;
+  const imageUrl = event.coverImage || 'https://picsum.photos/seed/event/1200/630';
+
+  return {
+    title: `${event.title} | Tikeoh`,
+    description: event.description?.substring(0, 160) || `Découvre cet événement sur Tikeoh : ${event.title}`,
+    openGraph: {
+      title: `${event.title} | Tikeoh`,
+      description: event.description?.substring(0, 160) || `Découvre cet événement sur Tikeoh : ${event.title}`,
+      url: eventUrl,
+      siteName: 'Tikeoh',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: event.title,
+        },
+      ],
+      locale: 'fr_FR',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${event.title} | Tikeoh`,
+      description: event.description?.substring(0, 160) || `Découvre cet événement sur Tikeoh : ${event.title}`,
+      images: [imageUrl],
+    },
+    alternates: {
+      canonical: eventUrl,
+    },
+  };
 }
 
 export default async function EventDetailPage({ params }: { params: { id: string } }) {
@@ -108,7 +153,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             initialLiked={event.isLiked || false}
             initialCount={event.likesCount || 0}
           />
-          <ShareButton title={event.title} eventId={params.id} />
+          <ShareButton title={event.title} eventId={params.id} image={event.coverImage} />
         </div>
 
         {/* Title overlay */}
