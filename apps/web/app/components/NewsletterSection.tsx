@@ -7,16 +7,50 @@ export default function NewsletterSection() {
   const [name, setName] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    setErrorMessage('');
+
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (trimmedName.length < 2) {
+      setErrorMessage('Veuillez saisir un prénom valide (min 2 caractères).');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setErrorMessage('Veuillez saisir une adresse email valide.');
+      return;
+    }
+
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setIsSubmitted(true);
-    setEmail('');
-    setName('');
+
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmedName, email: trimmedEmail }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setErrorMessage(data?.message || 'Inscription impossible pour le moment.');
+        setIsLoading(false);
+        return;
+      }
+
+      setIsSubmitted(true);
+      setEmail('');
+      setName('');
+    } catch {
+      setErrorMessage('Erreur réseau. Veuillez réessayer.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -152,6 +186,9 @@ export default function NewsletterSection() {
                       />
                     </div>
                   </div>
+                  {errorMessage && (
+                    <p className="text-red-300 text-sm font-medium">{errorMessage}</p>
+                  )}
                   <button
                     type="submit"
                     disabled={isLoading}

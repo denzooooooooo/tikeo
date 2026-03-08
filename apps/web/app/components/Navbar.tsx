@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   SearchIcon, UserIcon, MenuIcon, CloseIcon, TicketIcon,
   ArrowRightIcon, BellIcon, CalendarIcon, HeartIcon, SettingsIcon,
@@ -103,6 +103,7 @@ function NavSearch() {
 
 export function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -117,14 +118,10 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
-    const closeOnNavigation = () => {
-      setMobileOpen(false);
-      setMobileSearch(false);
-      setUserOpen(false);
-    };
-    window.addEventListener('popstate', closeOnNavigation);
-    return () => window.removeEventListener('popstate', closeOnNavigation);
-  }, []);
+    setMobileOpen(false);
+    setMobileSearch(false);
+    setUserOpen(false);
+  }, [pathname]);
 
   const handleLogout = () => { logout(); setUserOpen(false); router.push('/'); };
 
@@ -136,8 +133,8 @@ export function Navbar() {
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-              <div className="w-12 h-12 lg:w-14 lg:h-14 overflow-hidden flex items-center justify-center">
-                <Image src="/tikeoh-logo.png" alt="Tikeoh" width={56} height={56} className="w-full h-full object-contain" />
+              <div className="w-14 h-14 lg:w-16 lg:h-16 overflow-hidden flex items-center justify-center">
+                <Image src="/tikeoh-logo.png" alt="Tikeoh" width={64} height={64} className="w-full h-full object-contain" />
               </div>
             </Link>
 
