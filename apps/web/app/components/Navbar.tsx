@@ -26,20 +26,14 @@ const categories = [
 
 function MegaMenu() {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
       <button onClick={() => setOpen(!open)} className={`flex items-center gap-1.5 px-3 py-2 font-semibold text-sm rounded-xl transition-all ${open ? 'text-[#5B7CFF] bg-[#5B7CFF]/10' : 'text-gray-700 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/8'}`}>
         Catégories
         <svg className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
       </button>
       {open && (
-        <div className="absolute left-0 mt-2 w-[540px] bg-white/98 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+        <div className="absolute left-0 mt-2 w-[540px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
           <div className="p-4">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Explorer par catégorie</p>
             <div className="grid grid-cols-4 gap-2">
@@ -71,20 +65,14 @@ function MegaMenu() {
 
 function DropMenu({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
       <button onClick={() => setOpen(!open)} className={`flex items-center gap-1.5 px-3 py-2 font-semibold text-sm rounded-xl transition-all ${open ? 'text-[#5B7CFF] bg-[#5B7CFF]/10' : 'text-gray-700 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/8'}`}>
         {title}
         <svg className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
       </button>
       {open && (
-        <div className="absolute left-0 mt-2 w-52 bg-white/98 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+        <div className="absolute left-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
           {children}
         </div>
       )}
@@ -128,18 +116,28 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
+  useEffect(() => {
+    const closeOnNavigation = () => {
+      setMobileOpen(false);
+      setMobileSearch(false);
+      setUserOpen(false);
+    };
+    window.addEventListener('popstate', closeOnNavigation);
+    return () => window.removeEventListener('popstate', closeOnNavigation);
+  }, []);
+
   const handleLogout = () => { logout(); setUserOpen(false); router.push('/'); };
 
   return (
     <>
-      <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/97 backdrop-blur-2xl shadow-lg shadow-gray-200/60 border-b border-gray-100' : 'bg-white/92 backdrop-blur-xl border-b border-gray-100/80'}`}>
+      <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white border-b border-gray-100' : 'bg-white border-b border-gray-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-[68px] gap-3">
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-lg">
-                <Image src="/logo.png" alt="Tikeo" width={40} height={40} className="w-full h-full object-cover" />
+              <div className="w-12 h-12 lg:w-14 lg:h-14 overflow-hidden flex items-center justify-center">
+                <Image src="/tikeoh-logo.png" alt="Tikeoh" width={56} height={56} className="w-full h-full object-contain" />
               </div>
             </Link>
 
@@ -149,7 +147,7 @@ export function Navbar() {
               <Link href="/events" className="px-3 py-2 text-gray-700 hover:text-[#5B7CFF] font-semibold text-sm rounded-xl hover:bg-[#5B7CFF]/8 transition-all">Événements</Link>
               <DropMenu title="Plus">
                 <div className="px-3 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Découvrir</p></div>
-                <DLink href="/events?category=Festivals" icon={FestivalIcon}>Festivals</DLink>
+                <DLink href="/about" icon={FestivalIcon}>Aide</DLink>
                 <div className="border-t border-gray-100 my-1" />
                 <div className="px-3 py-1.5"><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tikeoh</p></div>
                 <DLink href="/about" icon={UserIcon}>À propos</DLink>
@@ -181,7 +179,7 @@ export function Navbar() {
                       <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${userOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     {userOpen && (
-                      <div className="absolute right-0 mt-3 w-72 bg-white/98 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                      <div className="absolute right-0 mt-3 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2">
                         <div className="px-4 py-3 border-b border-gray-100">
                           <div className="flex items-center gap-3">
                             <div className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center text-white font-bold" style={{ background: 'linear-gradient(135deg,#5B7CFF,#7B61FF)' }}>

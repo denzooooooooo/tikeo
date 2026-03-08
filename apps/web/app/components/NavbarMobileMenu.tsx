@@ -46,8 +46,8 @@ const mobileCategories = [
 
 export default function NavbarMobileMenu({ user, isAuthenticated, onClose, onLogout }: NavbarMobileMenuProps) {
   return (
-    <div className="lg:hidden border-t border-gray-100 bg-white shadow-xl">
-      <div className="px-4 py-4 space-y-3 max-h-[calc(100vh-80px)] overflow-y-auto">
+    <div className="lg:hidden fixed top-16 left-0 right-0 z-[70] border-t border-gray-100 bg-white shadow-xl">
+      <div className="px-4 py-4 space-y-3 max-h-[calc(100vh-64px)] overflow-y-auto">
 
         {/* Auth Buttons */}
         {!isAuthenticated && (

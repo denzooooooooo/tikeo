@@ -1,17 +1,7 @@
-# TODO - Homepage Organizers + Organizer Profile Improvements
-
-- [ ] Update `apps/web/app/components/HomeBottomSections.tsx`
-  - [ ] Improve organizer logo/avatar rendering with better fallback
-  - [ ] Add share action per organizer card (no mock, real organizer profile URL)
-  - [ ] Improve card CTAs (view profile + follow)
-  - [ ] Keep backend-driven stats only
-
-- [ ] Update `apps/web/app/organizers/[id]/page.tsx`
-  - [ ] Add organizer share action in header
-  - [ ] Improve branding/logo/avatar fallback
-  - [ ] Improve social links / CTA consistency
-  - [ ] Keep real backend data only
-
-- [ ] Run targeted builds
-  - [ ] `npm run build --workspace @tikeo/ui`
-  - [ ] `npm run build --workspace apps/web`
+- [x] Mettre la navbar en blanc (desktop/mobile, états scroll inclus)
+- [x] Mettre aussi les menus déroulants de la navbar en blanc
+- [x] Enlever les effets visuels du logo dans la navbar
+- [x] Agrandir l'image du logo dans la navbar
+- [ ] Corriger la fermeture des menus : fermeture auto lors de la navigation/changement de page
+- [ ] Corriger l’affichage du menu mobile à l’ouverture (position/lisibilité)
+- [ ] Vérifier visuellement les changements

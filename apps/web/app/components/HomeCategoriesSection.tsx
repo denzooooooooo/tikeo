@@ -5,7 +5,7 @@ const CATEGORIES = [
   { name: 'Concerts', image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600&q=80', color: 'from-purple-600 to-pink-600' },
   { name: 'Festivals', image: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600&q=80', color: 'from-orange-500 to-red-600' },
   { name: 'Spectacles', image: 'https://images.unsplash.com/photo-1503095396549-807759245b35?w=600&q=80', color: 'from-blue-600 to-cyan-500' },
-  { name: 'Sports', image: 'https://images.unsplash.com/photo-1461896836934-4e2c221bfd66?w=600&q=80', color: 'from-green-600 to-emerald-500' },
+
   { name: 'Conférences', image: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=600&q=80', color: 'from-indigo-600 to-purple-600' },
   { name: 'Expositions', image: 'https://images.unsplash.com/photo-1531243269054-5ebf6f34081e?w=600&q=80', color: 'from-pink-600 to-rose-600' },
   { name: 'Gastronomie', image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&q=80', color: 'from-amber-500 to-orange-600' },
