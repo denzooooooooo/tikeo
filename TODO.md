@@ -1,10 +1,6 @@
-- [x] Mettre la navbar en blanc (desktop/mobile, états scroll inclus)
-- [x] Mettre aussi les menus déroulants de la navbar en blanc
-- [x] Enlever les effets visuels du logo dans la navbar
-- [x] Agrandir l'image du logo dans la navbar
-- [x] Corriger la fermeture des menus : fermeture auto lors de la navigation/changement de page
-- [x] Corriger l’affichage du menu mobile à l’ouverture (position/lisibilité)
-- [x] Remplacer "Festivals" par "Aide" dans le menu "Plus"
-- [x] Mettre le nouveau logo `TIKEOH LOGO 3.png` dans la navbar
-- [x] Rendre la section newsletter fonctionnelle (API + formulaire)
-- [ ] Vérifier visuellement les changements
+- [x] Remplacer le branding email "Tikeo" par "Tikeoh"
+- [x] Améliorer le layout admin (sidebar/mobile header/ergonomie responsive)
+- [x] Rendre le dashboard admin (`/admin`) pleinement responsive
+- [x] Ajouter des états erreur/vides plus actionnables sur dashboard admin
+- [ ] Lancer vérification UI admin desktop + mobile
+- [ ] Étendre les améliorations responsive aux autres pages admin (users, events, tickets, payouts, notifications, audit, settings)

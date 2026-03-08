@@ -242,12 +242,12 @@ export default function AdminEventsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Événements</h1>
-          <p className="text-gray-500 mt-1">Gérer tous les événements de la plateforme</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Événements</h1>
+          <p className="text-sm text-gray-500 mt-1">Gérer tous les événements de la plateforme</p>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
           {events.length} événement(s)
         </div>
       </div>
@@ -274,9 +274,22 @@ export default function AdminEventsPage() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center justify-between">
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <p className="text-yellow-700 text-sm">{error}</p>
-          <button onClick={() => setError(null)} className="text-yellow-700 hover:text-yellow-900">✕</button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs font-medium rounded-lg transition-colors"
+            >
+              Réessayer
+            </button>
+            <button 
+              onClick={() => setError(null)} 
+              className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg border border-gray-200 transition-colors"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       )}
 
@@ -299,13 +312,13 @@ export default function AdminEventsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Événement</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Organisateur</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Billets</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Prix</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Événement</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Organisateur</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Statut</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Billets</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Prix</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Date</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -326,11 +339,11 @@ export default function AdminEventsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                         <p className="text-sm text-gray-700">{event.organizer.companyName}</p>
                       </td>
-                      <td className="px-6 py-4">{getStatusBadge(event.status)}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-6 py-4 hidden sm:table-cell">{getStatusBadge(event.status)}</td>
+                      <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
                             <div
@@ -343,13 +356,13 @@ export default function AdminEventsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-3 sm:px-6 py-4 text-sm text-gray-600 hidden md:table-cell">
                         {formatCurrency(event.minPrice, event.currency)} - {formatCurrency(event.maxPrice, event.currency)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-3 sm:px-6 py-4 text-sm text-gray-600 hidden sm:table-cell">
                         {new Date(event.startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 sm:px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => { setStatusEvent(event); setNewStatus(event.status); setShowStatusModal(true); }}

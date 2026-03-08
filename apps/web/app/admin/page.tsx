@@ -255,14 +255,22 @@ export default function AdminDashboard() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrateur</h1>
-        <p className="text-gray-500 mt-1">Vue d&apos;ensemble de la plateforme Tikeoh</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard Administrateur</h1>
+        <p className="text-sm sm:text-base text-gray-500 mt-1">Vue d&apos;ensemble de la plateforme Tikeoh</p>
       </div>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-red-700 text-sm">{error}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <p className="text-red-700 text-sm">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded-lg transition-colors"
+            >
+              Réessayer
+            </button>
+          </div>
         </div>
       )}
 
@@ -305,9 +313,9 @@ export default function AdminDashboard() {
       )}
 
       {/* Quick Actions */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Actions rapides</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="mt-6 sm:mt-8">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4">Actions rapides</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {[
             { label: 'Utilisateurs', href: '/admin/users', icon: UsersIcon },
             { label: 'Événements', href: '/admin/events', icon: CalendarIcon },
@@ -324,7 +332,7 @@ export default function AdminDashboard() {
               <div className="p-2 rounded-lg bg-gray-50 text-gray-600 mb-2">
                 <action.icon />
               </div>
-              <span className="text-sm font-medium text-gray-700">{action.label}</span>
+              <span className="text-xs sm:text-sm font-medium text-gray-700 text-center">{action.label}</span>
             </Link>
           ))}
         </div>
@@ -332,8 +340,8 @@ export default function AdminDashboard() {
 
       {/* Revenue Summary */}
       {stats && (
-        <div className="mt-8 bg-gradient-to-br from-[#5B7CFF] to-[#7B61FF] rounded-2xl p-6 text-white">
-          <div className="flex items-center justify-between">
+        <div className="mt-6 sm:mt-8 bg-gradient-to-br from-[#5B7CFF] to-[#7B61FF] rounded-2xl p-4 sm:p-6 text-white">
+          <div className="flex items-start sm:items-center justify-between gap-4">
             <div>
               <p className="text-white/80 text-sm font-medium mb-1">Revenus nets aux organisateurs (99%)</p>
               <p className="text-3xl font-bold">
@@ -351,7 +359,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Recent Orders & Top Events */}
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="mt-6 sm:mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         {/* Recent Orders */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -451,7 +459,7 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-500">Activité des 30 derniers jours</p>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
               <div>
                 <p className="text-sm font-medium text-gray-500 mb-3">Commandes</p>
                 <div className="space-y-2">

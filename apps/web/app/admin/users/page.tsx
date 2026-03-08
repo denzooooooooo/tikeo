@@ -183,12 +183,12 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Utilisateurs</h1>
-          <p className="text-gray-500 mt-1">Gérer les utilisateurs de la plateforme</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Utilisateurs</h1>
+          <p className="text-sm text-gray-500 mt-1">Gérer les utilisateurs de la plateforme</p>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
           {users.length} utilisateur(s)
         </div>
       </div>
@@ -215,16 +215,27 @@ export default function AdminUsersPage() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center justify-between">
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <p className="text-yellow-700 text-sm">{error}</p>
-          <button onClick={() => setError(null)} className="text-yellow-700 hover:text-yellow-900">
-            ✕
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 text-xs font-medium rounded-lg transition-colors"
+            >
+              Réessayer
+            </button>
+            <button 
+              onClick={() => setError(null)} 
+              className="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg border border-gray-200 transition-colors"
+            >
+              Fermer
+            </button>
+          </div>
         </div>
       )}
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6">
         {loading ? (
           <div className="p-6">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -242,13 +253,13 @@ export default function AdminUsersPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Utilisateur</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Rôle</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Commandes</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Billets</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Inscrit le</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Utilisateur</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Rôle</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Statut</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Commandes</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Billets</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Inscrit le</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -265,20 +276,20 @@ export default function AdminUsersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4 hidden sm:table-cell">{getRoleBadge(user.role)}</td>
+                    <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       {user.emailVerified ? (
                         <span className="text-green-600 text-sm">✓ Vérifié</span>
                       ) : (
                         <span className="text-yellow-600 text-sm">⏳ En attente</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-gray-700">{user._count.orders}</td>
-                    <td className="px-6 py-4 text-gray-700">{user._count.tickets}</td>
-                    <td className="px-6 py-4 text-gray-500">
+                    <td className="px-3 sm:px-6 py-4 text-gray-700 hidden lg:table-cell">{user._count.orders}</td>
+                    <td className="px-3 sm:px-6 py-4 text-gray-700 hidden lg:table-cell">{user._count.tickets}</td>
+                    <td className="px-3 sm:px-6 py-4 text-gray-500 hidden md:table-cell">
                       {new Date(user.createdAt).toLocaleDateString('fr-FR')}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => { setEditingUser(user); setNewRole(user.role); setShowRoleModal(true); }}
