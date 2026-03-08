@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { FollowButton } from '@tikeo/ui';
@@ -53,6 +54,15 @@ const CheckCircleIcon = () => (
 const PlusIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+const ShareIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
   </svg>
 );
 
@@ -162,6 +172,29 @@ interface HomeOrganizersSectionProps {
 
 // ── Organizers Section ─────────────────────────────────────────────────────────
 export function HomeOrganizersSection({ organizers }: HomeOrganizersSectionProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const shareOrganizer = async (organizerId: string, organizerName: string) => {
+    const shareUrl = `${window.location.origin}/organizers/${organizerId}`;
+    const shareData = {
+      title: `${organizerName} - Organisateur sur Tikeoh`,
+      text: `Découvre ${organizerName} sur Tikeoh`,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopiedId(organizerId);
+        setTimeout(() => setCopiedId(null), 1800);
+      }
+    } catch {
+      // ignore cancel/share errors
+    }
+  };
+
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -222,8 +255,25 @@ export function HomeOrganizersSection({ organizers }: HomeOrganizersSectionProps
                     )}
                   </div>
                   
-                  {/* Follow Button — uses userId for UserFollow system */}
-                  <div className="mt-auto">
+                  {/* Actions */}
+                  <div className="mt-auto space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/organizers/${org.id}`}
+                        className="flex-1 text-center px-3 py-2 rounded-lg text-xs font-semibold border border-[#5B7CFF] text-[#5B7CFF] hover:bg-[#5B7CFF] hover:text-white transition-colors"
+                      >
+                        Voir profil
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => shareOrganizer(org.id, displayName)}
+                        className="px-3 py-2 rounded-lg text-xs font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors inline-flex items-center gap-1"
+                      >
+                        <ShareIcon />
+                        {copiedId === org.id ? 'Copié' : 'Partager'}
+                      </button>
+                    </div>
+
                     {org.userId ? (
                       <FollowButton
                         userId={org.userId}

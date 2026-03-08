@@ -1,17 +1,17 @@
-# TODO - Emails acheteur/vendeur (PDF + reporting)
+# TODO - Homepage Organizers + Organizer Profile Improvements
 
-- [x] Installer dépendances PDF backend (`pdfkit`, `@types/pdfkit`)
-- [ ] Phase 1
-  - [ ] Générer billet PDF dans `EmailService` (design + QR)
-  - [ ] Envoyer billet en pièce jointe PDF dans `sendTicketEmail`
-  - [ ] Mettre texte email acheteur en FR: "Cher client, voici votre billet..."
-  - [ ] Ajouter rappel vendeur si infos payout manquantes (trigger vente)
-- [ ] Phase 2
-  - [ ] Ajouter email hebdomadaire vendeur (stats ventes, CA brut, commission, net)
-  - [ ] Ajouter logique scheduler/cron hebdo jusqu'à fin d'événement
-  - [ ] Ajouter rappel dashboard vendeur pour infos payout manquantes
-  - [ ] Afficher revenu net clair (après commission) côté dashboard
-- [ ] Vérifications
-  - [ ] Type-check api-gateway
-  - [ ] Type-check web
-  - [ ] Tests API critiques (emails/notifications/reporting)
+- [ ] Update `apps/web/app/components/HomeBottomSections.tsx`
+  - [ ] Improve organizer logo/avatar rendering with better fallback
+  - [ ] Add share action per organizer card (no mock, real organizer profile URL)
+  - [ ] Improve card CTAs (view profile + follow)
+  - [ ] Keep backend-driven stats only
+
+- [ ] Update `apps/web/app/organizers/[id]/page.tsx`
+  - [ ] Add organizer share action in header
+  - [ ] Improve branding/logo/avatar fallback
+  - [ ] Improve social links / CTA consistency
+  - [ ] Keep real backend data only
+
+- [ ] Run targeted builds
+  - [ ] `npm run build --workspace @tikeo/ui`
+  - [ ] `npm run build --workspace apps/web`

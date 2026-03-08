@@ -4,6 +4,36 @@ import Link from 'next/link';
 import { VerifiedIcon, LocationIcon, CalendarIcon, GlobeIcon, StarIcon } from '@tikeo/ui';
 import { FollowButton } from '@tikeo/ui';
 
+function ShareOrganizerButton({ organizerId, organizerName }: { organizerId: string; organizerName: string }) {
+  const handleShare = async () => {
+    const url = `${window.location.origin}/organizers/${organizerId}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `${organizerName} - Organisateur sur Tikeoh`,
+          text: `Découvre ${organizerName} sur Tikeoh`,
+          url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        alert('Lien copié');
+      }
+    } catch {
+      // ignore cancel/share errors
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      className="px-4 py-2 bg-white border border-gray-200 rounded-xl font-semibold text-gray-700 hover:border-[#5B7CFF] hover:text-[#5B7CFF] transition-all text-sm"
+    >
+      Partager
+    </button>
+  );
+}
+
 async function getOrganizer(id: string) {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/organizers/${id}`, {
@@ -34,12 +64,13 @@ async function getOrganizerEvents(organizerId: string) {
 
 export default async function OrganizerProfilePage({ params }: { params: { id: string } }) {
   const organizer = await getOrganizer(params.id);
-  
+
   if (!organizer) {
     notFound();
   }
 
   const { data: events } = await getOrganizerEvents(params.id);
+  const displayName = organizer.companyName || `${organizer.user?.firstName || ''} ${organizer.user?.lastName || ''}`.trim() || 'Organisateur';
 
   return (
     <div className="min-h-screen bg-white">
@@ -78,9 +109,7 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
-                    {organizer.companyName || `${organizer.user?.firstName || ''} ${organizer.user?.lastName || ''}`.trim()}
-                  </h1>
+                  <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">{displayName}</h1>
                   {organizer.verified && (
                     <VerifiedIcon className="text-[#5B7CFF]" size={28} />
                   )}
@@ -122,7 +151,8 @@ export default async function OrganizerProfilePage({ params }: { params: { id: s
               </div>
 
               {/* Social Links & Follow Button */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <ShareOrganizerButton organizerId={params.id} organizerName={displayName} />
                 {/* FollowButton uses userId (UserFollow system) */}
                 {organizer.userId && (
                   <FollowButton
