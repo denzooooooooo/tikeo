@@ -26,8 +26,22 @@ const categories = [
 
 function MegaMenu() {
   const [open, setOpen] = useState(false);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearCloseTimeout = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  };
+
+  const scheduleClose = () => {
+    clearCloseTimeout();
+    closeTimeoutRef.current = setTimeout(() => setOpen(false), 140);
+  };
+
   return (
-    <div className="relative">
+    <div className="relative" onMouseEnter={clearCloseTimeout} onMouseLeave={scheduleClose}>
       <button onClick={() => setOpen(!open)} className={`flex items-center gap-1.5 px-3 py-2 font-semibold text-sm rounded-xl transition-all ${open ? 'text-[#5B7CFF] bg-[#5B7CFF]/10' : 'text-gray-700 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/8'}`}>
         Catégories
         <svg className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
@@ -65,8 +79,22 @@ function MegaMenu() {
 
 function DropMenu({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearCloseTimeout = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  };
+
+  const scheduleClose = () => {
+    clearCloseTimeout();
+    closeTimeoutRef.current = setTimeout(() => setOpen(false), 140);
+  };
+
   return (
-    <div className="relative">
+    <div className="relative" onMouseEnter={clearCloseTimeout} onMouseLeave={scheduleClose}>
       <button onClick={() => setOpen(!open)} className={`flex items-center gap-1.5 px-3 py-2 font-semibold text-sm rounded-xl transition-all ${open ? 'text-[#5B7CFF] bg-[#5B7CFF]/10' : 'text-gray-700 hover:text-[#5B7CFF] hover:bg-[#5B7CFF]/8'}`}>
         {title}
         <svg className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
@@ -133,8 +161,8 @@ export function Navbar() {
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-              <div className="w-14 h-14 lg:w-16 lg:h-16 overflow-hidden flex items-center justify-center">
-                <Image src="/tikeoh-logo.png" alt="Tikeoh" width={64} height={64} className="w-full h-full object-contain" />
+              <div className="w-16 h-16 lg:w-20 lg:h-20 overflow-hidden flex items-center justify-center">
+                <Image src="/tikeoh-logo.png" alt="Tikeoh" width={80} height={80} className="w-full h-full object-contain" />
               </div>
             </Link>
 

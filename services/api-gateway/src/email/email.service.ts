@@ -521,6 +521,28 @@ export class EmailService {
     );
   }
 
+  buildNewsletterWelcomeTemplate(data: { firstName: string }) {
+    const safeName = data.firstName || 'à vous';
+    const baseUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
+
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f6f7fb;">' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0;"><tr><td align="center">' +
+      '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border:1px solid #eceff5;border-radius:12px;overflow:hidden;">' +
+      this.getEmailHeader('Bienvenue sur la newsletter Tikeoh') +
+      '<tr><td style="padding:32px 28px;">' +
+      '<h2 style="margin:0 0 14px 0;color:#111827;font-size:24px;">Bonjour ' + safeName + ',</h2>' +
+      '<p style="margin:0 0 12px 0;color:#374151;font-size:15px;line-height:1.6;">Votre inscription à la newsletter Tikeoh est confirmée.</p>' +
+      '<p style="margin:0 0 20px 0;color:#374151;font-size:15px;line-height:1.6;">Vous recevrez uniquement les infos essentielles : nouveaux événements, meilleures offres et annonces importantes.</p>' +
+      this.getButton(baseUrl + '/events', 'Découvrir les événements') +
+      '<p style="margin:14px 0 0 0;color:#6b7280;font-size:12px;line-height:1.5;">Si vous n’êtes pas à l’origine de cette inscription, vous pouvez ignorer cet email.</p>' +
+      '</td></tr>' + this.getEmailFooter() +
+      '</table></td></tr></table></body></html>';
+  }
+
+  async sendCustomTemplateEmail(email: string, subject: string, html: string, text: string) {
+    return this.sendEmail(email, subject, html, text);
+  }
+
   // Send custom notification email (admin)
   async sendCustomNotificationEmail(email: string, data: { type: string; title: string; message: string }) {
     const { type, title, message } = data;

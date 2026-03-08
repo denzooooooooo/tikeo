@@ -19,6 +19,7 @@ import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { EmailModule } from './email/email.module';
 import { LikesModule } from './likes/likes.module';
 import { AdminModule } from './admin/admin.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { AdminModule } from './admin/admin.module';
     EmailModule,
     LikesModule,
     AdminModule,
+    NewsletterModule,
   ],
 })
 export class AppModule {}
