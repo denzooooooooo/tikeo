@@ -41,7 +41,13 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   }
 
   const eventUrl = `${SITE_URL}/events/${params.id}`;
-  const imageUrl = event.coverImage || 'https://picsum.photos/seed/event/1200/630';
+  
+  // Ensure image URL is absolute
+  let imageUrl = event.coverImage || 'https://picsum.photos/seed/event/1200/630';
+  if (imageUrl && !imageUrl.startsWith('http')) {
+    // If relative URL, prepend the site URL
+    imageUrl = imageUrl.startsWith('/') ? `${SITE_URL}${imageUrl}` : `${SITE_URL}/${imageUrl}`;
+  }
 
   return {
     title: `${event.title} | Tikeoh`,
