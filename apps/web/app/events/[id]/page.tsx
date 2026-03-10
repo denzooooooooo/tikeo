@@ -15,7 +15,7 @@ import {
   ShareIcon,
   TicketIcon,
 } from '@tikeo/ui'; 
-import { LikeButton, FollowButton, ReviewForm } from '@tikeo/ui';
+import { FollowButton } from '@tikeo/ui';
 import ShareButton from './ShareButton';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
@@ -153,14 +153,6 @@ export default async function EventDetailPage({ params }: { params: { id: string
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
 
         {/* Action buttons top-right */}
-        <div className="absolute top-4 right-4 flex gap-2">
-          <LikeButton
-            eventId={params.id}
-            initialLiked={event.isLiked || false}
-            initialCount={event.likesCount || 0}
-          />
-          <ShareButton title={event.title} eventId={params.id} image={event.coverImage} />
-        </div>
 
         {/* Title overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 lg:p-12">
@@ -235,7 +227,6 @@ export default async function EventDetailPage({ params }: { params: { id: string
                       <FollowButton
                         userId={event.organizer.userId}
                         size="sm"
-                        showCount={false}
                       />
                     )}
                     {event.organizer?.userId && (
@@ -335,7 +326,9 @@ export default async function EventDetailPage({ params }: { params: { id: string
                   </div>
                   <p className="text-gray-600 text-sm">{event.totalReviews || 0} avis</p>
                 </div>
-                <ReviewForm eventId={params.id} />
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 text-sm text-gray-600">
+                  Connectez-vous pour laisser un avis sur cet événement.
+                </div>
               </div>
             </div>
           </div>
