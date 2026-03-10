@@ -78,7 +78,8 @@ export class EmailService {
   constructor(private configService: ConfigService) {
     //优先使用 RESEND_API_KEY (推荐方式)
     const resendApiKey = this.configService.get('RESEND_API_KEY');
-    this.fromEmail = this.configService.get('SMTP_FROM') || 'Tikeoh <onboarding@resend.dev>';
+    const configuredFrom = this.configService.get('SMTP_FROM') || this.configService.get('RESEND_FROM');
+    this.fromEmail = configuredFrom || 'Tikeoh <no-reply@tikeoh.com>';
 
     if (resendApiKey) {
       this.resend = new Resend(resendApiKey);
@@ -126,20 +127,31 @@ export class EmailService {
       return { success: false, error: 'EMAIL_SERVICE_NOT_CONFIGURED' };
     }
 
-    const replyTo = this.configService.get('SMTP_REPLY_TO');
+    const replyTo =
+      this.configService.get('SMTP_REPLY_TO') ||
+      this.configService.get('RESEND_REPLY_TO') ||
+      'support@tikeoh.com';
 
     if (this.resend) {
       try {
+        const normalizedSubject = subject.replace(/\s+/g, ' ').trim().slice(0, 120);
+
         const result = await this.resend.emails.send({
           from: this.fromEmail,
           to: [to],
-          subject,
+          subject: normalizedSubject,
           html,
           text,
           ...(attachments && attachments.length > 0 ? { attachments } : {}),
           ...(replyTo ? { replyTo } : {}),
+          tags: [
+            { name: 'app', value: 'tikeoh' },
+            { name: 'type', value: normalizedSubject.toLowerCase().includes('billet') ? 'ticket' : 'transactional' },
+          ],
           headers: {
             'X-Entity-Ref-ID': `tikeo-${Date.now()}`,
+            'X-Auto-Response-Suppress': 'All',
+            'List-Unsubscribe': '<mailto:unsubscribe@tikeoh.com?subject=unsubscribe>',
           },
         });
 
@@ -406,7 +418,9 @@ export class EmailService {
     const pdfBuffer = await this.generateTicketPdfBuffer(ticketData, qrImage);
     const pdfBase64 = pdfBuffer.toString('base64');
 
-    const buyerName = `${ticketData.buyerFirstName || ''} ${ticketData.buyerLastName || ''}`.trim();
+    const buyerName = `${ticketData.buyerFirstName || ''} ${ticketData.buyerLastName || ''}`.trim() || 'Non renseigné';
+    const buyerEmail = ticketData.buyerEmail || 'Non renseigné';
+    const buyerPhone = ticketData.buyerPhone || 'Non renseigné';
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#0f1220;">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1220;padding:24px 12px;"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#13172b;border:1px solid #202642;border-radius:16px;overflow:hidden;">' +
@@ -432,9 +446,14 @@ export class EmailService {
       '</div></div>' +
       '<div style="margin-top:14px;padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03);">' +
       '<p style="margin:0 0 8px 0;color:#ffffff;font-size:13px;font-weight:700;">Acheteur</p>' +
-      (buyerName ? '<p style="margin:0;color:#d9e1ff;font-size:13px;">Nom: ' + buyerName + '</p>' : '') +
-      (ticketData.buyerEmail ? '<p style="margin:4px 0 0 0;color:#d9e1ff;font-size:13px;">Email: ' + ticketData.buyerEmail + '</p>' : '') +
-      (ticketData.buyerPhone ? '<p style="margin:4px 0 0 0;color:#d9e1ff;font-size:13px;">Téléphone: ' + ticketData.buyerPhone + '</p>' : '') +
+      '<p style="margin:0;color:#d9e1ff;font-size:13px;">Nom: ' + buyerName + '</p>' +
+      '<p style="margin:4px 0 0 0;color:#d9e1ff;font-size:13px;">Email: ' + buyerEmail + '</p>' +
+      '<p style="margin:4px 0 0 0;color:#d9e1ff;font-size:13px;">Téléphone: ' + buyerPhone + '</p>' +
+      '</div>' +
+      '<div style="margin-top:10px;padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03);">' +
+      '<p style="margin:0 0 8px 0;color:#ffffff;font-size:13px;font-weight:700;">Détails commande</p>' +
+      '<p style="margin:0;color:#d9e1ff;font-size:12px;line-height:1.6;">Commande: ' + ticketData.orderId + '</p>' +
+      '<p style="margin:2px 0 0 0;color:#d9e1ff;font-size:12px;line-height:1.6;">Type billet: ' + ticketData.ticketType + '</p>' +
       '</div>' +
       '<div style="margin-top:10px;padding:12px;border:1px dashed rgba(123,97,255,.6);border-radius:10px;background:rgba(123,97,255,.08);">' +
       '<p style="margin:0 0 8px 0;color:#ffffff;font-size:13px;font-weight:700;">Vérification manuelle (si scan impossible)</p>' +
@@ -451,6 +470,9 @@ export class EmailService {
       (showQr && ticketData.qrCode ? '<p style="color:#96a1c6;font-size:11px;text-align:center;word-break:break-all;margin:8px 0 0 0;">' + ticketData.qrCode + '</p>' : '') +
       '<p style="color:#cfd6f6;font-size:14px;line-height:1.6;margin:18px 0 0 0;">Cher client, voici votre billet pour l’événement. Le PDF est joint à cet email.</p>' +
       '<p style="color:#cfd6f6;font-size:14px;line-height:1.6;margin:8px 0 0 0;">Arrivez 30 minutes avant le début de l’événement pour faciliter le contrôle.</p>' +
+      '<div style="margin-top:10px;padding:12px;border:1px dashed rgba(123,97,255,.5);border-radius:10px;background:rgba(123,97,255,.07);">' +
+      '<p style="margin:0;color:#d9e1ff;font-size:12px;line-height:1.6;">Contrôle entrée: présentez ce mail + PDF. En cas de scan impossible, l’équipe peut vérifier avec Commande + Billet ID + identité acheteur.</p>' +
+      '</div>' +
       (showTerms ? '<p style="color:#8d98be;font-size:12px;line-height:1.5;margin:12px 0 0 0;">' + footerNote + '</p>' : '') +
       this.getButton(baseUrl + '/tickets', 'Voir mes billets') +
       '</td></tr>' + this.getEmailFooter() +
