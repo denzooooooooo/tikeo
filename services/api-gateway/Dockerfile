@@ -27,11 +27,7 @@ RUN npm ci --prefer-offline
 # Générer le client Prisma
 RUN cd services/api-gateway && npx prisma generate
 
-# Builder les packages partagés d'abord
-RUN npm run build --workspace=packages/types
-RUN npm run build --workspace=packages/utils
-
-# Builder l'API Gateway
+# Builder l'API Gateway (packages/types et packages/utils sont JS/DTs-only, pas de script build requis)
 RUN npm run build --workspace=services/api-gateway
 
 # ---- Stage 2: Runner (image de production légère) ----
