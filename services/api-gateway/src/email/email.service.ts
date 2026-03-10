@@ -246,11 +246,17 @@ export class EmailService {
 
   private async generateTicketPdfBuffer(ticketData: TicketData, qrImage: string): Promise<Buffer> {
     const design = ticketData.ticketDesign || {};
+    const template = (design.template || 'CLASSIC').toUpperCase();
     const primary = design.primaryColor || '#5B7CFF';
     const secondary = design.secondaryColor || '#7B61FF';
+    const textColor = design.textColor || '#FFFFFF';
     const title = design.customTitle || 'Billet officiel';
     const footerNote = design.footerNote || 'Merci de présenter ce billet à l’entrée.';
     const showQr = design.showQr !== false;
+
+    const buyerName = `${ticketData.buyerFirstName || ''} ${ticketData.buyerLastName || ''}`.trim() || 'Non renseigné';
+    const buyerEmail = ticketData.buyerEmail || 'Non renseigné';
+    const buyerPhone = ticketData.buyerPhone || 'Non renseigné';
 
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({ size: 'A4', margin: 40 });
@@ -260,36 +266,59 @@ export class EmailService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
+      // Fond global
       doc.rect(0, 0, doc.page.width, doc.page.height).fill('#0f1220');
 
-      doc
-        .save()
-        .rect(40, 40, doc.page.width - 80, 110)
-        .fillOpacity(1)
-        .fill(primary)
-        .restore();
+      // Variantes template (forme/layout)
+      if (template === 'MINIMAL') {
+        doc.rect(40, 40, doc.page.width - 80, 740).fill('#ffffff');
+        doc.rect(40, 40, doc.page.width - 80, 8).fill(primary);
+      } else if (template === 'MODERN') {
+        doc
+          .save()
+          .linearGradient(0, 0, doc.page.width, 220)
+          .stop(0, primary)
+          .stop(1, secondary);
+        doc.rect(0, 0, doc.page.width, 220).fill(primary);
+        doc.restore();
+        doc.roundedRect(30, 170, doc.page.width - 60, 600, 16).fill('#13172b');
+      } else {
+        // CLASSIC + fallback
+        doc
+          .save()
+          .rect(40, 40, doc.page.width - 80, 110)
+          .fill(primary)
+          .restore();
+        doc.roundedRect(40, 170, doc.page.width - 80, 560, 12).fill('#13172b');
+      }
 
+      const lightText = template === 'MINIMAL' ? '#111827' : '#e8eeff';
+      const bodyText = template === 'MINIMAL' ? '#374151' : '#d9e1ff';
+      const cardBg = template === 'MINIMAL' ? '#f8fafc' : '#13172b';
+
+      // Header
       doc
         .fontSize(24)
-        .fillColor('#ffffff')
+        .fillColor(template === 'MINIMAL' ? '#111827' : '#ffffff')
         .text(`🎫 ${title}`, 60, 72, { width: doc.page.width - 120 });
 
       doc
         .fontSize(11)
-        .fillColor('#e8eeff')
+        .fillColor(lightText)
         .text('Tikeoh • Billet officiel', 60, 108);
 
-      doc
-        .roundedRect(40, 170, doc.page.width - 80, 560, 12)
-        .fill('#13172b');
+      // Carte principale
+      if (template === 'MINIMAL') {
+        doc.roundedRect(55, 170, doc.page.width - 110, 560, 10).fill(cardBg);
+      }
 
       doc
         .fontSize(22)
-        .fillColor('#ffffff')
+        .fillColor(template === 'MINIMAL' ? '#111827' : textColor)
         .text(ticketData.eventTitle, 60, 200, { width: 320 });
 
       const detailsY = 260;
-      doc.fontSize(12).fillColor('#d9e1ff');
+      doc.fontSize(12).fillColor(bodyText);
       doc.text(`Date: ${ticketData.eventDate}`, 60, detailsY);
       doc.text(`Lieu: ${ticketData.venue}`, 60, detailsY + 24);
       doc.text(`Type: ${ticketData.ticketType}`, 60, detailsY + 48);
@@ -308,47 +337,48 @@ export class EmailService {
         doc.image(qrImage, 400, 250, { width: 130, height: 130 });
       }
 
+      // Infos acheteur (toujours visibles)
       let buyerY = 520;
-      doc.fontSize(12).fillColor('#e8eeff').text('Acheteur', 60, buyerY);
+      doc.fontSize(12).fillColor(lightText).text('Acheteur', 60, buyerY);
       buyerY += 20;
-      doc.fontSize(11).fillColor('#cfd6f6');
-      const buyerName = `${ticketData.buyerFirstName || ''} ${ticketData.buyerLastName || ''}`.trim();
-      if (buyerName) doc.text(`Nom: ${buyerName}`, 60, buyerY);
-      if (ticketData.buyerEmail) doc.text(`Email: ${ticketData.buyerEmail}`, 60, buyerY + 18);
-      if (ticketData.buyerPhone) doc.text(`Téléphone: ${ticketData.buyerPhone}`, 60, buyerY + 36);
+      doc.fontSize(11).fillColor(bodyText);
+      doc.text(`Nom: ${buyerName}`, 60, buyerY);
+      doc.text(`Email: ${buyerEmail}`, 60, buyerY + 18);
+      doc.text(`Téléphone: ${buyerPhone}`, 60, buyerY + 36);
 
+      // Fallback manuel scan
       doc
         .fontSize(11)
-        .fillColor('#e8eeff')
+        .fillColor(lightText)
         .text('Vérification manuelle (fallback scanner)', 60, 600);
 
       doc
         .fontSize(10)
-        .fillColor('#cfd6f6')
+        .fillColor(bodyText)
         .text(`Commande: ${ticketData.orderId}`, 60, 618);
 
       if (ticketData.ticketId) {
         doc
           .fontSize(10)
-          .fillColor('#cfd6f6')
+          .fillColor(bodyText)
           .text(`Billet ID: ${ticketData.ticketId}`, 220, 618);
       }
 
       if (ticketData.qrCode) {
         doc
           .fontSize(9)
-          .fillColor('#9aa6d1')
+          .fillColor(template === 'MINIMAL' ? '#4b5563' : '#9aa6d1')
           .text(`QR texte: ${ticketData.qrCode}`, 60, 634, { width: 480, lineBreak: false });
       }
 
       doc
         .fontSize(10)
-        .fillColor('#8d98be')
+        .fillColor(template === 'MINIMAL' ? '#4b5563' : '#8d98be')
         .text(footerNote, 60, 654, { width: 480, lineGap: 3 });
 
       doc
         .fontSize(10)
-        .fillColor('#7B61FF')
+        .fillColor(primary)
         .text(`Document généré par Tikeoh • ${new Date().toLocaleString('fr-FR')}`, 60, 700);
 
       doc.end();
