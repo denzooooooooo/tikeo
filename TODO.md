@@ -10,13 +10,15 @@
   - [x] Lire `apps/web/app/components/Navbar.tsx`
   - [x] Vérifier les imports `@tikeo/ui` et la surface d’exports
   - [ ] Lire `apps/web/app/test.js`
-  - [ ] Lire `apps/web/next.config.js`
+  - [x] Lire `apps/web/next.config.js`
   - [ ] Neutraliser fichiers parasites potentiels (`app/test.js`, `dashboard/page 2.tsx`) si confirmé
+  - [x] Vérifier l’existence de `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx` (manquants)
+  - [x] Créer les fichiers d’erreur App Router manquants
 
 - [ ] 3. Validation build web
   - [x] Lancer `npm run build --workspace web`
   - [x] Vérifier disparition de l’erreur `Element type is invalid` (largement résolue)
-  - [ ] Corriger `TypeError: ... useContext` sur `/_error: /404` et `/_error: /500`
+  - [x] Corriger `TypeError: ... useContext` sur `/_error: /404` et `/_error: /500`
   - [ ] Relancer build et confirmer succès complet
 
 - [ ] 4. Corriger le build Docker Railway (api-gateway)

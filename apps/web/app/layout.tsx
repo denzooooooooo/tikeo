@@ -137,12 +137,7 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Providers>
-          <div className="flex flex-col min-h-screen">
-            <Navbar />
-            <main className="flex-1">{children}</main>
-            <GlassFooter />
-            <CookieConsentBanner />
-          </div>
+          {children}
         </Providers>
       </body>
     </html>
