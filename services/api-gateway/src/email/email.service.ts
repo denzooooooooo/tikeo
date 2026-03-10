@@ -157,6 +157,7 @@ export class EmailService {
 
         if (result.error) {
           this.logger.error(`Failed to send email to ${to}: ${result.error.message}`);
+          this.logger.error(`Email payload debug -> subject="${normalizedSubject}", from="${this.fromEmail}", hasAttachments=${attachments && attachments.length > 0 ? 'yes' : 'no'}`);
           return { success: false, error: result.error.message };
         }
 
@@ -459,7 +460,6 @@ export class EmailService {
       '<p style="margin:0 0 8px 0;color:#ffffff;font-size:13px;font-weight:700;">Vérification manuelle (si scan impossible)</p>' +
       '<p style="margin:0;color:#d9e1ff;font-size:12px;line-height:1.6;">Commande: ' + ticketData.orderId + '</p>' +
       (ticketData.ticketId ? '<p style="margin:2px 0 0 0;color:#d9e1ff;font-size:12px;line-height:1.6;">Billet ID: ' + ticketData.ticketId + '</p>' : '') +
-      (ticketData.qrCode ? '<p style="margin:2px 0 0 0;color:#9fb0e8;font-size:11px;line-height:1.5;word-break:break-all;">QR texte: ' + ticketData.qrCode + '</p>' : '') +
       '</div>' +
       (showQr && qrImage
         ? '<div style="text-align:center;margin:18px 0 10px 0;">' +
@@ -467,7 +467,6 @@ export class EmailService {
           '<img src="' + qrImage + '" alt="QR Code billet" style="width:180px;height:180px;display:block;" />' +
           '</div></div>'
         : '') +
-      (showQr && ticketData.qrCode ? '<p style="color:#96a1c6;font-size:11px;text-align:center;word-break:break-all;margin:8px 0 0 0;">' + ticketData.qrCode + '</p>' : '') +
       '<p style="color:#cfd6f6;font-size:14px;line-height:1.6;margin:18px 0 0 0;">Cher client, voici votre billet pour l’événement. Le PDF est joint à cet email.</p>' +
       '<p style="color:#cfd6f6;font-size:14px;line-height:1.6;margin:8px 0 0 0;">Arrivez 30 minutes avant le début de l’événement pour faciliter le contrôle.</p>' +
       '<div style="margin-top:10px;padding:12px;border:1px dashed rgba(123,97,255,.5);border-radius:10px;background:rgba(123,97,255,.07);">' +
