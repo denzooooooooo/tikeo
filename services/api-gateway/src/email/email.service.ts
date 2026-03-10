@@ -12,6 +12,11 @@ interface TicketData {
   orderId: string;
   qrCode?: string;
   ticketId?: string;
+  eventCoverImage?: string;
+  buyerFirstName?: string;
+  buyerLastName?: string;
+  buyerEmail?: string;
+  buyerPhone?: string;
   ticketDesign?: {
     template?: string | null;
     backgroundUrl?: string | null;
@@ -291,20 +296,31 @@ export class EmailService {
       doc.text(`Commande: ${ticketData.orderId}`, 60, detailsY + 72);
       if (ticketData.ticketId) doc.text(`Billet ID: ${ticketData.ticketId}`, 60, detailsY + 96);
 
+      if (ticketData.eventCoverImage) {
+        try {
+          doc.roundedRect(390, 410, 150, 100, 8).fill('#ffffff');
+          doc.image(ticketData.eventCoverImage, 394, 414, { width: 142, height: 92 });
+        } catch {}
+      }
+
       if (showQr && qrImage) {
         doc.roundedRect(390, 240, 150, 150, 8).fill('#ffffff');
         doc.image(qrImage, 400, 250, { width: 130, height: 130 });
       }
 
-      doc
-        .fontSize(12)
-        .fillColor('#cfd6f6')
-        .text('Cher client, voici votre billet pour l’événement. Merci de le présenter à l’entrée.', 60, 430, { width: 480, lineGap: 4 });
+      let buyerY = 520;
+      doc.fontSize(12).fillColor('#e8eeff').text('Acheteur', 60, buyerY);
+      buyerY += 20;
+      doc.fontSize(11).fillColor('#cfd6f6');
+      const buyerName = `${ticketData.buyerFirstName || ''} ${ticketData.buyerLastName || ''}`.trim();
+      if (buyerName) doc.text(`Nom: ${buyerName}`, 60, buyerY);
+      if (ticketData.buyerEmail) doc.text(`Email: ${ticketData.buyerEmail}`, 60, buyerY + 18);
+      if (ticketData.buyerPhone) doc.text(`Téléphone: ${ticketData.buyerPhone}`, 60, buyerY + 36);
 
       doc
         .fontSize(10)
         .fillColor('#8d98be')
-        .text(footerNote, 60, 480, { width: 480, lineGap: 3 });
+        .text(footerNote, 60, 620, { width: 480, lineGap: 3 });
 
       doc
         .fontSize(10)
@@ -336,6 +352,7 @@ export class EmailService {
     const pdfBuffer = await this.generateTicketPdfBuffer(ticketData, qrImage);
     const pdfBase64 = pdfBuffer.toString('base64');
 
+    const buyerName = `${ticketData.buyerFirstName || ''} ${ticketData.buyerLastName || ''}`.trim();
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;font-family:-apple-system,sans-serif;background:#0f1220;">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f1220;padding:24px 12px;"><tr><td align="center">' +
       '<table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#13172b;border:1px solid #202642;border-radius:16px;overflow:hidden;">' +
@@ -346,6 +363,11 @@ export class EmailService {
       '<div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.08);' + backgroundImage + '">' +
       '<div style="background:rgba(8,10,16,.72);padding:20px;color:' + textColor + ';">' +
       '<h2 style="margin:0 0 12px 0;font-size:22px;color:#fff;">' + ticketData.eventTitle + '</h2>' +
+      (ticketData.eventCoverImage
+        ? '<div style="margin:0 0 12px 0;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.15);">' +
+          '<img src="' + ticketData.eventCoverImage + '" alt="Image événement" style="width:100%;max-height:170px;object-fit:cover;display:block;" />' +
+          '</div>'
+        : '') +
       '<table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.7;color:#d9e1ff;">' +
       '<tr><td style="padding:3px 0;"><strong>Date</strong></td><td style="padding:3px 0;text-align:right;">' + ticketData.eventDate + '</td></tr>' +
       '<tr><td style="padding:3px 0;"><strong>Lieu</strong></td><td style="padding:3px 0;text-align:right;">' + ticketData.venue + '</td></tr>' +
@@ -354,6 +376,12 @@ export class EmailService {
       (ticketData.ticketId ? '<tr><td style="padding:3px 0;"><strong>Billet ID</strong></td><td style="padding:3px 0;text-align:right;">' + ticketData.ticketId + '</td></tr>' : '') +
       '</table>' +
       '</div></div>' +
+      '<div style="margin-top:14px;padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03);">' +
+      '<p style="margin:0 0 8px 0;color:#ffffff;font-size:13px;font-weight:700;">Acheteur</p>' +
+      (buyerName ? '<p style="margin:0;color:#d9e1ff;font-size:13px;">Nom: ' + buyerName + '</p>' : '') +
+      (ticketData.buyerEmail ? '<p style="margin:4px 0 0 0;color:#d9e1ff;font-size:13px;">Email: ' + ticketData.buyerEmail + '</p>' : '') +
+      (ticketData.buyerPhone ? '<p style="margin:4px 0 0 0;color:#d9e1ff;font-size:13px;">Téléphone: ' + ticketData.buyerPhone + '</p>' : '') +
+      '</div>' +
       (showQr && qrImage
         ? '<div style="text-align:center;margin:18px 0 10px 0;">' +
           '<div style="display:inline-block;background:#fff;padding:12px;border-radius:12px;border:1px solid #eceff9;">' +

@@ -173,6 +173,7 @@ export default function EditEventPage() {
   const [success, setSuccess] = useState(false);
   const [ticketError, setTicketError] = useState<string | null>(null);
   const [ticketSuccess, setTicketSuccess] = useState<string | null>(null);
+  const [coverImagePreviewError, setCoverImagePreviewError] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -268,7 +269,18 @@ export default function EditEventPage() {
   useEffect(() => { fetchEvent(); }, [fetchEvent]);
 
   const handleChange = (field: string, value: string | boolean) => {
+    if (field === 'coverImage') setCoverImagePreviewError(false);
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const isCoverImageUrlValid = (url: string) => {
+    if (!url?.trim()) return true;
+    try {
+      const u = new URL(url);
+      return ['http:', 'https:'].includes(u.protocol);
+    } catch {
+      return false;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -496,9 +508,33 @@ export default function EditEventPage() {
               </div>
               <div>
                 <label className={labelCls}>Image de couverture (URL)</label>
-                <input type="url" value={form.coverImage} onChange={(e) => handleChange('coverImage', e.target.value)} className={inputCls} placeholder="https://…" />
-                {form.coverImage && (
-                  <img src={form.coverImage} alt="Aperçu" className="mt-2 h-32 w-full object-cover rounded-xl border border-gray-200" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                <input
+                  type="url"
+                  value={form.coverImage}
+                  onChange={(e) => handleChange('coverImage', e.target.value)}
+                  className={`${inputCls} ${!isCoverImageUrlValid(form.coverImage) ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : ''}`}
+                  placeholder="https://…"
+                />
+                {!isCoverImageUrlValid(form.coverImage) && (
+                  <p className="mt-2 text-xs text-red-600">
+                    URL invalide. Utilisez une URL complète (http:// ou https://).
+                  </p>
+                )}
+                {form.coverImage && isCoverImageUrlValid(form.coverImage) && (
+                  <>
+                    <img
+                      src={form.coverImage}
+                      alt="Aperçu"
+                      className="mt-2 h-32 w-full object-cover rounded-xl border border-gray-200"
+                      onError={() => setCoverImagePreviewError(true)}
+                      onLoad={() => setCoverImagePreviewError(false)}
+                    />
+                    {coverImagePreviewError && (
+                      <p className="mt-2 text-xs text-amber-700">
+                        Impossible de prévisualiser cette image. Vérifiez le lien (mais vous pouvez quand même enregistrer).
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>

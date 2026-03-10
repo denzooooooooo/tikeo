@@ -120,7 +120,10 @@ function shareTicket(ticket: Ticket) {
 function TicketModal({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
   const event = ticket.order?.event;
   const countdown = event?.startDate ? getCountdown(event.startDate) : '';
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticket.qrCode || ticket.id)}&bgcolor=ffffff&color=000000&margin=4`;
+  const qrValue = ticket.qrCode?.trim();
+  const qrUrl = qrValue
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrValue)}&bgcolor=ffffff&color=000000&margin=4`
+    : null;
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -156,7 +159,13 @@ function TicketModal({ ticket, onClose }: { ticket: Ticket; onClose: () => void 
             {(event?.ticketDesignShowQr ?? true) && (
               <div className="flex justify-center mt-4">
                 <div className="w-44 h-44 bg-white border-2 border-gray-200 rounded-xl p-2 flex items-center justify-center shadow-sm">
-                  <img src={qrUrl} alt="QR Code billet" className="w-full h-full object-contain" />
+                  {qrUrl ? (
+                    <img src={qrUrl} alt="QR Code billet" className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="text-center px-2">
+                      <p className="text-[11px] text-red-500 font-medium">QR indisponible</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -508,7 +517,16 @@ export default function TicketsPage() {
                               {/* QR thumbnail */}
                               <div className="w-12 bg-gray-50 flex items-center justify-center border-l border-gray-100 flex-shrink-0 ml-2">
                                 <div className="w-10 h-10 bg-white rounded-lg shadow-sm p-0.5 flex items-center justify-center">
-                                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=48x48&data=${encodeURIComponent(ticket.qrCode || ticket.id)}&bgcolor=ffffff&color=000000&margin=2`} alt="QR" className="w-full h-full object-contain" loading="lazy" />
+                                  {ticket.qrCode?.trim() ? (
+                                    <img
+                                      src={`https://api.qrserver.com/v1/create-qr-code/?size=48x48&data=${encodeURIComponent(ticket.qrCode)}&bgcolor=ffffff&color=000000&margin=2`}
+                                      alt="QR"
+                                      className="w-full h-full object-contain"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <span className="text-[9px] text-red-500 font-semibold">N/A</span>
+                                  )}
                                 </div>
                               </div>
                             </div>

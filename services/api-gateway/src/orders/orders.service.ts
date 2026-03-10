@@ -182,20 +182,26 @@ export class OrdersService {
 
       // Déterminer l'email de confirmation (utilisateur connecté ou invité)
       let confirmEmail: string | null = null;
-      let confirmFirstName: string | null = null;
+      let buyerFirstName: string | null = null;
+      let buyerLastName: string | null = null;
+      let buyerPhone: string | null = null;
 
       if (userId) {
         const user = await this.prisma.user.findUnique({
           where: { id: userId },
-          select: { email: true, firstName: true },
+          select: { email: true, firstName: true, lastName: true, phone: true },
         });
         if (user) {
           confirmEmail = user.email;
-          confirmFirstName = user.firstName;
+          buyerFirstName = user.firstName;
+          buyerLastName = user.lastName;
+          buyerPhone = user.phone;
         }
       } else if (guestInfo) {
         confirmEmail = guestInfo.email;
-        confirmFirstName = guestInfo.firstName;
+        buyerFirstName = guestInfo.firstName;
+        buyerLastName = guestInfo.lastName;
+        buyerPhone = guestInfo.phone ?? null;
       }
 
       if (confirmEmail) {
@@ -241,6 +247,11 @@ export class OrdersService {
               orderId: order.id,
               ticketId: t.id,
               qrCode: t.qrCode,
+              eventCoverImage: event.coverImage || undefined,
+              buyerFirstName: buyerFirstName || undefined,
+              buyerLastName: buyerLastName || undefined,
+              buyerEmail: confirmEmail || undefined,
+              buyerPhone: buyerPhone || undefined,
               ticketDesign,
             });
             

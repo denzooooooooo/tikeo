@@ -150,17 +150,26 @@ export class PaymentsService implements OnModuleInit {
       // Send confirmation email (fire and forget)
       // Get user email (logged in) OR guest email
       let confirmEmail: string | null = null;
+      let buyerFirstName: string | null = null;
+      let buyerLastName: string | null = null;
+      let buyerPhone: string | null = null;
 
       if (order.userId) {
         // Logged in user
         const user = await this.prisma.user.findUnique({
           where: { id: order.userId },
-          select: { email: true },
+          select: { email: true, firstName: true, lastName: true, phone: true },
         });
         confirmEmail = user?.email || null;
+        buyerFirstName = user?.firstName || null;
+        buyerLastName = user?.lastName || null;
+        buyerPhone = user?.phone || null;
       } else if (order.guestEmail) {
         // Guest (not logged in)
         confirmEmail = order.guestEmail;
+        buyerFirstName = order.billingName?.split(' ')?.[0] || null;
+        buyerLastName = order.billingName?.split(' ')?.slice(1).join(' ') || null;
+        buyerPhone = order.guestPhone || null;
       }
 
       const event = eventData ?? await this.prisma.event.findUnique({
@@ -169,6 +178,7 @@ export class PaymentsService implements OnModuleInit {
           title: true,
           startDate: true,
           venueName: true,
+          coverImage: true,
           ticketDesignTemplate: true,
           ticketDesignBackgroundUrl: true,
           ticketDesignPrimaryColor: true,
@@ -230,6 +240,11 @@ export class PaymentsService implements OnModuleInit {
                 orderId: order.id,
                 ticketId: t.id,
                 qrCode: t.qrCode,
+                eventCoverImage: (event as any).coverImage || undefined,
+                buyerFirstName: buyerFirstName || undefined,
+                buyerLastName: buyerLastName || undefined,
+                buyerEmail: confirmEmail || undefined,
+                buyerPhone: buyerPhone || undefined,
                 ticketDesign,
               });
 
