@@ -1,25 +1,25 @@
-# TODO - Fix event edit image, ticket PDF buyer details, event photo, QR reliability
+# TODO - Correction build web + Docker Railway
 
-- [x] 1. Fix QR reliability on tickets page
-  - [x] Remove fallback to `ticket.id` for QR generation
-  - [x] Show clear "QR indisponible" state when `ticket.qrCode` missing
+- [x] 1. Corriger les exports UI partagés
+  - [x] Mettre à jour `packages/ui/index.js` pour exporter les icônes utilisées
+  - [x] Mettre à jour `packages/ui/index.d.ts` avec les types correspondants
 
-- [x] 2. Enrich ticket PDF/email data model
-  - [x] Extend `TicketData` in `services/api-gateway/src/email/email.service.ts` with buyer fields
-  - [x] Extend `TicketData` with `eventCoverImage`
+- [ ] 2. Investigation ciblée erreurs `/404` et `/500`
+  - [x] Lire `apps/web/app/layout.tsx`
+  - [x] Lire `apps/web/app/providers.tsx`
+  - [x] Lire `apps/web/app/components/Navbar.tsx`
+  - [x] Vérifier les imports `@tikeo/ui` et la surface d’exports
+  - [ ] Lire `apps/web/app/test.js`
+  - [ ] Lire `apps/web/next.config.js`
+  - [ ] Neutraliser fichiers parasites potentiels (`app/test.js`, `dashboard/page 2.tsx`) si confirmé
 
-- [x] 3. Render buyer details + event image in PDF/email
-  - [x] Add buyer section in generated PDF
-  - [x] Add event image (if available) in PDF
-  - [x] Add buyer info and event image in ticket email HTML
+- [ ] 3. Validation build web
+  - [x] Lancer `npm run build --workspace web`
+  - [x] Vérifier disparition de l’erreur `Element type is invalid` (largement résolue)
+  - [ ] Corriger `TypeError: ... useContext` sur `/_error: /404` et `/_error: /500`
+  - [ ] Relancer build et confirmer succès complet
 
-- [x] 4. Pass new fields from order flows
-  - [x] Update `services/api-gateway/src/orders/orders.service.ts` (free orders flow)
-  - [x] Update `services/api-gateway/src/payments/payments.service.ts` (paid orders flow)
-
-- [x] 5. Improve event edit image UX
-  - [x] Improve feedback/validation around `coverImage` in edit page
-
-- [ ] 6. Validation
-  - [ ] Run targeted checks/build for web and api-gateway
-  - [ ] Fix any lint/type issues
+- [ ] 4. Corriger le build Docker Railway (api-gateway)
+  - [ ] Vérifier et corriger le contexte de build / `COPY packages/ ./packages/`
+  - [ ] Ajuster `services/api-gateway/Dockerfile` ou config Railway
+  - [ ] Validation build Docker ciblé
