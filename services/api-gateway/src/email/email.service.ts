@@ -318,9 +318,33 @@ export class EmailService {
       if (ticketData.buyerPhone) doc.text(`Téléphone: ${ticketData.buyerPhone}`, 60, buyerY + 36);
 
       doc
+        .fontSize(11)
+        .fillColor('#e8eeff')
+        .text('Vérification manuelle (fallback scanner)', 60, 600);
+
+      doc
+        .fontSize(10)
+        .fillColor('#cfd6f6')
+        .text(`Commande: ${ticketData.orderId}`, 60, 618);
+
+      if (ticketData.ticketId) {
+        doc
+          .fontSize(10)
+          .fillColor('#cfd6f6')
+          .text(`Billet ID: ${ticketData.ticketId}`, 220, 618);
+      }
+
+      if (ticketData.qrCode) {
+        doc
+          .fontSize(9)
+          .fillColor('#9aa6d1')
+          .text(`QR texte: ${ticketData.qrCode}`, 60, 634, { width: 480, lineBreak: false });
+      }
+
+      doc
         .fontSize(10)
         .fillColor('#8d98be')
-        .text(footerNote, 60, 620, { width: 480, lineGap: 3 });
+        .text(footerNote, 60, 654, { width: 480, lineGap: 3 });
 
       doc
         .fontSize(10)
@@ -381,6 +405,12 @@ export class EmailService {
       (buyerName ? '<p style="margin:0;color:#d9e1ff;font-size:13px;">Nom: ' + buyerName + '</p>' : '') +
       (ticketData.buyerEmail ? '<p style="margin:4px 0 0 0;color:#d9e1ff;font-size:13px;">Email: ' + ticketData.buyerEmail + '</p>' : '') +
       (ticketData.buyerPhone ? '<p style="margin:4px 0 0 0;color:#d9e1ff;font-size:13px;">Téléphone: ' + ticketData.buyerPhone + '</p>' : '') +
+      '</div>' +
+      '<div style="margin-top:10px;padding:12px;border:1px dashed rgba(123,97,255,.6);border-radius:10px;background:rgba(123,97,255,.08);">' +
+      '<p style="margin:0 0 8px 0;color:#ffffff;font-size:13px;font-weight:700;">Vérification manuelle (si scan impossible)</p>' +
+      '<p style="margin:0;color:#d9e1ff;font-size:12px;line-height:1.6;">Commande: ' + ticketData.orderId + '</p>' +
+      (ticketData.ticketId ? '<p style="margin:2px 0 0 0;color:#d9e1ff;font-size:12px;line-height:1.6;">Billet ID: ' + ticketData.ticketId + '</p>' : '') +
+      (ticketData.qrCode ? '<p style="margin:2px 0 0 0;color:#9fb0e8;font-size:11px;line-height:1.5;word-break:break-all;">QR texte: ' + ticketData.qrCode + '</p>' : '') +
       '</div>' +
       (showQr && qrImage
         ? '<div style="text-align:center;margin:18px 0 10px 0;">' +

@@ -113,6 +113,14 @@ export class TicketsService {
             firstName: true,
             lastName: true,
             email: true,
+            phone: true,
+          },
+        },
+        order: {
+          select: {
+            guestEmail: true,
+            guestPhone: true,
+            billingName: true,
           },
         },
         ticketType: {
@@ -120,6 +128,22 @@ export class TicketsService {
         },
       },
     });
+
+    const resolveBuyer = () => {
+      const hasUser = !!ticket?.user;
+      const fullName = hasUser
+        ? `${ticket?.user?.firstName || ''} ${ticket?.user?.lastName || ''}`.trim()
+        : (ticket?.order?.billingName || '').trim();
+
+      return {
+        buyerType: hasUser ? 'user' : (ticket?.order?.guestEmail ? 'guest' : 'unknown'),
+        firstName: hasUser ? (ticket?.user?.firstName || '') : (fullName.split(' ').slice(0, 1).join('') || ''),
+        lastName: hasUser ? (ticket?.user?.lastName || '') : (fullName.split(' ').slice(1).join(' ') || ''),
+        fullName: fullName || 'Acheteur inconnu',
+        email: hasUser ? (ticket?.user?.email || null) : (ticket?.order?.guestEmail || null),
+        phone: hasUser ? (ticket?.user?.phone || null) : (ticket?.order?.guestPhone || null),
+      };
+    };
 
     if (!ticket) {
       this.scanEventSubject.next({
@@ -160,25 +184,44 @@ export class TicketsService {
 
     // 3. Status check
     if (ticket.status !== 'VALID') {
+      const buyer = resolveBuyer();
       this.scanEventSubject.next({
         type: 'INVALID',
         qrCode: normalizedQr,
         ticketId: ticket.id,
-        userName: `${ticket.user.firstName} ${ticket.user.lastName}`,
+        userName: buyer.fullName,
         eventTitle: ticket.event.title,
         scannedByUserId: userId,
         timestamp: new Date(),
       });
-      return { valid: false, message: `Ticket is ${ticket.status.toLowerCase()}` };
+      return {
+        valid: false,
+        message: `Ticket is ${ticket.status.toLowerCase()}`,
+        ticket: {
+          id: ticket.id,
+          qrCode: ticket.qrCode,
+          status: ticket.status,
+          event: ticket.event,
+          user: {
+            firstName: buyer.firstName,
+            lastName: buyer.lastName,
+            email: buyer.email,
+            phone: buyer.phone,
+            buyerType: buyer.buyerType,
+          },
+          ticketType: ticket.ticketType,
+        },
+      };
     }
 
     // 4. Already scanned check
     if (ticket.scannedAt) {
+      const buyer = resolveBuyer();
       this.scanEventSubject.next({
         type: 'ALREADY_SCANNED',
         qrCode: normalizedQr,
         ticketId: ticket.id,
-        userName: `${ticket.user.firstName} ${ticket.user.lastName}`,
+        userName: buyer.fullName,
         eventTitle: ticket.event.title,
         scannedAt: ticket.scannedAt,
         scannedByUserId: userId,
@@ -193,7 +236,13 @@ export class TicketsService {
           qrCode: ticket.qrCode,
           status: ticket.status,
           event: ticket.event,
-          user: ticket.user,
+          user: {
+            firstName: buyer.firstName,
+            lastName: buyer.lastName,
+            email: buyer.email,
+            phone: buyer.phone,
+            buyerType: buyer.buyerType,
+          },
           ticketType: ticket.ticketType,
         },
       };
@@ -209,11 +258,12 @@ export class TicketsService {
       },
     });
 
+    const buyer = resolveBuyer();
     this.scanEventSubject.next({
       type: 'VALID',
       qrCode: normalizedQr,
       ticketId: ticket.id,
-      userName: `${ticket.user.firstName} ${ticket.user.lastName}`,
+      userName: buyer.fullName,
       eventTitle: ticket.event.title,
       scannedByUserId: userId,
       timestamp: new Date(),
@@ -227,7 +277,13 @@ export class TicketsService {
         qrCode: ticket.qrCode,
         status: 'USED',
         event: ticket.event,
-        user: ticket.user,
+        user: {
+          firstName: buyer.firstName,
+          lastName: buyer.lastName,
+          email: buyer.email,
+          phone: buyer.phone,
+          buyerType: buyer.buyerType,
+        },
         ticketType: ticket.ticketType,
       },
     };

@@ -17,7 +17,7 @@ export interface ScanResult {
     qrCode: string; 
     status: string; 
     event?: { title: string; startDate: string; venueName: string; venueCity: string }; 
-    user?: { firstName: string; lastName: string; email: string }; 
+    user?: { firstName: string; lastName: string; email: string; phone?: string | null; buyerType?: string }; 
     ticketType?: { name: string } 
   };
 }
@@ -76,9 +76,12 @@ export function fmtMsg(m: string, at?: string): string {
 
 // Export CSV
 export function exportCSV(h: ScanEntry[]) {
-  const rows = [['Heure','Code QR','Statut','Titulaire','Evenement','Type'],
+  const rows = [['Heure','Code QR','Statut','Titulaire','Email','Téléphone','Type acheteur','Evenement','Type billet'],
     ...h.map(e => [e.time.toLocaleString('fr-FR'), e.qr, e.result.valid?'VALIDE':'INVALIDE',
       e.result.ticket?.user ? `${e.result.ticket.user.firstName} ${e.result.ticket.user.lastName}` : '',
+      e.result.ticket?.user?.email || '',
+      e.result.ticket?.user?.phone || '',
+      e.result.ticket?.user?.buyerType || '',
       e.result.ticket?.event?.title||'', e.result.ticket?.ticketType?.name||''])];
   const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
   const a = document.createElement('a');

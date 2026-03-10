@@ -36,6 +36,15 @@ interface Ticket {
   createdAt: string;
   order?: {
     id: string;
+    guestEmail?: string;
+    guestPhone?: string;
+    billingName?: string;
+    user?: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      phone?: string;
+    };
     event?: {
       id: string;
       title: string;
@@ -191,11 +200,24 @@ function TicketModal({ ticket, onClose }: { ticket: Ticket; onClose: () => void 
                 <span className="font-medium text-right max-w-[60%]">{event.venueName}, {event.venueCity}</span>
               </div>
               {ticket.ticketType?.price !== undefined && (
-                <div className="flex justify-between py-1.5">
+                <div className="flex justify-between py-1.5 border-b border-gray-50">
                   <span className="text-gray-500">Prix</span>
                   <span className="font-bold text-[#5B7CFF]">{formatPrice(ticket.ticketType.price, event.venueCountry)}</span>
                 </div>
               )}
+
+              <div className="pt-1.5">
+                <p className="text-gray-500 text-xs mb-1">Titulaire / Acheteur</p>
+                <p className="font-medium">
+                  {`${ticket.order?.user?.firstName || ''} ${ticket.order?.user?.lastName || ''}`.trim() || ticket.order?.billingName || 'Non renseigné'}
+                </p>
+                {(ticket.order?.user?.email || ticket.order?.guestEmail) && (
+                  <p className="text-xs text-gray-500 break-all">{ticket.order?.user?.email || ticket.order?.guestEmail}</p>
+                )}
+                {(ticket.order?.user?.phone || ticket.order?.guestPhone) && (
+                  <p className="text-xs text-gray-500">{ticket.order?.user?.phone || ticket.order?.guestPhone}</p>
+                )}
+              </div>
             </div>
           )}
 

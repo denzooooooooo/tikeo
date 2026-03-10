@@ -33,9 +33,17 @@ function HistoryRow({ e }: { e: ScanEntry }) {
       <div className="flex-1 min-w-0">
         <p className="font-mono text-xs text-gray-400 truncate">{e.qr}</p>
         {e.result.ticket?.user && (
-          <p className="text-xs text-gray-300 font-medium truncate">
-            {e.result.ticket.user.firstName} {e.result.ticket.user.lastName}
-          </p>
+          <>
+            <p className="text-xs text-gray-300 font-medium truncate">
+              {e.result.ticket.user.firstName} {e.result.ticket.user.lastName}
+            </p>
+            {e.result.ticket.user.email && (
+              <p className="text-xs text-gray-500 truncate">{e.result.ticket.user.email}</p>
+            )}
+            {e.result.ticket.user.phone && (
+              <p className="text-xs text-gray-600 truncate">{e.result.ticket.user.phone}</p>
+            )}
+          </>
         )}
         {e.result.ticket?.event && (
           <p className="text-xs text-gray-500 truncate">{e.result.ticket.event.title}</p>
@@ -216,12 +224,32 @@ export default function ScannerPage() {
                 </div>
               </div>
               {result.ticket && (
-                <div className="space-y-1.5 text-sm border-t border-white/10 pt-3 mt-3">
+              <div className="space-y-1.5 text-sm border-t border-white/10 pt-3 mt-3">
                   {result.ticket.user && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Titulaire</span>
-                      <span className="font-semibold">{result.ticket.user.firstName} {result.ticket.user.lastName}</span>
-                    </div>
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Titulaire</span>
+                        <span className="font-semibold">{result.ticket.user.firstName} {result.ticket.user.lastName}</span>
+                      </div>
+                      {result.ticket.user.email && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Email</span>
+                          <span className="font-semibold text-right max-w-[60%] break-all">{result.ticket.user.email}</span>
+                        </div>
+                      )}
+                      {result.ticket.user.phone && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Téléphone</span>
+                          <span className="font-semibold">{result.ticket.user.phone}</span>
+                        </div>
+                      )}
+                      {result.ticket.user.buyerType && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Type acheteur</span>
+                          <span className="font-semibold uppercase">{result.ticket.user.buyerType}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                   {result.ticket.event && (
                     <div className="flex justify-between">
@@ -245,6 +273,20 @@ export default function ScannerPage() {
                     <span className="text-gray-500">Code</span>
                     <span className="font-mono text-xs text-gray-400">{result.ticket.qrCode}</span>
                   </div>
+                </div>
+              )}
+
+              {!result.valid && result.ticket?.user && (
+                <div className="mt-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                  <p className="text-xs font-semibold text-gray-300 mb-2">Fallback contrôle manuel</p>
+                  <p className="text-xs text-gray-400">
+                    Si le QR ne passe pas, vérifiez l’identité acheteur:
+                  </p>
+                  <p className="text-xs text-gray-200 mt-1">
+                    {result.ticket.user.firstName} {result.ticket.user.lastName}
+                    {result.ticket.user.email ? ` • ${result.ticket.user.email}` : ''}
+                    {result.ticket.user.phone ? ` • ${result.ticket.user.phone}` : ''}
+                  </p>
                 </div>
               )}
             </div>

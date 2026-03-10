@@ -15,13 +15,21 @@
   - [x] Vérifier l’existence de `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx` (manquants)
   - [x] Créer les fichiers d’erreur App Router manquants
 
-- [ ] 3. Validation build web
+- [x] 3. Validation build web
   - [x] Lancer `npm run build --workspace web`
   - [x] Vérifier disparition de l’erreur `Element type is invalid` (largement résolue)
   - [x] Corriger `TypeError: ... useContext` sur `/_error: /404` et `/_error: /500`
-  - [ ] Relancer build et confirmer succès complet
+  - [x] Relancer build et confirmer succès complet
 
 - [ ] 4. Corriger le build Docker Railway (api-gateway)
   - [ ] Vérifier et corriger le contexte de build / `COPY packages/ ./packages/`
   - [ ] Ajuster `services/api-gateway/Dockerfile` ou config Railway
   - [ ] Validation build Docker ciblé
+
+- [ ] 5. Améliorations billets / scan / emails (QR + identité acheteur partout)
+  - [ ] Enrichir backend tickets (buyer details complets + fallback invité)
+  - [ ] Afficher identité acheteur complète sur scanner (résultat + historique)
+  - [ ] Afficher identité titulaire sur page billets
+  - [ ] Afficher identité acheteur côté dashboard commandes organisateur
+  - [ ] Enrichir emails billet/PDF avec section vérification manuelle
+  - [ ] Valider build web + tests API ciblés `tickets/validate`
