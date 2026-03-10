@@ -137,7 +137,25 @@ export class LikesService {
       },
     });
 
-    const eventMap = new Map(events.map((e) => [e.id, e]));
+    type LikedEvent = {
+      id: string;
+      title: string;
+      slug: string | null;
+      coverImage: string | null;
+      startDate: Date;
+      venueName: string;
+      venueCity: string;
+      minPrice: number | null;
+      maxPrice: number | null;
+      organizer: {
+        id: string;
+        companyName: string;
+      } | null;
+    };
+
+    const eventMap = new Map<string, LikedEvent>(
+      events.map((e) => [e.id, e as LikedEvent]),
+    );
 
     return {
       events: likes
