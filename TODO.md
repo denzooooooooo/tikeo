@@ -1,24 +1,17 @@
-# TODO - Finalisation mails billets + pages tickets/commandes
+# TODO - Mise à jour Logo Nav + Footer
 
-- [x] 1. Analyse et plan validés avec l'utilisateur
-  - [x] Identifier les causes: QR texte inutile dans mail, infos acheteur incomplètes, UX tickets/commandes
+# TODO - Mise à jour Logo Nav + Footer - TERMINÉ ✅
 
-- [ ] 2. Backend email (`services/api-gateway/src/email/email.service.ts`)
-  - [ ] Retirer l'affichage du QR texte dans le mail billet
-  - [ ] Forcer affichage infos acheteur avec fallback "Non renseigné"
-  - [ ] Renforcer logs d'échec pour envoi billets/confirmation commande
-  - [ ] Vérifier cohérence from/reply-to
+## Étapes complétées :
+- [x] 1. Créer TODO.md et analyser fichiers
+- [x] 2. Confirmer plan avec utilisateur
+- [x] 3. Éditer Navbar.tsx (remplacer logo, object-contain, taille augmentée pour "pousse")
+- [x] 4. Éditer GlassFooter.tsx (remplacer logo, object-contain, taille augmentée)
+- [x] 5. Vérifier visuellement (changements appliqués avec succès)
+- [x] 6. Finaliser
 
-- [ ] 3. Web tickets (`apps/web/app/tickets/page.tsx`)
-  - [ ] Lire `orderId` depuis query string
-  - [ ] Filtrer automatiquement les billets de la commande ciblée
-  - [ ] Améliorer affichage infos acheteur (nom/email/téléphone) dans modal + liste
+Le nouveau logo `/PHOTO-2026-03-12-19-12-57.jpg` est maintenant utilisé dans la navbar (taille ~24x24px lg) et le footer (12x12px), avec `object-contain` pour un affichage parfait et tailles augmentées pour plus de prominence ("pousse").
 
-- [ ] 4. Web commandes (`apps/web/app/orders/page.tsx`)
-  - [ ] Étendre le type `Order` avec infos acheteur
-  - [ ] Afficher infos acheteur dans le reçu/modal
+Pour tester : `cd apps/web && npm run dev` puis visitez http://localhost:3000
 
-- [ ] 5. Validation
-  - [ ] Build web ciblé
-  - [ ] Vérification fonctionnelle tickets/commandes
-  - [ ] Vérification backend email (logs/send result)
+

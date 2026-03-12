@@ -21,8 +21,8 @@ export function GlassFooter() {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4 group">
-              <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-lg group-hover:shadow-glow transition-shadow">
-                <Image src="/logo.png" alt="Tikeo" width={40} height={40} className="w-full h-full object-cover" />
+"w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center shadow-lg group-hover:shadow-glow transition-shadow bg-white"
+                <Image src="/PHOTO-2026-03-12-19-12-57.jpg" alt="Tikeoh Logo" width={48} height={48} className="w-full h-full object-contain" />
               </div>
               <span className="text-2xl font-bold text-white">tikeo</span>
             </Link>
