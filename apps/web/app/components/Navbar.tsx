@@ -162,7 +162,7 @@ export function Navbar() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
               <div className="w-18 h-18 lg:w-24 lg:h-24 overflow-hidden flex items-center justify-center bg-[#f3f4f6] rounded-lg">
-                <Image src="/PHOTO-2026-03-12-19-12-57.jpg" alt="Tikeoh Logo" width={96} height={96} className="w-full h-full object-contain" />
+                <Image src="/PHOTO-2026-03-12-19-12-57.jpg" alt="Tikeoh Logo" width={85} height={85} className="w-full h-full object-contain" />
               </div>
             </Link>
 
