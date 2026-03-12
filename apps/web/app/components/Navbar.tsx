@@ -155,13 +155,13 @@ export function Navbar() {
 
   return (
     <>
-      <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white border-b border-gray-100' : 'bg-white border-b border-gray-100'}`}>
+      <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#f3f4f6] border-b border-gray-200' : 'bg-[#f3f4f6] border-b border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-[68px] gap-3">
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-              <div className="w-18 h-18 lg:w-24 lg:h-24 overflow-hidden flex items-center justify-center bg-white rounded-lg shadow-lg">
+              <div className="w-18 h-18 lg:w-24 lg:h-24 overflow-hidden flex items-center justify-center bg-[#f3f4f6] rounded-lg">
                 <Image src="/PHOTO-2026-03-12-19-12-57.jpg" alt="Tikeoh Logo" width={96} height={96} className="w-full h-full object-contain" />
               </div>
             </Link>
