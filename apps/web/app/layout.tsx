@@ -116,7 +116,7 @@ export default function RootLayout({
               '@type': 'Organization',
               name: 'Tikeoh',
               url: SITE_URL,
-              logo: `${SITE_URL}/logo.png`,
+              logo: `${SITE_URL}/PHOTO-2026-03-12-19-12-57.jpg`,
               description:
                 'Plateforme de billetterie événementielle nouvelle génération',
               sameAs: [
