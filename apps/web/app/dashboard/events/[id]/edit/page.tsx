@@ -507,9 +507,9 @@ export default function EditEventPage() {
                 </div>
               </div>
               <div>
-                <label className={labelCls}>Image de couverture (URL)</label>
+<label className={labelCls}>Image de couverture</label>
                 <input
-                  type="url"
+                  type="text"
                   value={form.coverImage}
                   onChange={(e) => handleChange('coverImage', e.target.value)}
                   className={`${inputCls} ${!isCoverImageUrlValid(form.coverImage) ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : ''}`}

@@ -175,8 +175,7 @@ export default async function HomePage() {
       {/* Pourquoi Tikeoh */}
       <HomeFeaturesSection />
 
-      {/* Stats */}
-      <HomeStatsSection />
+      {/* Stats - commenté par BLACKBOXAI */}\n      {/* <HomeStatsSection /> */}
 
       {/* Comment ça marche */}
       <HomeHowItWorksSection />

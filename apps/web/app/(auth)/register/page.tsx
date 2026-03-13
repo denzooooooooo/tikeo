@@ -115,7 +115,7 @@ export default function RegisterPage() {
         <div className="relative h-full flex items-center justify-center p-12">
           <div className="max-w-lg">
             <h2 className="text-5xl font-bold text-white mb-6">
-              Rejoignez Tikeo
+Rejoignez Tikeoh
             </h2>
             <p className="text-xl text-white/90 mb-12">
               Créez votre compte et vibrez au rythme des événements
@@ -159,7 +159,7 @@ export default function RegisterPage() {
                   <span className="text-2xl font-bold text-white">T</span>
                 </div>
                 <span className="text-2xl font-bold gradient-text">
-                  Tikeo
+                  Tikeoh
                 </span>
               </div>
             </Link>
@@ -167,7 +167,7 @@ export default function RegisterPage() {
               Créer un compte
             </h2>
             <p className="text-gray-600">
-              Commencez votre aventure avec Tikeo
+Commencez votre aventure avec Tikeoh
             </p>
           </div>
 

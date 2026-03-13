@@ -81,7 +81,7 @@ export default function NewsletterSection() {
               </span>
             </h2>
             <p className="text-lg text-white/55 mb-10 leading-relaxed">
-              Rejoignez plus de <strong className="text-white/80">50 000 passionnés</strong> qui reçoivent chaque semaine les meilleures offres et événements du monde entier.
+Rejoignez des milliers de passionnés
             </p>
 
             {/* Benefits */}
@@ -127,7 +127,7 @@ export default function NewsletterSection() {
                     <svg key={s} width="13" height="13" viewBox="0 0 24 24" fill="#FBBF24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                   ))}
                 </div>
-                <p className="text-white/45 text-xs">+50 000 abonnés satisfaits</p>
+abonnés satisfaits
               </div>
             </div>
           </div>

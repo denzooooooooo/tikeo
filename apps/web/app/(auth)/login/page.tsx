@@ -204,7 +204,7 @@ export default function LoginPage() {
                   <span className="text-2xl font-bold text-white">T</span>
                 </div>
                 <span className="text-2xl font-bold" style={{ background: 'linear-gradient(135deg, #5B7CFF, #7B61FF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  Tikeo
+                  Tikeoh
                 </span>
               </div>
             </Link>

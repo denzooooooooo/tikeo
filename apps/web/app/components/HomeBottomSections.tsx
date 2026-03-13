@@ -67,7 +67,7 @@ const ShareIcon = () => (
 );
 
 // ── Stats Section ──────────────────────────────────────────────────────────────
-export function HomeStatsSection() {
+export function HomeStatsSection() {\n  // Commenté par BLACKBOXAI - section désactivée\n  return null;\n}
   const stats = [
     { value: '10K+', label: 'Événements', icon: <CalendarIcon /> },
     { value: '500K+', label: 'Billets vendus', icon: <TicketIcon /> },
