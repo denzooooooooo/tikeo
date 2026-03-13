@@ -67,39 +67,9 @@ const ShareIcon = () => (
 );
 
 // ── Stats Section ──────────────────────────────────────────────────────────────
-export function HomeStatsSection() {\n  // Commenté par BLACKBOXAI - section désactivée\n  return null;\n}
-  const stats = [
-    { value: '10K+', label: 'Événements', icon: <CalendarIcon /> },
-    { value: '500K+', label: 'Billets vendus', icon: <TicketIcon /> },
-    { value: '50K+', label: 'Utilisateurs', icon: <UsersIcon /> },
-    { value: '4.9/5', label: 'Satisfaction', icon: <StarIcon /> },
-  ];
-  return (
-    <section className="py-24 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #5B7CFF 0%, #7B61FF 55%, #9D4EDD 100%)' }}>
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse animation-delay-2000" />
-        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
-      </div>
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-3">Tikeoh en chiffres</h2>
-          <p className="text-xl text-white/65">La confiance de milliers d&apos;utilisateurs</p>
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-          {stats.map((s) => (
-            <div key={s.label} className="group text-center">
-              <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-2xl p-6 sm:p-8 transform group-hover:scale-105 group-hover:bg-white/20 transition-all duration-300">
-                <div className="flex justify-center mb-4 text-white/80">{s.icon}</div>
-                <div className="text-4xl sm:text-5xl font-bold text-white mb-2">{s.value}</div>
-                <div className="text-sm sm:text-base text-white/75 font-medium">{s.label}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+export function HomeStatsSection() {
+  // Commenté par BLACKBOXAI - section désactivée
+  return null;
 }
 
 // ── How It Works Section ───────────────────────────────────────────────────────
