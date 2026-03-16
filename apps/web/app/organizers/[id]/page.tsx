@@ -36,73 +36,68 @@ function ShareOrganizerButton({ organizerId, organizerName }: { organizerId: str
   );
 }
 
-function getOrganizerData(id: string) {
-  // Fallback data in case API fails
-  const fallbackOrganizer = {
-    id,
-    companyName: "Tikeoh Events",
-    description: "Organisateur d'événements culturels et musicaux en Afrique de l'Ouest. Nous proposons des concerts, festivals et spectacles de qualité.",
-    logo: "/tikeoh-logo.png",
-    verified: true,
-    website: "https://tikeoh.com",
-    facebookUrl: "https://facebook.com/tikeoh",
-    instagramUrl: "https://instagram.com/tikeoh",
-    twitterUrl: "https://twitter.com/tikeoh",
-    linkedinUrl: "https://linkedin.com/company/tikeoh",
-    totalEvents: 24,
-    followersCount: 1250,
-    rating: 4.8,
-    userId: "user123",
-    _count: {
-      events: 24,
-      subscriptions: 1250
-    },
-    user: {
-      firstName: "Tikeoh",
-      lastName: "Admin",
-      avatar: "/tikeoh-logo.png"
-    }
-  };
+const FALLBACK_ORGANIZER = {
+  id: 'fallback',
+  companyName: "Tikeoh Events",
+  description: "Organisateur d'événements culturels et musicaux en Afrique de l'Ouest. Nous proposons des concerts, festivals et spectacles de qualité.",
+  logo: "/tikeoh-logo.png",
+  verified: true,
+  website: "https://tikeoh.com",
+  facebookUrl: "https://facebook.com/tikeoh",
+  instagramUrl: "https://instagram.com/tikeoh",
+  twitterUrl: "https://twitter.com/tikeoh",
+  linkedinUrl: "https://linkedin.com/company/tikeoh",
+  totalEvents: 24,
+  followersCount: 1250,
+  rating: 4.8,
+  userId: "user123",
+  _count: {
+    events: 24,
+    subscriptions: 1250
+  },
+  user: {
+    firstName: "Tikeoh",
+    lastName: "Admin",
+    avatar: "/tikeoh-logo.png"
+  }
+};
 
-  // Fallback events
-  const fallbackEvents = [
-    {
-      id: "event1",
-      slug: "festival-afro-2024",
-      title: "Festival Afro 2024",
-      category: "FESTIVAL",
-      startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      endDate: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
-      venueCity: "Abidjan",
-      coverImage: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&auto=format&fit=crop",
-      minPrice: 15000
-    },
-    {
-      id: "event2",
-      slug: "concert-jazz-fusion",
-      title: "Concert Jazz Fusion",
-      category: "CONCERT",
-      startDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      venueCity: "Dakar",
-      coverImage: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&auto=format&fit=crop",
-      minPrice: 8000
-    },
-    {
-      id: "event3",
-      slug: "exposition-art-contemporain",
-      title: "Exposition Art Contemporain",
-      category: "EXPOSITION",
-      startDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
-      endDate: new Date(Date.now() + 35 * 24 * 60 * 60 * 1000).toISOString(),
-      venueCity: "Lomé",
-      coverImage: "https://images.unsplash.com/photo-1594122230689-45899d9e6f69?w=800&auto=format&fit=crop",
-      minPrice: 5000
-    }
-  ];
+const FALLBACK_EVENTS = [
+  {
+    id: "event1",
+    slug: "festival-afro-2024",
+    title: "Festival Afro 2024",
+    category: "FESTIVAL",
+    startDate: "2024-12-15T18:00:00.000Z",
+    endDate: "2024-12-17T22:00:00.000Z",
+    venueCity: "Abidjan",
+    coverImage: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&auto=format&fit=crop",
+    minPrice: 15000
+  },
+  {
+    id: "event2",
+    slug: "concert-jazz-fusion",
+    title: "Concert Jazz Fusion",
+    category: "CONCERT",
+    startDate: "2024-12-22T19:00:00.000Z",
+    endDate: "2024-12-22T23:00:00.000Z",
+    venueCity: "Dakar",
+    coverImage: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&auto=format&fit=crop",
+    minPrice: 8000
+  },
+  {
+    id: "event3",
+    slug: "exposition-art-contemporain",
+    title: "Exposition Art Contemporain",
+    category: "EXPOSITION",
+    startDate: "2024-12-29T10:00:00.000Z",
+    endDate: "2025-01-12T20:00:00.000Z",
+    venueCity: "Lomé",
+    coverImage: "https://images.unsplash.com/photo-1594122230689-45899d9e6f69?w=800&auto=format&fit=crop",
+    minPrice: 5000
+  }
+];
 
-  return { fallbackOrganizer, fallbackEvents };
-}
 
 export default function OrganizerProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -111,7 +106,7 @@ export default function OrganizerProfilePage({ params }: { params: { id: string 
   const [organizer, setOrganizer] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
   
-  const { fallbackOrganizer, fallbackEvents } = getOrganizerData(params.id);
+// Fallback data now static
 
   useEffect(() => {
     const fetchData = async () => {
