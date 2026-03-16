@@ -1,17 +1,24 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { Star, Users, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { VerifiedIcon, FollowButton } from '../components/ui/Icons';
+import { VerifiedIcon } from '../components/ui/Icons';
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
-async function getOrganizers(page = 1): Promise<{ organizers: any[]; pagination: { totalPages: number; currentPage: number } }> {
+async function getOrganizers({ page = 1, search = '', verified = '', minEvents = '', sortBy = 'popular' }: { page?: number; search?: string; verified?: string; minEvents?: string; sortBy?: string }): Promise<{ organizers: any[]; pagination: { totalPages: number; currentPage: number } }> {
+
   try {
-    const res = await fetch(`${API_URL}/organizers?limit=20&page=${page}&sortBy=popular`, { 
-      cache: 'no-store',
+    let url = `${API_URL}/organizers?limit=20&page=${page}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (verified === 'true') url += '&verified=true';
+    if (minEvents) url += `&minEvents=${minEvents}`;
+    if (sortBy !== 'popular') url += `&sortBy=${sortBy}`;
+    const res = await fetch(url, { 
       next: { revalidate: 300 }
     });
+
+
     if (!res.ok) return { organizers: [], pagination: { totalPages: 1, currentPage: 1 } };
     const data = await res.json();
     return {
@@ -58,11 +65,17 @@ function OrganizerCard({ organizer }: { organizer: any }) {
         {/* Stats */}
         <div className="space-y-3 mb-6">
           <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-            <Calendar className="w-4 h-4" />
+<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+</svg>
+
             <span>{eventsCount} événement{eventsCount > 1 ? 's' : ''}</span>
           </div>
           <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-            <Star className="w-4 h-4 fill-yellow-400 text-yellow-500" />
+<svg className="w-4 h-4 text-yellow-500 fill-current" viewBox="0 0 20 20">
+  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+</svg>
+
             <span>{rating.toFixed(1)} ({organizer._count?.reviews || 0} avis)</span>
           </div>
         </div>
@@ -70,7 +83,10 @@ function OrganizerCard({ organizer }: { organizer: any }) {
         {/* CTA */}
         <div className="flex items-center justify-center gap-2 pt-4 border-t border-gray-100">
           <span className="text-sm font-semibold text-gray-700 group-hover:text-[#5B7CFF] transition-colors">Voir profil</span>
-          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+</svg>
+
         </div>
       </div>
     </Link>
@@ -97,7 +113,11 @@ export default async function OrganizersPage({ searchParams }: { searchParams: {
           {/* Recherche */}
           <div className="max-w-md mx-auto">
             <div className="flex bg-white/20 backdrop-blur-xl rounded-2xl border border-white/30 p-1">
-              <Search className="w-5 h-5 text-white/70 ml-4 flex-shrink-0" />
+<svg className="w-5 h-5 text-white/70 ml-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <circle cx="11" cy="11" r="8"/>
+  <path d="m21 21-4.35-4.35"/>
+</svg>
+
               <input
                 type="text"
                 placeholder="Rechercher un organisateur..."
@@ -126,7 +146,10 @@ export default async function OrganizersPage({ searchParams }: { searchParams: {
               className="p-3 rounded-2xl bg-white shadow-lg hover:shadow-xl border border-gray-200 hover:bg-[#5B7CFF] hover:text-white transition-all flex items-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
               prefetch={false}
             >
-              <ChevronLeft size={20} />
+<svg size={20} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+</svg>
+
               Précédent
             </Link>
             
@@ -156,7 +179,10 @@ export default async function OrganizersPage({ searchParams }: { searchParams: {
               prefetch={false}
             >
               Suivant
-              <ChevronRight size={20} />
+<svg size={20} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+</svg>
+
             </Link>
           </div>
         )}

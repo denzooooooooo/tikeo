@@ -11,8 +11,10 @@ import { NotificationsService } from '../notifications/notifications.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Fix double imports (dev only)
 @Injectable()
 export class EventsService {
+
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,

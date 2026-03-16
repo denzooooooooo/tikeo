@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, notFound } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { VerifiedIcon, LocationIcon, CalendarIcon, GlobeIcon, StarIcon, FollowButton } from '../../components/ui/Icons';
@@ -12,92 +12,26 @@ function ShareOrganizerButton({ organizerId, organizerName }: { organizerId: str
     try {
       if (navigator.share) {
         await navigator.share({
-          title: `${organizerName} - Organisateur sur Tikeoh`,
-          text: `Découvre ${organizerName} sur Tikeoh`,
+          title: `${organizerName} - Tikeoh`,
+          text: `Découvrez ${organizerName}`,
           url,
         });
       } else {
-        await navigator.clipboard.writeText(url);
-        alert('Lien copié');
+        navigator.clipboard.writeText(url);
+        alert("Lien copié !");
       }
-    } catch {
-      // ignore cancel/share errors
-    }
+    } catch {}
   };
 
   return (
     <button
-      type="button"
       onClick={handleShare}
-      className="px-4 py-2 bg-white border border-gray-200 rounded-xl font-semibold text-gray-700 hover:border-[#5B7CFF] hover:text-[#5B7CFF] transition-all text-sm"
+      className="px-6 py-3 bg-white border-2 border-gray-200 rounded-2xl font-semibold text-gray-800 hover:border-blue-500 hover:text-blue-600 hover:shadow-lg transition-all duration-300 whitespace-nowrap"
     >
       Partager
     </button>
   );
 }
-
-const FALLBACK_ORGANIZER = {
-  id: 'fallback',
-  companyName: "Tikeoh Events",
-  description: "Organisateur d'événements culturels et musicaux en Afrique de l'Ouest. Nous proposons des concerts, festivals et spectacles de qualité.",
-  logo: "/tikeoh-logo.png",
-  verified: true,
-  website: "https://tikeoh.com",
-  facebookUrl: "https://facebook.com/tikeoh",
-  instagramUrl: "https://instagram.com/tikeoh",
-  twitterUrl: "https://twitter.com/tikeoh",
-  linkedinUrl: "https://linkedin.com/company/tikeoh",
-  totalEvents: 24,
-  followersCount: 1250,
-  rating: 4.8,
-  userId: "user123",
-  _count: {
-    events: 24,
-    subscriptions: 1250
-  },
-  user: {
-    firstName: "Tikeoh",
-    lastName: "Admin",
-    avatar: "/tikeoh-logo.png"
-  }
-};
-
-const FALLBACK_EVENTS = [
-  {
-    id: "event1",
-    slug: "festival-afro-2024",
-    title: "Festival Afro 2024",
-    category: "FESTIVAL",
-    startDate: "2024-12-15T18:00:00.000Z",
-    endDate: "2024-12-17T22:00:00.000Z",
-    venueCity: "Abidjan",
-    coverImage: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&auto=format&fit=crop",
-    minPrice: 15000
-  },
-  {
-    id: "event2",
-    slug: "concert-jazz-fusion",
-    title: "Concert Jazz Fusion",
-    category: "CONCERT",
-    startDate: "2024-12-22T19:00:00.000Z",
-    endDate: "2024-12-22T23:00:00.000Z",
-    venueCity: "Dakar",
-    coverImage: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&auto=format&fit=crop",
-    minPrice: 8000
-  },
-  {
-    id: "event3",
-    slug: "exposition-art-contemporain",
-    title: "Exposition Art Contemporain",
-    category: "EXPOSITION",
-    startDate: "2024-12-29T10:00:00.000Z",
-    endDate: "2025-01-12T20:00:00.000Z",
-    venueCity: "Lomé",
-    coverImage: "https://images.unsplash.com/photo-1594122230689-45899d9e6f69?w=800&auto=format&fit=crop",
-    minPrice: 5000
-  }
-];
-
 
 export default function OrganizerProfilePage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -105,337 +39,238 @@ export default function OrganizerProfilePage({ params }: { params: { id: string 
   const [error, setError] = useState<string | null>(null);
   const [organizer, setOrganizer] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
-  
-// Fallback data now static
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
-        
-        // Fetch organizer data
-        const organizerRes = await fetch(`${API_URL}/organizers/${params.id}`, {
-          cache: 'no-store',
-        });
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+
+        const [organizerRes, eventsRes] = await Promise.all([
+          fetch(`${API_URL}/organizers/${params.id}`, { cache: 'no-store' }),
+          fetch(`${API_URL}/events?organizerId=${params.id}&status=PUBLISHED&limit=9`, { cache: 'no-store' })
+        ]);
 
         if (!organizerRes.ok) {
-          if (organizerRes.status === 404) {
-            // Use fallback data instead of 404
-            setOrganizer(fallbackOrganizer);
-          } else {
-            throw new Error(`Erreur lors du chargement de l'organisateur: ${organizerRes.status}`);
-          }
+          setOrganizer(null);
         } else {
-          const organizerData = await organizerRes.json();
-          setOrganizer(organizerData);
+          setOrganizer(await organizerRes.json());
         }
-
-        // Fetch events
-        const eventsRes = await fetch(`${API_URL}/events?organizerId=${params.id}&status=PUBLISHED&limit=6`, {
-          cache: 'no-store',
-        });
 
         if (!eventsRes.ok) {
-          // Use fallback events
-          setEvents(fallbackEvents);
+          setEvents([]);
         } else {
-          const eventsData = await eventsRes.json();
-          setEvents(eventsData.data || []);
+          const data = await eventsRes.json();
+          setEvents(data.data || []);
         }
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Une erreur est survenue lors du chargement des données');
-        // Use fallback data
-        setOrganizer(fallbackOrganizer);
-        setEvents(fallbackEvents);
+        console.error(err);
+        setError('Erreur de chargement');
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [params.id, fallbackOrganizer, fallbackEvents]);
+  }, [params.id]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#5B7CFF]"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-20 w-20 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (!organizer && error) {
+  if (error || !organizer) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-6 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      <div className="min-h-screen bg-white flex items-center justify-center p-8">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-12 text-center border">
+          <div className="w-24 h-24 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-8">
+            <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Organisateur non trouvé</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button 
-              onClick={() => window.location.reload()} 
-              className="px-4 py-2 bg-[#5B7CFF] text-white rounded-xl font-medium hover:bg-[#4B6CEF] transition-colors"
-            >
-              Réessayer
-            </button>
-            <button 
-              onClick={() => router.push('/events')} 
-              className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-            >
-              Voir les événements
-            </button>
-          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Organisateur introuvable</h2>
+          <p className="text-gray-600 mb-8">{error || 'Page non trouvée'}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-semibold hover:bg-blue-700 transition-colors mr-4"
+          >
+            Réessayer
+          </button>
+          <button 
+            onClick={() => router.push('/events')} 
+            className="px-8 py-3 border border-gray-300 text-gray-700 rounded-2xl font-semibold hover:bg-gray-50 transition-colors"
+          >
+            Voir les événements
+          </button>
         </div>
       </div>
     );
   }
+
   const displayName = organizer.companyName || `${organizer.user?.firstName || ''} ${organizer.user?.lastName || ''}`.trim() || 'Organisateur';
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Cover Image */}
-      <div className="relative h-64 lg:h-80 bg-gradient-to-br from-[#5B7CFF] via-[#7B61FF] to-[#9D4EDD]">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+      {/* Hero Section */}
+      <div className="relative h-80 lg:h-96 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 overflow-hidden">
+        <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+        {organizer.bannerImage && (
+          <Image 
+            src={organizer.bannerImage} 
+            alt={displayName}
+            fill className="object-cover opacity-30" 
+          />
+        )}
       </div>
 
-      {/* Profile Header */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Logo */}
-          <div className="flex-shrink-0">
-            <div className="w-40 h-40 lg:w-48 lg:h-48 bg-white rounded-2xl shadow-xl p-2">
-          <div className="w-full h-full bg-gradient-to-br from-[#5B7CFF] to-[#7B61FF] rounded-xl flex items-center justify-center overflow-hidden">
-                {/* Priorité: avatar utilisateur > logo organisateur */}
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 -mt-24 pb-24">
+        
+        {/* Header */}
+        <div className="bg-white rounded-3xl shadow-2xl p-8 lg:p-12 border border-gray-200 -mb-8 relative z-10">
+          <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
+            
+            {/* Avatar */}
+            <div className="flex-shrink-0">
+              <div className="w-32 h-32 lg:w-40 lg:h-40 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-2xl border-4 border-white">
                 {(organizer.user?.avatar || organizer.logo) ? (
                   <Image
                     src={organizer.user?.avatar || organizer.logo}
-                    alt={organizer.companyName || `${organizer.user?.firstName} ${organizer.user?.lastName}`}
-                    width={200}
-                    height={200}
-                    className="w-full h-full object-cover"
+                    alt={displayName}
+                    width={160}
+                    height={160}
+                    className="w-full h-full object-cover rounded-2xl shadow-2xl"
                   />
                 ) : (
-                  <span className="text-6xl font-bold text-white">
-                    {(organizer.companyName || organizer.user?.firstName || 'O').charAt(0).toUpperCase()}
+                  <span className="text-5xl font-black text-white">
+                    {(displayName.charAt(0)).toUpperCase()}
                   </span>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Info */}
-          <div className="flex-1 pt-4 lg:pt-8">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">{displayName}</h1>
-                  {organizer.verified && (
-                    <VerifiedIcon className="text-[#5B7CFF]" size={28} />
-                  )}
-                </div>
-                
-                {organizer.description && (
-                  <p className="text-gray-600 max-w-2xl mb-4">
-                    {organizer.description}
-                  </p>
+            {/* Info */}
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-4">
+                <h1 className="text-4xl lg:text-5xl font-black text-gray-900">{displayName}</h1>
+                {organizer.verified && <VerifiedIcon className="w-12 h-12 text-blue-600" />}
+              </div>
+              
+              {organizer.description && (
+                <p className="text-xl text-gray-700 leading-relaxed mb-8 max-w-2xl">
+                  {organizer.description}
+                </p>
+              )}
+
+              {/* Meta */}
+              <div className="flex flex-wrap items-center gap-8 text-lg mb-8">
+                {organizer.website && (
+                  <a href={organizer.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold">
+                    <GlobeIcon size={24} />
+                    Site web
+                  </a>
                 )}
-
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                  {organizer.website && (
-                    <a
-                      href={organizer.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-[#5B7CFF] hover:underline"
-                    >
-                      <GlobeIcon size={18} />
-                      Site web
-                    </a>
-                  )}
-                  
-                  {organizer.totalEvents !== undefined && (
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon size={18} className="text-gray-400" />
-                      <span>{organizer.totalEvents} événements</span>
-                    </div>
-                  )}
-
-                  {organizer.rating && (
-                    <div className="flex items-center gap-2">
-                      <StarIcon className="text-yellow-500 fill-yellow-500" size={18} />
-                      <span className="font-medium">{organizer.rating.toFixed(1)}</span>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2">
+                  <CalendarIcon size={24} className="text-gray-500" />
+                  <span className="font-semibold">{organizer.totalEvents || 0} événements</span>
                 </div>
+                {organizer.rating && (
+                  <div className="flex items-center gap-2">
+                    <StarIcon className="text-yellow-500 w-6 h-6" />
+                    <span className="font-bold text-2xl">{organizer.rating.toFixed(1)}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Social Links & Follow Button */}
-              <div className="flex items-center gap-3 flex-wrap">
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
                 <ShareOrganizerButton organizerId={params.id} organizerName={displayName} />
-                {/* FollowButton uses userId (UserFollow system) */}
                 {organizer.userId && (
                   <FollowButton
                     userId={organizer.userId}
-                    initialCount={organizer._count?.subscriptions || organizer.followersCount || 0}
-                    size="md"
+                    initialCount={organizer._count?.subscriptions || 0}
+                    size="lg"
                   />
-                )}
-                {organizer.facebookUrl && (
-                  <a
-                    href={organizer.facebookUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-10 h-10 bg-gray-100 hover:bg-[#5B7CFF] rounded-lg flex items-center justify-center transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                    </svg>
-                  </a>
-                )}
-                
-                {organizer.twitterUrl && (
-                  <a
-                    href={organizer.twitterUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-10 h-10 bg-gray-100 hover:bg-[#5B7CFF] rounded-lg flex items-center justify-center transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
-                    </svg>
-                  </a>
-                )}
-                
-                {organizer.instagramUrl && (
-                  <a
-                    href={organizer.instagramUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-10 h-10 bg-gray-100 hover:bg-[#5B7CFF] rounded-lg flex items-center justify-center transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z" />
-                    </svg>
-                  </a>
-                )}
-                
-                {organizer.linkedinUrl && (
-                  <a
-                    href={organizer.linkedinUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-10 h-10 bg-gray-100 hover:bg-[#5B7CFF] rounded-lg flex items-center justify-center transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                    </svg>
-                  </a>
                 )}
               </div>
             </div>
+
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          <div className="bg-gradient-to-br from-[#5B7CFF] to-[#7B61FF] rounded-2xl p-6 text-white">
-          <div className="text-4xl font-bold mb-1">{organizer._count?.events || organizer.totalEvents || 0}</div>
-            <div className="text-white/80">Événements</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl p-8 hover:shadow-2xl transition-shadow duration-300 text-center">
+            <div className="text-4xl font-black mb-2">{organizer._count?.events || organizer.totalEvents || 0}</div>
+            <div className="text-blue-100 font-semibold text-lg">Événements</div>
           </div>
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 text-white">
-            <div className="text-4xl font-bold mb-1">{organizer._count?.subscriptions || organizer.followersCount || 0}</div>
-            <div className="text-white/80">Abonnés</div>
+          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-3xl p-8 hover:shadow-2xl transition-shadow duration-300 text-center">
+            <div className="text-4xl font-black mb-2">{organizer._count?.subscriptions || 0}</div>
+            <div className="text-emerald-100 font-semibold text-lg">Abonnés</div>
           </div>
-          <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-6 text-white">
-            <div className="text-4xl font-bold mb-1">{organizer.rating?.toFixed(1) || 'N/A'}</div>
-            <div className="text-white/80">Note moyenne</div>
+          <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-3xl p-8 hover:shadow-2xl transition-shadow duration-300 text-center">
+            <div className="text-4xl font-black mb-2">{organizer.rating?.toFixed(1) || 'N/A'}</div>
+            <div className="text-orange-100 font-semibold text-lg">Note</div>
           </div>
-          <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-6 text-white">
-            <div className="text-4xl font-bold mb-1">{organizer.verified ? '✓' : '✗'}</div>
-            <div className="text-white/80">{organizer.verified ? 'Vérifié' : 'Non vérifié'}</div>
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-3xl p-8 hover:shadow-2xl transition-shadow duration-300 text-center">
+            <div className="text-4xl font-black mb-2">{organizer.verified ? '✓' : '✗'}</div>
+            <div className="text-purple-100 font-semibold text-lg">{organizer.verified ? 'Vérifié' : 'Non vérifié'}</div>
           </div>
         </div>
 
         {/* Events */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">
-              Événements à venir
-            </h2>
-            <Link
-              href={`/events?organizerId=${params.id}`}
-              className="text-[#5B7CFF] font-semibold hover:underline"
-            >
-              Voir tout
+        <div>
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="text-4xl font-black text-gray-900">Événements à venir</h2>
+            <Link href={`/events?organizerId=${params.id}`} className="text-blue-600 hover:text-blue-700 font-semibold text-xl">
+              Voir tout →
             </Link>
           </div>
 
-          {/* Use events from organizer._count or fetched separately */}
-          {(organizer.events?.length > 0 || events?.length > 0) ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(organizer.events || events || []).map((event: any) => (
-                <Link
-                  key={event.id}
-                  href={`/events/${event.slug}`}
-                  className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden">
+          {events.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {events.map((event) => (
+                <Link key={event.id} href={`/events/${event.slug}`} className="group block bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 overflow-hidden border border-gray-200">
+                  <div className="relative h-64 overflow-hidden rounded-t-3xl">
                     <Image
-                      src={event.coverImage || `https://picsum.photos/seed/${event.id}/800/600`}
+                      src={event.coverImage || '/placeholder-event.jpg'}
                       alt={event.title}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    
-                    <div className="absolute top-4 left-4">
-                      <span className="px-3 py-1 bg-white/95 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-900">
+                    <div className="absolute top-6 left-6">
+                      <span className="px-4 py-2 bg-white rounded-2xl font-bold text-gray-900 text-sm shadow-lg">
                         {event.category}
                       </span>
                     </div>
-
-                    <div className="absolute bottom-4 left-4">
-                      <div className="bg-white rounded-lg p-2 text-center shadow-lg">
-                        <div className="text-xs font-semibold text-gray-500 uppercase">
+                    <div className="absolute bottom-6 left-6">
+                      <div className="bg-white rounded-2xl p-4 shadow-2xl text-center min-w-[80px]">
+                        <div className="text-xs font-bold text-gray-500 uppercase">
                           {new Date(event.startDate).toLocaleDateString('fr-FR', { month: 'short' })}
                         </div>
-                        <div className="text-2xl font-bold text-gray-900">
+                        <div className="text-2xl font-black text-gray-900">
                           {new Date(event.startDate).getDate()}
                         </div>
                       </div>
                     </div>
                   </div>
-
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-[#5B7CFF] transition-colors line-clamp-1 mb-2">
+                  <div className="p-8">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4 line-clamp-2 group-hover:text-blue-600 transition-colors">
                       {event.title}
                     </h3>
-
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                      <LocationIcon size={16} className="text-gray-400" />
-                      <span>{event.venueCity}</span>
+                    <div className="flex items-center gap-3 text-lg text-gray-600 mb-4">
+                      <LocationIcon size={20} />
+                      <span className="font-semibold">{event.venueCity}</span>
                     </div>
-
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <CalendarIcon size={16} className="text-gray-400" />
-                        <span>
-                          {new Date(event.startDate).toLocaleDateString('fr-FR', {
-                            weekday: 'short',
-                            day: 'numeric',
-                            month: 'short',
-                          })}
-                        </span>
+                      <div className="flex items-center gap-2 text-lg text-gray-600">
+                        <CalendarIcon size={20} />
+                        <span>{new Date(event.startDate).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                       </div>
-                      <div className="text-lg font-bold text-[#5B7CFF]">
-                        {event.minPrice > 0 ? `À partir de ${event.minPrice}€` : 'Gratuit'}
+                      <div className="text-2xl font-bold text-blue-600">
+                        {event.minPrice > 0 ? `${event.minPrice.toLocaleString()} FCFA` : 'Gratuit'}
                       </div>
                     </div>
                   </div>
@@ -443,49 +278,34 @@ export default function OrganizerProfilePage({ params }: { params: { id: string 
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-2xl">
-              <CalendarIcon className="mx-auto mb-4 text-gray-400" size={48} />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Aucun événement à venir
-              </h3>
-              <p className="text-gray-600">
-                Revenez bientôt pour découvrir les nouveaux événements de {organizer.companyName || organizer.user?.firstName}
+            <div className="text-center py-24 border-2 border-dashed border-gray-200 rounded-3xl bg-gray-50">
+              <CalendarIcon className="mx-auto mb-8 w-24 h-24 text-gray-400" />
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">Aucun événement à venir</h3>
+              <p className="text-xl text-gray-600 max-w-lg mx-auto">
+                {displayName} prépare prochainement de nouveaux événements. Revenez bientôt !
               </p>
             </div>
           )}
         </div>
 
-        {/* Contact CTA */}
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 text-white">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="text-2xl font-bold mb-2">
-                Organisez un événement avec {organizer.companyName || organizer.user?.firstName}
-              </h3>
-              <p className="text-gray-400">
-                Une question ? Besoin d&apos;informations ? N&apos;hésitez pas à nous contacter.
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <Link
-                href="/contact"
-                className="px-6 py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
-              >
-                Nous contacter
-              </Link>
-              {organizer.website && (
-                <a
-                  href={organizer.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 bg-[#5B7CFF] text-white rounded-xl font-semibold hover:bg-[#7B61FF] transition-colors"
-                >
-                  Visiter le site
-                </a>
-              )}
-            </div>
+        {/* CTA */}
+        <div className="mt-24 bg-gradient-to-r from-gray-900 to-slate-900 rounded-3xl p-12 lg:p-20 text-white text-center">
+          <h3 className="text-4xl lg:text-5xl font-black mb-6">Prêt à organiser votre événement ?</h3>
+          <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
+            Collaborez avec {displayName} pour créer des expériences uniques et mémorables.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <Link href="/contact" className="px-10 py-5 bg-white text-gray-900 rounded-2xl font-bold text-xl hover:bg-gray-100 hover:shadow-2xl transition-all duration-300">
+              Nous contacter
+            </Link>
+            {organizer.website && (
+              <a href={organizer.website} target="_blank" rel="noopener noreferrer" className="px-10 py-5 border-2 border-white text-white rounded-2xl font-bold text-xl hover:bg-white hover:text-gray-900 transition-all duration-300">
+                Site officiel
+              </a>
+            )}
           </div>
         </div>
+
       </div>
     </div>
   );

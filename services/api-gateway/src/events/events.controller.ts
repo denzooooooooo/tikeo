@@ -208,7 +208,9 @@ export class EventsController {
   @Post(':id/upload-cover')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiConsumes('multipart/form-data')
+@ApiConsumes('multipart/form-data')
+
+
   @ApiOperation({ summary: 'Upload image de couverture événement (galerie)' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadCoverImage(
