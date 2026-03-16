@@ -1,7 +1,11 @@
 import {
   Controller, Get, Post, Put, Delete, Body, Param, Query,
   UseGuards, Request, HttpException, HttpStatus, NotFoundException,
+  UploadedFile, UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Express } from 'express';
+
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EventsService } from './events.service';
@@ -200,6 +204,31 @@ export class EventsController {
     return this.eventsService.unpublish(id, req.user?.id);
   }
 
+  // ─── POST /events/:id/upload-cover ──────────────────────────────────────────
+  @Post(':id/upload-cover')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload image de couverture événement (galerie)' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadCoverImage(
+    @Param('id') eventId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: any,
+  ) {
+    if (!file) throw new HttpException('Fichier requis', HttpStatus.BAD_REQUEST);
+    
+    // Validate image
+    if (!file.mimetype.startsWith('image/')) {
+      throw new HttpException('Seule les images sont autorisées (jpg, png, webp)', HttpStatus.BAD_REQUEST);
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new HttpException('Taille max 5MB', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.eventsService.uploadCoverImage(eventId, file, req.user.id);
+  }
+
   // ─── POST /events/:id/ticket-types ────────────────────────────────────────────
   @Post(':id/ticket-types')
   @UseGuards(JwtAuthGuard)
@@ -212,6 +241,7 @@ export class EventsController {
   ) {
     return this.eventsService.createTicketType(id, dto, req.user?.id);
   }
+
 
   // ─── PUT /events/:id/ticket-types/:ttId ───────────────────────────────────────
   @Put(':id/ticket-types/:ttId')

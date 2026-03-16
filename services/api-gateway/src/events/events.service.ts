@@ -4,12 +4,21 @@ import { RedisService } from '../redis/redis.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import * as fs from 'fs';
+import * as path from 'path';
+
+@Injectable()
 export class EventsService {
   constructor(
     private prisma: PrismaService,
     private redis: RedisService,
     private notificationsService: NotificationsService,
   ) {}
+
 
   async findAll(page: number = 1, limit: number = 20, filters?: any) {
     const skip = (page - 1) * limit;
@@ -861,6 +870,52 @@ export class EventsService {
   }
 
   // ─── ADMIN: delete all seeded events ────────────────────────────────────────
+  async uploadCoverImage(eventId: string, file: Express.Multer.File, userId: string) {
+    // Vérifier l'événement appartient à l'utilisateur
+    const event = await this.prisma.event.findFirst({
+      where: { 
+        id: eventId,
+        organizer: { userId }
+      }
+    });
+    if (!event) {
+      throw new HttpException('Événement non trouvé ou non autorisé', HttpStatus.FORBIDDEN);
+    }
+
+    // Créer dossier uploads si pas existant
+    const uploadDir = path.join(process.cwd(), 'uploads', 'events');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Générer nom unique
+    const ext = path.extname(file.originalname).toLowerCase();
+    const filename = `cover-${eventId}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    const filepath = path.join(uploadDir, filename);
+
+    // Sauvegarder fichier
+    fs.writeFileSync(filepath, file.buffer);
+
+    // Retourner URL publique (à adapter pour prod: Cloudinary/S3)
+    const baseUrl = process.env.API_BASE_URL || `http://localhost:3001`;
+    const publicUrl = `${baseUrl}/uploads/events/${filename}`;
+
+    // Optionnel: supprimer ancienne image (garder 3 max)
+    const oldImages = await this.prisma.eventImage.findMany({
+      where: { eventId },
+      orderBy: { createdAt: 'desc' },
+      take: 4, // garder 3 + nouvelle
+    });
+    if (oldImages.length >= 4) {
+      const oldest = oldImages[3];
+      const oldPath = path.join(uploadDir, path.basename(oldest.url));
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      await this.prisma.eventImage.delete({ where: { id: oldest.id } });
+    }
+
+    return { url: publicUrl };
+  }
+
   async deleteAllEvents() {
     await this.prisma.ticket.deleteMany();
     await this.prisma.order.deleteMany();
@@ -873,3 +928,4 @@ export class EventsService {
     return { deleted: result.count };
   }
 }
+

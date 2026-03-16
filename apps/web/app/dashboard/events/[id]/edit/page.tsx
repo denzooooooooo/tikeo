@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
@@ -174,6 +176,9 @@ export default function EditEventPage() {
   const [ticketError, setTicketError] = useState<string | null>(null);
   const [ticketSuccess, setTicketSuccess] = useState<string | null>(null);
   const [coverImagePreviewError, setCoverImagePreviewError] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
 
   const [form, setForm] = useState({
     title: '',
@@ -272,6 +277,39 @@ export default function EditEventPage() {
     if (field === 'coverImage') setCoverImagePreviewError(false);
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handleImageSelect = async (url: string) => {
+    handleChange('coverImage', url);
+    setUploadError('');
+  };
+
+  const uploadImage = async (file: File): Promise<string> => {
+    setUploadingImage(true);
+    setUploadError('');
+    try {
+      const token = getToken();
+      if (!token) throw new Error('Non connecté');
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_URL}/events/${eventId}/upload-cover`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || 'Erreur upload');
+      }
+      const data = await res.json();
+      return data.url;
+    } catch (err: any) {
+      setUploadError(err.message);
+      throw err;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
 
   const isCoverImageUrlValid = (url: string) => {
     if (!url?.trim()) return true;
@@ -507,35 +545,26 @@ export default function EditEventPage() {
                 </div>
               </div>
               <div>
-<label className={labelCls}>Image de couverture</label>
-                <input
-                  type="text"
-                  value={form.coverImage}
-                  onChange={(e) => handleChange('coverImage', e.target.value)}
-                  className={`${inputCls} ${!isCoverImageUrlValid(form.coverImage) ? 'border-red-300 focus:border-red-500 focus:ring-red-100' : ''}`}
-                  placeholder="https://…"
-                />
-                {!isCoverImageUrlValid(form.coverImage) && (
-                  <p className="mt-2 text-xs text-red-600">
-                    URL invalide. Utilisez une URL complète (http:// ou https://).
-                  </p>
-                )}
-                {form.coverImage && isCoverImageUrlValid(form.coverImage) && (
-                  <>
-                    <img
-                      src={form.coverImage}
-                      alt="Aperçu"
-                      className="mt-2 h-32 w-full object-cover rounded-xl border border-gray-200"
-                      onError={() => setCoverImagePreviewError(true)}
-                      onLoad={() => setCoverImagePreviewError(false)}
+                <label className={labelCls}>Image de couverture</label>
+                <div className="space-y-3">
+                  {/* Dropzone pour galerie */}
+                  <DropzoneWithPreview 
+                    onImageSelect={handleImageSelect}
+                    currentImage={form.coverImage}
+                  />
+                  {/* Fallback URL */}
+                  <div>
+                    <label className="text-xs text-slate-500 block mb-1">Ou URL directe</label>
+                    <input
+                      type="text"
+                      value={form.coverImage}
+                      onChange={(e) => handleChange('coverImage', e.target.value)}
+                      className={`${inputCls} text-xs py-2`}
+                      placeholder="https://exemple.com/image.jpg"
                     />
-                    {coverImagePreviewError && (
-                      <p className="mt-2 text-xs text-amber-700">
-                        Impossible de prévisualiser cette image. Vérifiez le lien (mais vous pouvez quand même enregistrer).
-                      </p>
-                    )}
-                  </>
-                )}
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -785,6 +814,56 @@ export default function EditEventPage() {
 }
 
 // ─── Ticket form fields component ─────────────────────────────────────────────
+// ── DropzoneWithPreview Component ──
+function DropzoneWithPreview({ onImageSelect, currentImage }: { onImageSelect: (url: string) => void; currentImage: string }) {
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    multiple: false,
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif'] },
+    maxSize: 5 * 1024 * 1024, // 5MB
+    onDrop: async (acceptedFiles, rejectedFiles) => {
+      if (rejectedFiles.length > 0) {
+        alert('Fichier rejeté: taille max 5MB ou format image seulement');
+        return;
+      }
+      if (acceptedFiles.length === 0) return;
+      try {
+        const url = await uploadImage(acceptedFiles[0]);
+        onImageSelect(url);
+      } catch {}
+    },
+  });
+
+  return (
+    <div>
+      <div
+        {...getRootProps()}
+        className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#5B7CFF] hover:bg-[#5B7CFF]/5 transition-all h-32 flex flex-col items-center justify-center"
+      >
+        <input {...getInputProps()} />
+        {isDragActive ? (
+          <p className="text-[#5B7CFF] font-semibold">Déposez l&apos;image ici...</p>
+        ) : (
+          <>
+            <div className="w-12 h-12 bg-[#5B7CFF]/20 rounded-2xl flex items-center justify-center mb-3">
+              <svg className="w-6 h-6 text-[#5B7CFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.5h13m-3.536-3.536L6.5 14.5l-4 4 .536.536a2.5 2.5 0 013.536 3.536l.5-.5a2.5 2.5 0 113.536 3.536l.5-.5a2.5 2.5 0 11-3.536-3.536l-.5.5a2.5 2.5 0 11-3.536 3.536z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-700 mb-1">Cliquer ou glisser une image</p>
+            <p className="text-xs text-gray-500">Jpg, Png, Webp (max 5 Mo)</p>
+          </>
+        )}
+      </div>
+      {currentImage && (
+        <div className="mt-3 p-3 bg-gray-50 rounded-xl border">
+          <img src={currentImage} alt="Prévisualisation" className="h-24 w-full object-cover rounded-lg" />
+          <p className="text-xs text-gray-500 mt-1 truncate">{currentImage}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TicketFormFields({
   ticket,
   onChange,
