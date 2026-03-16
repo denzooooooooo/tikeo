@@ -278,8 +278,10 @@ export default function EditEventPage() {
     handleChange('coverImage', url);
     setUploadError('');
   };
-
+  
   const uploadImage = async (file: File): Promise<string> => {
+
+const uploadImage = async (file: File): Promise<string> => {
     setUploadingImage(true);
     setUploadError('');
     try {
@@ -824,10 +826,12 @@ function DropzoneWithPreview({ onImageSelect, currentImage }: { onImageSelect: (
         return;
       }
       if (acceptedFiles.length === 0) return;
-      try {
+        try {
         const url = await uploadImage(acceptedFiles[0]);
         onImageSelect(url);
-      } catch {}
+      } catch (err) {
+        console.error('Upload failed', err);
+      }
     },
   });
 
