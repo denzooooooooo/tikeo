@@ -278,8 +278,8 @@ export default function EditEventPage() {
     handleChange('coverImage', url);
     setUploadError('');
   };
-  
-  const uploadImage = async (file: File): Promise<string> => {
+
+const uploadImage = async (file: File): Promise<string> => {
 
 const uploadImage = async (file: File): Promise<string> => {
     setUploadingImage(true);
