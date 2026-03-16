@@ -908,15 +908,22 @@ export class EventsService {
       orderBy: { createdAt: 'desc' },
       take: 4, // garder 3 + nouvelle
     });
-    if (oldImages.length >= 4) {
+  if (oldImages.length >= 4) {
       const oldest = oldImages[3];
       const oldPath = path.join(uploadDir, path.basename(oldest.url));
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       await this.prisma.eventImage.delete({ where: { id: oldest.id } });
     }
 
+    // ✅ UPDATE EVENT COVERIMAGE in DB
+    await this.prisma.event.update({
+      where: { id: eventId },
+      data: { coverImage: publicUrl },
+    });
+
     return { url: publicUrl };
   }
+
 
   async deleteAllEvents() {
     await this.prisma.ticket.deleteMany();

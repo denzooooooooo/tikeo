@@ -278,7 +278,7 @@ export default function EditEventPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleImageSelect = async (url: string) => {
+
     handleChange('coverImage', url);
     setUploadError('');
   };
