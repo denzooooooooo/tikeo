@@ -160,11 +160,7 @@ export default function EditEventPage() {
   );
 }
 
-  isNew?: boolean;
-  isEditing?: boolean;
-}
 
-export default function EditEventPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params?.id as string;
