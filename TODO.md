@@ -1,12 +1,10 @@
-# TODO - Ajout Upload Galerie Photo Événement
+# TODO - Page Organisateurs ✅ TERMINÉE
 
-## ✅ TERMINÉ !
+**Succès**:
+- [x] 1. Page créée: grid responsive 1/2/3/4 + pagination
+- [x] 2. Cards glassmorphism hover + Verified badge
+- [x] 3. npm run build OK + push main
 
-**Upload galerie photo événement fonctionnel:**
-- Dropzone mobile/desktop → POST /events/:id/upload-cover
-- Multer fs + auth organizer
-- Preview/save → visible /events/[id]
+**Live**: /organizers → tous organisateurs + "Voir profil"
 
-**PR ouverte**: blackboxai/upload-galerie-event
-
-Serveur: npm run dev
+**Prochaine**: Améliorations optionnelles (search, filters).
