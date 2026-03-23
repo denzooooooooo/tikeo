@@ -1,166 +1,170 @@
 'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
-import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
+import { useState, useEffect, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-gateway-production-8ee0.up.railway.app/api/v1';
 
 function getToken(): string | null {
   try {
-    const stored = localStorage.getItem("auth_tokens");
+    const stored = localStorage.getItem('auth_tokens');
     if (!stored) return null;
     return JSON.parse(stored).accessToken ?? null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
-// Icons
-const ArrowLeftIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="m15 18-6-6 6-6" />
-  </svg>
-);
-const InfoIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 16v-4M12 8h.01" />
-  </svg>
-);
-const CalendarIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <rect width="18" height="18" x="3" y="4" rx="2" />
-    <line x1="16" x2="16" y1="2" y2="6" />
-    <line x1="8" x2="8" y1="2" y2="6" />
-    <line x1="3" x2="21" y1="10" y2="10" />
-  </svg>
-);
-const MapPinIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
-    <circle cx="12" cy="10" r="3" />
-  </svg>
-);
-const TicketIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-  </svg>
-);
-const PlusIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 12h14M12 5v14" />
-  </svg>
-);
-const TrashIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-  </svg>
-);
-const EditIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z" />
-  </svg>
-);
-const SaveIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-    <polyline points="17 21 17 13 7 13 7 21" />
-    <polyline points="7 3 7 8 15 8" />
-  </svg>
-);
-const CheckIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-const XIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M18 6 6 18M6 6l12 12" />
-  </svg>
-);
-const CurrencyIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="12" r="10" />
-    <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-    <path d="M12 18V6" />
-  </svg>
-);
-const UsersIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
+// ─── SVG Icons ───────────────────────────────────────────────────────────────
+const ArrowLeftIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>;
+const InfoIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>;
+const CalendarIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
+const MapPinIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>;
+const TicketIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>;
+const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5v14"/></svg>;
+const TrashIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+const EditIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>;
+const SaveIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
+const CheckIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>;
+const XIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>;
+const CurrencyIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>;
+const UsersIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
 
-// COUNTRIES list
+// ─── Liste de pays prédéfinis ─────────────────────────────────────────────────
 const COUNTRIES = [
+  // Afrique de l'Ouest
   { value: "Bénin", label: "🇧🇯 Bénin" },
-  // ... (same list)
+  { value: "Burkina Faso", label: "🇧🇫 Burkina Faso" },
+  { value: "Cap-Vert", label: "🇨🇻 Cap-Vert" },
+  { value: "Côte d'Ivoire", label: "🇨🇮 Côte d'Ivoire" },
+  { value: "Gambie", label: "🇬🇲 Gambie" },
+  { value: "Ghana", label: "🇬🇭 Ghana" },
+  { value: "Guinée", label: "🇬🇳 Guinée" },
+  { value: "Guinée-Bissau", label: "🇬🇼 Guinée-Bissau" },
+  { value: "Liberia", label: "🇱🇷 Liberia" },
+  { value: "Mali", label: "🇲🇱 Mali" },
+  { value: "Mauritanie", label: "🇲🇷 Mauritanie" },
+  { value: "Niger", label: "🇳🇪 Niger" },
+  { value: "Nigeria", label: "🇳🇬 Nigeria" },
+  { value: "Sénégal", label: "🇸🇳 Sénégal" },
+  { value: "Sierra Leone", label: "🇸🇱 Sierra Leone" },
+  { value: "Togo", label: "🇹🇬 Togo" },
+  // Afrique Centrale
+  { value: "Cameroun", label: "🇨🇲 Cameroun" },
+  { value: "Congo", label: "🇨🇬 Congo" },
+  { value: "RD Congo", label: "🇨🇩 RD Congo" },
+  { value: "Gabon", label: "🇬🇦 Gabon" },
+  { value: "Guinée équatoriale", label: "🇬🇶 Guinée équatoriale" },
+  { value: "République centrafricaine", label: "🇨🇫 République centrafricaine" },
+  { value: "Tchad", label: "🇹🇩 Tchad" },
+  // Afrique de l'Est
+  { value: "Burundi", label: "🇧🇮 Burundi" },
+  { value: "Comores", label: "🇰🇲 Comores" },
+  { value: "Djibouti", label: "🇩🇯 Djibouti" },
+  { value: "Érythrée", label: "🇪🇷 Érythrée" },
+  { value: "Éthiopie", label: "🇪🇹 Éthiopie" },
+  { value: "Kenya", label: "🇰🇪 Kenya" },
+  { value: "Madagascar", label: "🇲🇬 Madagascar" },
+  { value: "Malawi", label: "🇲🇼 Malawi" },
+  { value: "Maurice", label: "🇲🇺 Maurice" },
+  { value: "Mozambique", label: "🇲🇿 Mozambique" },
+  { value: "Ouganda", label: "🇺🇬 Ouganda" },
+  { value: "Rwanda", label: "🇷🇼 Rwanda" },
+  { value: "Seychelles", label: "🇸🇨 Seychelles" },
+  { value: "Somalie", label: "🇸🇴 Somalie" },
+  { value: "Soudan", label: "🇸🇩 Soudan" },
+  { value: "Soudan du Sud", label: "🇸🇸 Soudan du Sud" },
+  { value: "Tanzanie", label: "🇹🇿 Tanzanie" },
+  { value: "Zambie", label: "🇿🇲 Zambie" },
+  { value: "Zimbabwe", label: "🇿🇼 Zimbabwe" },
+  // Afrique du Nord
+  { value: "Algérie", label: "🇩🇿 Algérie" },
+  { value: "Égypte", label: "🇪🇬 Égypte" },
+  { value: "Libye", label: "🇱🇾 Libye" },
+  { value: "Maroc", label: "🇲🇦 Maroc" },
+  { value: "Tunisie", label: "🇹🇳 Tunisie" },
+  // Afrique Australe
+  { value: "Afrique du Sud", label: "🇿🇦 Afrique du Sud" },
+  { value: "Angola", label: "🇦🇴 Angola" },
+  { value: "Botswana", label: "🇧🇼 Botswana" },
+  { value: "Eswatini", label: "🇸🇿 Eswatini" },
+  { value: "Lesotho", label: "🇱🇸 Lesotho" },
+  { value: "Namibie", label: "🇳🇦 Namibie" },
+  // Europe
+  { value: "Allemagne", label: "🇩🇪 Allemagne" },
+  { value: "Belgique", label: "🇧🇪 Belgique" },
+  { value: "Canada", label: "🇨🇦 Canada" },
+  { value: "Espagne", label: "🇪🇸 Espagne" },
+  { value: "France", label: "🇫🇷 France" },
+  { value: "Italie", label: "🇮🇹 Italie" },
+  { value: "Portugal", label: "🇵🇹 Portugal" },
+  { value: "Royaume-Uni", label: "🇬🇧 Royaume-Uni" },
+  { value: "Suisse", label: "🇨🇭 Suisse" },
+  // Autres
+  { value: "États-Unis", label: "🇺🇸 États-Unis" },
+  { value: "Brésil", label: "🇧🇷 Brésil" },
+  { value: "Chine", label: "🇨🇳 Chine" },
+  { value: "Émirats arabes unis", label: "🇦🇪 Émirats arabes unis" },
+  { value: "Inde", label: "🇮🇳 Inde" },
 ];
 
-// CATEGORIES list
+// ─── Category mapping (DB enum → French label) ───────────────────────────────
 const CATEGORIES = [
   { value: 'MUSIC', label: 'Musique' },
-  // ...
+  { value: 'SPORTS', label: 'Sport' },
+  { value: 'ARTS', label: 'Arts & Culture' },
+  { value: 'TECHNOLOGY', label: 'Technologie' },
+  { value: 'BUSINESS', label: 'Business' },
+  { value: 'FOOD', label: 'Gastronomie' },
+  { value: 'ENTERTAINMENT', label: 'Divertissement' },
+  { value: 'EDUCATION', label: 'Éducation' },
+  { value: 'FESTIVAL', label: 'Festival' },
+  { value: 'CONFERENCE', label: 'Conférence' },
+  { value: 'SPORTS', label: 'Sport' },
+  { value: 'OTHER', label: 'Autre' },
 ];
 
+// Deduplicated
 const UNIQUE_CATEGORIES = CATEGORIES.filter((c, i, arr) => arr.findIndex(x => x.value === c.value) === i);
 
-export default function EditEventPage() {
-  // ... (all state, fetchEvent, handlers)
+const TICKET_DESIGN_TEMPLATES = [
+  { value: 'CLASSIC', label: 'Classic' },
+  { value: 'NEON', label: 'Neon' },
+  { value: 'GOLD', label: 'Gold' },
+  { value: 'MINIMAL', label: 'Minimal' },
+  { value: 'LUXURY', label: 'Luxury' },
+  { value: 'FESTIVE', label: 'Festive' },
+  { value: 'CORPORATE', label: 'Corporate' },
+];
 
-  // Move components OUTSIDE component as separate functions
-  const TicketFormFields = ({ ticket, onChange, inputCls }: {
-    ticket: any;
-    onChange: (field: string, value: string) => void;
-    inputCls: string;
-  }) => {
-    const labelCls = 'block text-xs font-semibold text-gray-600 mb-1';
-    return (
-      <div className="space-y-3">
-        {/* same JSX */}
-      </div>
-    );
-  };
-
-  const DropzoneWithPreview = ({ onImageSelect, currentImage }: { onImageSelect: (url: string) => void; currentImage: string }) => {
-    // same dropzone code
-    return (
-      <div>
-        {/* dropzone JSX */}
-      </div>
-    );
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-10 h-10 border-4 border-[#5B7CFF] border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-500">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* JSX form + components CALLS */}
-      <DropzoneWithPreview 
-        onImageSelect={handleImageSelect}
-        currentImage={form.coverImage}
-      />
-      {/* rest JSX */}
-    </div>
-  );
+interface TicketType {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  quantity: number;
+  available: number;
+  sold: number;
+  maxPerOrder: number;
+  salesStart?: string;
+  salesEnd?: string;
 }
 
+interface TicketForm {
+  id?: string; // existing ticket
+  name: string;
+  description: string;
+  price: string;
+  quantity: string;
+  maxPerOrder: string;
+  salesStart: string;
+  salesEnd: string;
+  isNew?: boolean;
+  isEditing?: boolean;
+}
 
+export default function EditEventPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params?.id as string;
@@ -274,33 +278,44 @@ export default function EditEventPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-
+  const handleImageSelect = async (url: string) => {
+    console.log('🖼️ Image sélectionnée:', url);
     handleChange('coverImage', url);
     setUploadError('');
+    setCoverImagePreviewError(false);
   };
 
-const uploadImage = async (file: File): Promise<string> => {
-
-const uploadImage = async (file: File): Promise<string> => {
+  const uploadImage = async (file: File): Promise<string> => {
+    console.log('🚀 uploadImage appelée:', file.name, file.size, file.type);
     setUploadingImage(true);
     setUploadError('');
     try {
       const token = getToken();
+      console.log('🔑 Token OK:', !!token);
       if (!token) throw new Error('Non connecté');
       const formData = new FormData();
       formData.append('file', file);
+      console.log('📤 Upload →', `${API_URL}/events/${eventId}/upload-cover`, file.name, file.size);
+      
       const res = await fetch(`${API_URL}/events/${eventId}/upload-cover`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
+      
+      const text = await res.text();
+      console.log('📥 Response status:', res.status, res.statusText, 'body:', text);
+      
       if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err || 'Erreur upload');
+        throw new Error(`Status ${res.status}: ${text || 'Erreur upload'}`);
       }
-      const data = await res.json();
+      const data = JSON.parse(text);
+      console.log('✅ Upload OK, URL:', data.url);
       return data.url;
     } catch (err: any) {
+      console.error('❌ Upload ERROR:', err);
       setUploadError(err.message);
       throw err;
     } finally {
@@ -325,6 +340,12 @@ const uploadImage = async (file: File): Promise<string> => {
     setError(null);
     setSuccess(false);
 
+    console.log('📝 PUT payload:', {
+      coverImage: form.coverImage,
+      eventId,
+      ...form
+    });
+
     try {
       const token = getToken();
       const payload = {
@@ -343,14 +364,21 @@ const uploadImage = async (file: File): Promise<string> => {
         body: JSON.stringify(payload),
       });
 
+      const textRes = await res.text();
+      console.log('📥 PUT status:', res.status, 'response:', textRes);
+      
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || 'Erreur lors de la mise à jour');
+        const errData = JSON.parse(textRes).catch(() => ({}));
+        throw new Error(errData.message || `Erreur HTTP ${res.status}`);
       }
+
+      const data = JSON.parse(textRes);
+      console.log('✅ PUT OK');
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
+      console.error('❌ PUT ERROR:', err);
       setError(err.message || 'Erreur inconnue');
     } finally {
       setIsSaving(false);
@@ -458,12 +486,10 @@ const uploadImage = async (file: File): Promise<string> => {
     });
   };
 
-  // Variables déplacées AVANT tous returns
   const inputCls = 'w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#5B7CFF] focus:ring-2 focus:ring-[#5B7CFF]/20 outline-none text-sm bg-white transition-all';
   const labelCls = 'block text-sm font-semibold text-gray-700 mb-1.5';
 
   if (isLoading) {
-
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -546,22 +572,37 @@ const uploadImage = async (file: File): Promise<string> => {
               </div>
               <div>
                 <label className={labelCls}>Image de couverture</label>
-                <div className="space-y-3">
+              <div className="space-y-3">
                   {/* Dropzone pour galerie */}
                   <DropzoneWithPreview 
                     onImageSelect={handleImageSelect}
                     currentImage={form.coverImage}
+                    uploadImageFn={uploadImage}
                   />
                   {/* Fallback URL */}
                   <div>
-                    <label className="text-xs text-slate-500 block mb-1">Ou URL directe</label>
+                    <label className="text-xs text-slate-500 block mb-1">Ou URL directe (galerie)</label>
                     <input
                       type="text"
                       value={form.coverImage}
-                      onChange={(e) => handleChange('coverImage', e.target.value)}
+                      onChange={(e) => {
+                        console.log('Input URL change:', e.target.value);
+                        handleImageSelect(e.target.value);
+                      }}
                       className={`${inputCls} text-xs py-2`}
-                      placeholder="https://exemple.com/image.jpg"
+                      placeholder="https://i.pinimg.com/736x/0a/97/24/0a972457c72238e3bc648841b6868e39.jpg"
                     />
+                    {form.coverImage && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded-lg border">
+                        <img 
+                          src={form.coverImage} 
+                          alt="Preview" 
+                          className="h-24 w-full object-cover rounded"
+                          onError={() => console.error('Image preview erreur:', form.coverImage)}
+                        />
+                        <p className="text-xs text-gray-500 mt-1 truncate">{form.coverImage}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -815,22 +856,32 @@ const uploadImage = async (file: File): Promise<string> => {
 
 // ─── Ticket form fields component ─────────────────────────────────────────────
 // ── DropzoneWithPreview Component ──
-function DropzoneWithPreview({ onImageSelect, currentImage }: { onImageSelect: (url: string) => void; currentImage: string }) {
+function DropzoneWithPreview({ onImageSelect, currentImage, uploadImageFn }: { onImageSelect: (url: string) => void; currentImage: string; uploadImageFn: (file: File) => Promise<string> }) {
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     multiple: false,
     accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif'] },
     maxSize: 5 * 1024 * 1024, // 5MB
     onDrop: async (acceptedFiles, rejectedFiles) => {
+      console.log('📁 Fichiers reçus:', acceptedFiles.length);
       if (rejectedFiles.length > 0) {
         alert('Fichier rejeté: taille max 5MB ou format image seulement');
         return;
       }
       if (acceptedFiles.length === 0) return;
-        try {
-        const url = await uploadImage(acceptedFiles[0]);
+      setDragging(false);
+      try {
+        setUploading(true);
+        const url = await uploadImageFn(acceptedFiles[0]);
+        console.log('✅ Dropzone onImageSelect:', url);
         onImageSelect(url);
       } catch (err) {
-        console.error('Upload failed', err);
+        console.error('❌ Dropzone error:', err);
+        alert('Erreur upload: ' + (err as Error).message);
+      } finally {
+        setUploading(false);
       }
     },
   });
@@ -839,11 +890,32 @@ function DropzoneWithPreview({ onImageSelect, currentImage }: { onImageSelect: (
     <div>
       <div
         {...getRootProps()}
-        className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#5B7CFF] hover:bg-[#5B7CFF]/5 transition-all h-32 flex flex-col items-center justify-center"
+        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all h-32 flex flex-col items-center justify-center ${
+          dragging || isDragActive ? 'border-[#5B7CFF] bg-[#5B7CFF]/10 scale-[1.02]' : 
+          currentImage ? 'border-transparent shadow-md bg-gradient-to-br from-gray-50 to-white' : 
+          'border-gray-300 hover:border-[#5B7CFF] hover:bg-[#5B7CFF]/5'
+        }`}
+        onDragEnter={() => setDragging(true)}
+        onDragLeave={() => setDragging(false)}
       >
-        <input {...getInputProps()} />
-        {isDragActive ? (
-          <p className="text-[#5B7CFF] font-semibold">Déposez l&apos;image ici...</p>
+<input {...getInputProps()} />
+        {uploading ? (
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-6 h-6 border-2 border-[#5B7CFF] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-[#5B7CFF] font-semibold">Upload en cours...</p>
+          </div>
+        ) : isDragActive || dragging ? (
+          <p className="text-lg font-semibold text-[#5B7CFF]">📁 Déposez l&apos;image ici...</p>
+        ) : currentImage ? (
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#5B7CFF]/20 to-[#7B61FF]/20 rounded-2xl flex items-center justify-center mb-2 mx-auto">
+              <svg className="w-7 h-7 text-[#5B7CFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2l1.586-1.586a2 2 0 0 1 2.828 0L20 14m-6-6h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-700">Changer l&apos;image</p>
+            <p className="text-xs text-gray-500">Cliquez pour remplacer</p>
+          </div>
         ) : (
           <>
             <div className="w-12 h-12 bg-[#5B7CFF]/20 rounded-2xl flex items-center justify-center mb-3">
@@ -856,10 +928,10 @@ function DropzoneWithPreview({ onImageSelect, currentImage }: { onImageSelect: (
           </>
         )}
       </div>
-      {currentImage && (
-        <div className="mt-3 p-3 bg-gray-50 rounded-xl border">
+      {currentImage && !uploading && (
+        <div className="mt-3 p-3 bg-gray-50 rounded-xl border shadow-sm">
           <img src={currentImage} alt="Prévisualisation" className="h-24 w-full object-cover rounded-lg" />
-          <p className="text-xs text-gray-500 mt-1 truncate">{currentImage}</p>
+          <p className="text-xs text-gray-500 mt-1 truncate font-mono">{currentImage}</p>
         </div>
       )}
     </div>

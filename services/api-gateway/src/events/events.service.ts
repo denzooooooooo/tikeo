@@ -1,9 +1,3 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { RedisService } from '../redis/redis.service';
-import { NotificationsService } from '../notifications/notifications.service';
-
-@Injectable()
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
@@ -11,7 +5,6 @@ import { NotificationsService } from '../notifications/notifications.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Fix double imports (dev only)
 @Injectable()
 export class EventsService {
 
@@ -890,13 +883,23 @@ export class EventsService {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // Générer nom unique
-    const ext = path.extname(file.originalname).toLowerCase();
-    const filename = `cover-${eventId}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-    const filepath = path.join(uploadDir, filename);
+    let filename: string;
 
-    // Sauvegarder fichier
-    fs.writeFileSync(filepath, file.buffer);
+    // Si multer diskStorage a déjà écrit le fichier, on réutilise ce nom
+    if (file.filename) {
+      filename = file.filename;
+    } else {
+      // Fallback mémoire/buffer
+      const ext = path.extname(file.originalname).toLowerCase();
+      filename = `cover-${eventId}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+      const filepath = path.join(uploadDir, filename);
+
+      if (file.buffer) {
+        fs.writeFileSync(filepath, file.buffer);
+      } else {
+        throw new HttpException('Fichier invalide (aucune donnée)', HttpStatus.BAD_REQUEST);
+      }
+    }
 
     // Retourner URL publique (à adapter pour prod: Cloudinary/S3)
     const baseUrl = process.env.API_BASE_URL || `http://localhost:3001`;
@@ -908,14 +911,13 @@ export class EventsService {
       orderBy: { createdAt: 'desc' },
       take: 4, // garder 3 + nouvelle
     });
-  if (oldImages.length >= 4) {
+    if (oldImages.length >= 4) {
       const oldest = oldImages[3];
       const oldPath = path.join(uploadDir, path.basename(oldest.url));
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       await this.prisma.eventImage.delete({ where: { id: oldest.id } });
     }
 
-    // ✅ UPDATE EVENT COVERIMAGE in DB
     await this.prisma.event.update({
       where: { id: eventId },
       data: { coverImage: publicUrl },
@@ -923,7 +925,6 @@ export class EventsService {
 
     return { url: publicUrl };
   }
-
 
   async deleteAllEvents() {
     await this.prisma.ticket.deleteMany();

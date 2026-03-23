@@ -1,10 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // ✅ CORS configuration
   // En développement: localhost:3000 (NestJS local) et localhost:4000 (Next.js)
@@ -44,6 +46,11 @@ async function bootstrap() {
 
   // ✅ API prefix
   app.setGlobalPrefix('api/v1');
+
+  // ✅ Static files (uploads)
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads',
+  });
 
   // ✅ Swagger setup
   const swaggerConfig = new DocumentBuilder()

@@ -1,5 +1,4 @@
-# Galerie Upload Événement ✅
-
-**Site lancé**: `npm run dev`
-
-**Prochain**: Profil organisateur redesign + events PUBLISHED only
+- [x] Corriger upload cover frontend (retirer Content-Type forcé)
+- [x] Corriger upload cover backend (support diskStorage + buffer fallback)
+- [x] Vérifier les autres appels upload multipart/form-data dans le projet
+- [x] Valider les changements
