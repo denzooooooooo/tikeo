@@ -38,6 +38,7 @@
     "@nestjs/throttler": "^5.0.1",
     "@prisma/client": "^5.7.0",
     "@sendgrid/mail": "^8.1.6",
+    "@stablelib/base64": "^2.0.1",
     "@tikeo/types": "*",
     "@tikeo/utils": "*",
     "@types/multer": "^2.1.0",
