@@ -4,9 +4,11 @@ import {
   UploadedFile, UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as path from 'path';
 import type { Express } from 'express';
 
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EventsService } from './events.service';
 
@@ -205,14 +207,29 @@ export class EventsController {
   }
 
   // ─── POST /events/:id/upload-cover ──────────────────────────────────────────
-  @Post(':id/upload-cover')
+@Post(':id/upload-cover')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-@ApiConsumes('multipart/form-data')
-
-
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: './uploads/events',
+      filename: (req, file, cb) => {
+        const eventId = req.params.id;
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `cover-${eventId}-${uniqueSuffix}${path.extname(file.originalname)}`);
+      },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Seules les images sont autorisées'), false);
+      }
+    },
+  }))
   @ApiOperation({ summary: 'Upload image de couverture événement (galerie)' })
-  @UseInterceptors(FileInterceptor('file'))
   async uploadCoverImage(
     @Param('id') eventId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -220,14 +237,6 @@ export class EventsController {
   ) {
     if (!file) throw new HttpException('Fichier requis', HttpStatus.BAD_REQUEST);
     
-    // Validate image
-    if (!file.mimetype.startsWith('image/')) {
-      throw new HttpException('Seule les images sont autorisées (jpg, png, webp)', HttpStatus.BAD_REQUEST);
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      throw new HttpException('Taille max 5MB', HttpStatus.BAD_REQUEST);
-    }
-
     return this.eventsService.uploadCoverImage(eventId, file, req.user.id);
   }
 
